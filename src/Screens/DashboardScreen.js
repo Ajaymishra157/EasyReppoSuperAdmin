@@ -893,7 +893,7 @@ const DashboardScreen = () => {
             <View
               style={{
                 flexDirection: 'row',
-                justifyContent: 'space-between',
+                justifyContent: 'flex-start',
                 width: '100%',
                 marginTop: 30,
                 paddingHorizontal: 15,
@@ -945,6 +945,55 @@ const DashboardScreen = () => {
                   }}
                 >
                   App Settings
+                </Text>
+              </TouchableOpacity>
+
+
+              <TouchableOpacity
+                style={{
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: 'white',
+                  borderRadius: 15,
+                  width: 100,
+                  height: 120,
+                  padding: 10,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 6,
+                  elevation: 8,
+                  marginLeft: 30
+                }}
+                onPress={() => {
+                  navigation.navigate('AllVehicleSearch');
+                }}
+              >
+                <View
+                  style={{
+                    width: 50,
+                    height: 50,
+                    borderRadius: 30,
+                    backgroundColor: 'white', // Light Blue background
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginBottom: 10,
+                    borderWidth: 1.5,
+                    borderColor: '#1976D2', // Professional Blue border
+                  }}
+                >
+                  <Ionicons name="car-outline" size={25} color="#0D47A1" />
+                </View>
+
+                <Text
+                  style={{
+                    color: '#333',
+                    fontSize: 12,
+                    textAlign: 'center',
+                    fontFamily: 'Inter-Medium',
+                  }}
+                >
+                  All Vehicle Search
                 </Text>
               </TouchableOpacity>
 

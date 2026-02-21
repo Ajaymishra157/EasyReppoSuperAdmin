@@ -34,6 +34,7 @@ const AddAgencyStaff = () => {
 
     const route = useRoute();
     const { agencyId, staff_id, staff_name, staff_email, staff_mobile, staff_password, staff_address, staff_type } = route.params || {};
+    console.log("agency id and staff id", agencyId, staff_id);
 
 
     // Error states
@@ -143,6 +144,8 @@ const AddAgencyStaff = () => {
             schedule_type: scheduleDays, // '1 day', '1 month', '1 year'
             ...(staff_id ? { staff_id } : {})
         };
+
+        console.log("add schedule ka payload", payload);
 
         // If it's update, include staff_id
         if (staff_id) {

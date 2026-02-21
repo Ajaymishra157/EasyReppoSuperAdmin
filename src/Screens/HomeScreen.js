@@ -15,7 +15,7 @@ import {
   Switch,
   Keyboard
 } from 'react-native';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Header from '../Component/Header';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { ENDPOINTS, IMAGE_BASE_URL } from '../CommonFiles/Constant';
@@ -43,13 +43,17 @@ const HomeScreen = () => {
   const [StaffList, setStaffList] = useState([]);
   const [StaffLoading, setStaffLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [AllCount, setAllCount] = useState('');
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [InfoModal, SetInfoModal] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState(null);
 
+
+
   const [ConfrimationModal, setConfrimationModal] = useState(false);
   const [ResetModal, setResetModal] = useState(false);
+  const [ResetModalAll, setResetModalAll] = useState(false);
 
   const [data, setData] = useState(StaffList.slice(0, 20));  // Load first 20 items initially
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -75,6 +79,71 @@ const HomeScreen = () => {
 
   const [modalVisible, setModalVisible] = useState(false);
 
+  const [currentScrollPosition, setCurrentScrollPosition] = useState(0);
+  console.log("current position", currentScrollPosition)
+  const [loadedStaffIds, setLoadedStaffIds] = useState([]);
+  const [shouldRefresh, setShouldRefresh] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const flatListRef = useRef(null);
+
+  // useFocusEffect में conditional logic add करें
+  useFocusEffect(
+    useCallback(() => {
+
+      if (isInitialLoad) {
+        console.log("1")
+        fetchData(selectedTab, true);
+        setIsInitialLoad(false);
+      }
+
+      if (shouldRefresh) {
+        console.log("2")
+        // Only fetch data if something was changed in information screen
+        fetchData(selectedTab);
+        setShouldRefresh(false);
+      }
+    }, [shouldRefresh, selectedTab, isInitialLoad])
+  );
+
+  // informationScreen से वापस आने पर data update करने के लिए function
+  const handleReturnFromInfoScreen = useCallback(() => {
+
+    // अगर search text है तो उसके according filter करें, वरना normal fetch करें
+    if (text.trim() !== '') {
+      // Search text है, तो current text के according filter करें
+      const filtered = originalStaffData.filter(item => {
+        const lowerCaseInput = text.toLowerCase();
+        return (
+          item.staff_name?.toLowerCase().includes(lowerCaseInput) ||
+          item.staff_mobile?.toLowerCase().includes(lowerCaseInput)
+        );
+      });
+
+      // Directly set filtered data
+      setStaffList(filtered);
+      setCurrentPage(1);
+      setData(filtered.slice(0, 20));
+
+      // थोड़ी delay के बाद scroll position restore करें
+      setTimeout(() => {
+        if (flatListRef.current && currentScrollPosition > 0) {
+          flatListRef.current.scrollToOffset({
+            offset: currentScrollPosition,
+            animated: false
+          });
+        }
+      }, 50);
+    } else {
+      // कोई search नहीं है, तो normal fetch करें
+      setTimeout(() => {
+        console.log("3")
+        fetchData(selectedTab, true); // true = preserve scroll position
+      }, 100);
+    }
+  }, [selectedTab, text, originalStaffData, currentScrollPosition]);
+
+
+
 
   const [permissions, setPermissions] = useState({});
   console.log("fetch permission ye hai", permissions, permissions.staff && permissions.staff.staffreset);
@@ -83,6 +152,29 @@ const HomeScreen = () => {
   const [blacklistChecked, setBlacklistChecked] = useState(false);
   const [remark, setRemark] = useState('');
   const [remarkError, setRemarkError] = useState('');
+
+  const tabs = [
+    { key: '', label: 'Total', count: AllCount, bgColor: '#7c3aed', },
+    { key: 'admin', label: 'Admin', count: AdminCount, bgColor: '#0ea5e9', },
+    { key: 'field', label: 'Field', count: FieldCount, bgColor: '#22c55e', },
+
+  ]
+
+  const [selectedTab, setSelectedTab] = useState('');
+
+  const handleTabPress = (tabKey) => {
+    setCurrentScrollPosition(0);
+    setSelectedTab(tabKey);
+    // setStaffList([]); // ✅ पुरानी लिस्ट साफ करें
+    // setData([]); // ✅ data भी रीसेट करें
+    setText(''); // Search text clear करें
+    setCurrentPage(1); // Pagination reset करें
+    // Tab change पर scroll top करना चाहिए, इसलिए position preserve न करें
+
+    fetchData(tabKey, false);
+    // setCurrentPage(1); // ✅ पेज रीसेट करें
+    // fetchData(tabKey); // Send tab key to API
+  }
 
 
 
@@ -253,12 +345,21 @@ const HomeScreen = () => {
   const closeResetModal = () => {
     setResetModal(false); // Hide the modal
   };
+  const closeResetModalAll = () => {
+    setResetModalAll(false); // Hide the modal
+  };
+
 
   const OpenResetModal = (item) => {
     setSelectedStaffId(item.staff_id);
     setselectedStaffName(item.staff_name);
     setDeviceId(item.device_id);
     setResetModal(true); // Hide the modal
+  };
+
+  const OpenResetAllModal = (item) => {
+    setResetModalAll(true); // Hide the modal
+
   };
 
   const handleEdit = () => {
@@ -322,8 +423,13 @@ const HomeScreen = () => {
     }
   };
 
-  const fetchData = async () => {
+  const fetchData = async (filterKey = '', shouldPreservePosition = false) => {
+    console.log("wapis aya mai and tab filter key ye hai", filterKey);
+
+
     setStaffLoading(true);
+
+    // setStaffList([]);
     try {
       const storedAgencyId = await AsyncStorage.getItem('rent_agency_id');
       const rentAgencyId = storedAgencyId !== null ? parseInt(storedAgencyId, 10) : null;
@@ -336,6 +442,7 @@ const HomeScreen = () => {
         body: JSON.stringify({
 
           rent_agency_id: rentAgencyId,
+          filter: filterKey,
 
         }),
       });
@@ -344,22 +451,50 @@ const HomeScreen = () => {
 
       if (response.ok) {
         if (result.code === 200) {
-          setStaffList(result.payload); // Successfully received data
+          setStaffList(prev => {
+            if (JSON.stringify(prev) === JSON.stringify(result.payload)) {
+              return prev;
+            }
+            return result.payload;
+          });
           setAdminCount(result.count_admin);
-          setFieldCount(result.count_filed);
+          setFieldCount(result.count_field);
+          setAllCount(result.count_all);
+
+
           setoriginalStaffData(result.payload);
+
+          // Data set होने के बाद scroll position restore करें
+          // if (shouldPreservePosition && currentScrollPosition > 0) {
+          //   setTimeout(() => {
+          //     if (flatListRef.current) {
+          //       flatListRef.current.scrollToOffset({
+          //         offset: currentScrollPosition,
+          //         animated: false
+          //       });
+          //     }
+          //   }, 100);
+          // }
         } else {
           console.log('Error:', 'Failed to load staff data');
+          // ✅ Error की स्थिति में भी empty array set करें
+          setStaffList([]);
+          setoriginalStaffData([]);
         }
       } else {
         console.log('HTTP Error:', result.message || 'Something went wrong');
+        setStaffList([]);
+        setoriginalStaffData([]);
       }
     } catch (error) {
       console.log('Error fetching data:', error.message);
+      setStaffList([]);
+      setoriginalStaffData([]);
     } finally {
       setStaffLoading(false);
     }
   };
+
 
 
   useEffect(() => {
@@ -505,20 +640,54 @@ const HomeScreen = () => {
     }
   };
 
+  const resetAllDeviceId = async () => {
+    try {
+      const response = await fetch(ENDPOINTS.reset_all_device_id, {
+        method: 'GET', // ✅ GET request
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        if (result.code === 200) {
+          ToastAndroid.show("All Device Ids reset successfully", ToastAndroid.SHORT);
+          setResetModalAll(false);
+          fetchData(); // Refresh staff list
+        } else {
+          console.log('Error:', result.message || 'Failed to reset devices');
+        }
+      } else {
+        console.log('HTTP Error:', result.message || 'Something went wrong');
+      }
+    } catch (error) {
+      console.log('Error fetching data:', error.message);
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
 
-      if (text != '') {
-        handleTextChange(text);
-      } else {
-        fetchData();
+      console.log("Focus hua, current text:", text);
+
+      // 🔴 Agar search active hai → refresh mat karo
+      if (text.trim() !== '') {
+        console.log("Search active hai, refresh skip");
+        return;
       }
-    }, [text]), // Empty array ensures this is called only when the screen is focused
+
+      // 🟢 Agar search empty hai → refresh karo
+      console.log("Search empty hai, refresh ho raha hai");
+      fetchData(selectedTab);
+
+    }, [selectedTab, text])   // ✅ text add karo yaha
   );
+
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchData();
+    setCurrentScrollPosition(0);
+    console.log("5")
+    await fetchData(selectedTab, true);
     await fetchPermissions();
     setText('');
     setRefreshing(false);
@@ -551,257 +720,185 @@ const HomeScreen = () => {
   // }, [text]);
 
 
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     // When the screen is focused again, apply filtering based on existing text
-  //     if (text === '') {
-  //       setStaffList(originalStaffData);
-  //     } else {
-  //       const filtered = originalStaffData.filter(item => {
-  //         const lowerCaseInput = text.toLowerCase();
-  //         return (
-  //           item.staff_name?.toLowerCase().includes(lowerCaseInput)
-  //           || item.staff_mobile?.toLowerCase().includes(lowerCaseInput)
 
-  //         );
-  //       });
+  const getInitials = (name) => {
+    if (!name) return '';
+    const words = name.trim().split(' ');
+    if (words.length === 1) return words[0][0].toUpperCase();
+    return (words[0][0] + words[1][0]).toUpperCase();
+  };
 
-  //       setStaffList(filtered);
-  //     }
-  //   }, [text, originalStaffData])
-  // );
+  const renderItem = ({ item, index }) => {
+    // Function to get initials if no image
+    const getInitials = (name) => {
+      if (!name) return '';
+      const words = name.trim().split(' ');
+      if (words.length === 1) return words[0][0].toUpperCase();
+      return (words[0][0] + words[1][0]).toUpperCase();
+    };
 
-  const renderItem = ({ item, index }) => (
-    <TouchableOpacity
-      key={item.staff_id}
-      style={{
-        flexDirection: 'row',
-        backgroundColor: '#fff',
-        padding: 10,
-        margin: 13,
-        marginBottom: 7,
-        borderRadius: 5,
-        borderWidth: 1,
-        borderColor: '#ddd',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}
-      onPress={() =>
-        navigation.navigate('informationScreen', {
-          userData: item,
-          setStaffList: setStaffList, // ✅ correctly passed
-        })
+    // Function to get status color
+    const getStatusColor = (status) => {
+      switch (status?.toLowerCase()) {
+        case 'active': return '#e2feee';
+        case 'pending': return '#f1c40f';
+        case 'deactive': return '#fee2e2';
+        default: return 'grey';
       }
+    };
+    // Utility function to format date
+    const formatDate = (dateString) => {
+      if (!dateString) return '--';
+      const date = new Date(dateString);
+      if (isNaN(date)) return '--';
 
-      activeOpacity={1}
-    >
-      <View style={{ flexDirection: 'row', width: '50%' }}>
-        <View style={{ width: '30%', justifyContent: 'center', alignItems: 'flex-start' }}>
-          <TouchableOpacity
-            onPress={() => {
-              const imgSrc = item.staff_image
-                ? { uri: `${IMAGE_BASE_URL}${encodeURI(item.staff_image)}` }
-                : account;
+      const day = ('0' + date.getDate()).slice(-2);
+      const month = ('0' + (date.getMonth() + 1)).slice(-2); // month is 0-indexed
+      const year = date.getFullYear();
 
-              setSelectedImage(imgSrc);  // set image
-              setModalVisible(true);     // open modal
-            }}
-            activeOpacity={0.8}
-            style={{
-              width: 50,
-              height: 50,
-              borderRadius: 25,
-              overflow: 'hidden',
-              borderWidth: 1,
-              borderColor: '#ccc',
-            }}
-          >
-            <Image
-              source={
-                item.staff_image
-                  ? { uri: `${IMAGE_BASE_URL}${encodeURI(item.staff_image)}` }
-                  : account
-              }
-              style={{ width: '100%', height: '100%' }}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
-        </View>
-
-        <View style={{ width: '70%', justifyContent: 'center', alignItems: 'flex-start', marginLeft: 5 }}>
-
-          {/* Name */}
-          <Text
-            style={{
-              fontSize: 12,
-              textAlign: 'left',
-              color: 'black',
-              fontFamily: 'Inter-Regular',
-              textTransform: 'uppercase',
-            }}
-          >
-            {item.staff_name || '----'}
-          </Text>
-
-          {/* Mobile */}
-          <Text
-            style={{
-              fontSize: 12,
-              textAlign: 'center',
-              color: 'black',
-              fontFamily: 'Inter-Regular',
-            }}
-          >
-            {item.staff_mobile || '----'}
-          </Text>
-
-          {/* User Type */}
-          <Text
-            style={{
-              fontSize: 12,
-              textAlign: 'center',
-              color: 'black',
-              fontFamily: 'Inter-Regular',
-            }}
-          >
-            {item.staff_type === 'normal' ? 'User' : item.staff_type || '----'}
-          </Text>
-
-        </View>
-
-      </View>
+      return `${day}-${month}-${year}`; // Example: 30-11-2025
+    };
 
 
 
-      {/* Staff Date Column */}
-      {/* <View style={{ width: '22%', justifyContent: 'center', alignItems: 'center' }}>
-        <Text
+    return (
+      <TouchableOpacity
+        key={item.staff_id}
+        style={{
+          flexDirection: 'row',
+          backgroundColor: '#ffffff',
+          padding: 10,
+          marginHorizontal: 13,
+          marginVertical: 7,
+          borderRadius: 5,
+          borderWidth: 1,
+          borderColor: '#ddd',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          position: 'relative',
+        }}
+        onPress={() =>
+          navigation.navigate('informationScreen', {
+            userData: item,
+            setStaffList: setStaffList,
+            onGoBack: handleReturnFromInfoScreen,
+            currentTab: selectedTab,
+          })
+        }
+        activeOpacity={1}
+      >
+
+        {/* STATUS BADGE */}
+        <View
           style={{
-            fontSize: 12,
-            textAlign: 'center',
-            color: 'black',
-            fontFamily: 'Inter-Regular',
-            textTransform: 'uppercase',
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            backgroundColor: getStatusColor(item.staff_status),
+            paddingHorizontal: 8,
+            paddingVertical: 2,
+            borderBottomLeftRadius: 5,
+            borderTopRightRadius: 5,
+            zIndex: 2,
           }}
         >
-          {(item.staff_entry_date && item.staff_entry_date.split(' ')[0]) || '----'}
-
-        </Text>
-      </View> */}
-      <View style={{ width: '72%', flexDirection: 'row', justifyContent: 'flex-start' }}>
-        <View style={{ width: '60%', justifyContent: 'center', alignItems: 'flex-end', }}>
-          <View style={{ width: '80%', justifyContent: 'center', alignItems: 'center', }}>
-
-
-            {(
-              userType === 'SuperAdmin' ||
-              (userType === 'SubAdmin' && permissions?.staff?.staffreset) || (userType === 'main' && permissions?.staff?.staffreset)
-            ) && (
-                <TouchableOpacity
-                  style={{
-                    backgroundColor: 'white',
-                    paddingVertical: 5,
-                    paddingHorizontal: 10,
-                    borderRadius: 5,
-                    borderWidth: 1,
-                    borderColor: colors.Brown,
-                    flexDirection: 'row',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    gap: 5
-                  }}
-                  onPress={() => OpenResetModal(item)}
-                >
-                  <Text style={{ color: colors.Brown, fontSize: 12, fontWeight: 'bold', fontFamily: 'Inter-Medium' }}>
-                    Reset
-                  </Text>
-                  <Image source={phone} style={{ width: 21, height: 21, tintColor: colors.Brown }} />
-                </TouchableOpacity>
-              )}
-
-
-            {/* {
-              loadingToggles[item.staff_id] ? (
-                <ActivityIndicator size="small" color={colors.Brown} />
-              ) : (
-                <Switch
-                  trackColor={{ false: "#f54949", true: "#1cd181" }}
-                  thumbColor="#ebecee"
-                  ios_backgroundColor="#3e3e3e"
-                  disabled={!!loadingToggles[item.staff_id]}
-                  onValueChange={value => {
-                    const staffId = item.staff_id;
-
-                    // Show loader for this staff
-                    setLoadingToggles(prev => ({
-                      ...prev,
-                      [staffId]: true,
-                    }));
-
-                    // Optimistically update both display and source
-                    setStaffList(prev =>
-                      prev.map(staff =>
-                        staff.staff_id === staffId
-                          ? { ...staff, staff_location: value ? 'Yes' : 'No' }
-                          : staff
-                      )
-                    );
-
-                    // Update switch state mapping
-                    setIsLocationEnabled(prev => ({
-                      ...prev,
-                      [staffId]: value,
-                    }));
-
-                    // Background API call
-                    StaffInternetAccess(staffId, value ? 'Yes' : 'No');
-                  }}
-
-
-
-                  value={
-                    isLocationEnabled[item.staff_id] !== undefined
-                      ? isLocationEnabled[item.staff_id]
-                      : item.staff_location === 'Yes'
-                  }
-
-
-                />
-
-              )
-            } */}
-          </View>
-
-
-
-
-
+          <Text style={{ color: 'black', fontSize: 10, fontWeight: 'bold' }}>
+            {item.staff_status || '--'}
+            {item.account_status ? ` - ${item.account_status}` : ''}
+          </Text>
         </View>
 
-
-        {/* Actions Column */}
-        {(
-          userType === 'SuperAdmin' ||
-          (userType === 'SubAdmin' && (
-            permissions?.staff?.update || permissions?.staff?.delete
-          ))
-          || (userType === 'main' && (
-            permissions?.staff?.update || permissions?.staff?.delete
-          ))
-        ) && (
-
-            <TouchableOpacity onPress={() => OpenModal(item)} style={{ width: '20%', justifyContent: 'center', alignItems: 'flex-start' }}>
-              <TouchableOpacity
-                onPress={() => OpenModal(item)}
-                style={{ width: '100%', justifyContent: 'center', alignItems: 'flex-start', marginLeft: 5 }}
-              >
-                <Entypo name="dots-three-vertical" size={18} color="black" />
-              </TouchableOpacity>
+        {/* IMAGE + INFO */}
+        <View style={{ flexDirection: 'row', width: '50%' }}>
+          {/* IMAGE */}
+          <View style={{ width: '30%', justifyContent: 'center', alignItems: 'flex-start' }}>
+            <TouchableOpacity
+              onPress={() => {
+                setSelectedImage(
+                  item.staff_image ? { uri: encodeURI(item.staff_image) } : { name: item.staff_name }
+                );
+                setModalVisible(true);
+              }}
+              activeOpacity={0.8}
+              style={{
+                width: 50,
+                height: 50,
+                borderRadius: 25,
+                overflow: 'hidden',
+                borderWidth: 1,
+                borderColor: '#ccc',
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: !item.staff_image ? '#ccc' : 'transparent',
+              }}
+            >
+              {item.staff_image ? (
+                <Image
+                  source={{ uri: encodeURI(item.staff_image) }}
+                  style={{ width: '100%', height: '100%' }}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>
+                  {getInitials(item.staff_name)}
+                </Text>
+              )}
             </TouchableOpacity>
-          )}
-      </View>
-    </TouchableOpacity>
-  );
+          </View>
+
+          {/* NAME + MOBILE + TYPE */}
+          <View style={{ flex: 1, justifyContent: 'center', marginLeft: 5 }}>
+            <Text
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              style={{
+                fontSize: 12,
+                color: '#000',
+                fontFamily: 'Inter-Bold',
+                textTransform: 'uppercase',
+              }}
+            >
+              {item.staff_name || '----'}
+            </Text>
+            <Text style={{
+              fontSize: 12,
+              color: '#374151',
+              fontFamily: 'Inter-Regular', marginTop: 2
+            }}>
+              {item.staff_mobile || '----'}
+            </Text>
+            <Text style={{
+              fontSize: 12,
+              color: '#374151',
+              fontFamily: 'Inter-Regular', marginTop: 2
+            }}>
+              {item.staff_type === 'normal' ? 'Field Staff' : item.staff_type || '----'}
+            </Text>
+          </View>
+        </View>
+
+        {/* SCHEDULE */}
+        <View
+          style={{
+            position: 'absolute',
+            top: 35,
+            left: '52%',
+            width: '50%',
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{ fontSize: 12, color: '#000', fontFamily: 'Inter-Regular' }}>
+            {item.schedule_staff_start_date && item.schedule_staff_end_date
+              ? `${formatDate(item.schedule_staff_start_date)} - ${formatDate(item.schedule_staff_end_date)}`
+              : 'Not Available'}
+          </Text>
+        </View>
+
+      </TouchableOpacity>
+
+    );
+  };
+
 
 
   return (
@@ -909,7 +1006,59 @@ const HomeScreen = () => {
           ) : null}
         </View>
       </View>
-      {data.length > 0 && (
+
+      <View>
+        <ScrollView
+          horizontal
+          keyboardShouldPersistTaps='handled'
+          showsHorizontalScrollIndicator={false}
+          style={{
+            // FIXED HEIGHT
+            paddingVertical: 5,
+          }}
+          contentContainerStyle={{
+            paddingHorizontal: 10,
+            height: 60,
+            backgroundColor: 'white'
+          }}
+        >
+          {tabs.map((tab) => {
+            const isSelected = selectedTab === tab.key;
+
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                onPress={() => handleTabPress(tab.key)}
+                style={{
+                  backgroundColor: isSelected ? tab.bgColor : `${tab.bgColor}33`, // selected: full color, unselected: transparent version
+                  paddingVertical: 8,
+                  paddingHorizontal: 15,
+                  borderRadius: 8,
+                  marginRight: 10,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{
+                  color: isSelected ? 'white' : 'black',
+                  fontFamily: 'Inter-Bold',
+                  fontSize: 12,
+                }}>
+                  {tab.label}
+                </Text>
+                <Text style={{
+                  color: isSelected ? 'white' : 'black',
+                  fontFamily: 'Inter-Regular',
+                  fontSize: 12,
+                }}>
+                  {tab.count || 0}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+      {/* {data.length > 0 && (
         <View
           style={{
             flexDirection: 'row',
@@ -932,7 +1081,7 @@ const HomeScreen = () => {
             Field: <Text style={{ color: 'black', fontFamily: 'Inter-Regular' }}>{FieldCount}</Text>
           </Text>
         </View>
-      )}
+      )} */}
       {/* {data.length > 0 && (
         <View
           style={{
@@ -1007,13 +1156,29 @@ const HomeScreen = () => {
       )} */}
 
       <FlatList
+        ref={flatListRef}
         keyboardShouldPersistTaps='handled'
-        data={StaffList.slice(0, currentPage * 20)}
+        // data={StaffList.slice(0, currentPage * 20)}
+        data={data}
         renderItem={renderItem}
         onEndReached={loadMoreItems} // Trigger when scrolled to the bottom
         onEndReachedThreshold={0.5} // This determines when to trigger loadMoreItems (0.5 means half the list height)
         keyExtractor={(item) => item.staff_id.toString()}
         removeClippedSubviews={true}
+
+        onScroll={(event) => {
+          setCurrentScrollPosition(event.nativeEvent.contentOffset.y);
+        }}
+        scrollEventThrottle={16}
+
+        // ✅ टैब बदलने पर ऊपर लोडर दिखाएं
+        ListHeaderComponent={
+          StaffLoading && StaffList.length > 0 ? (
+            <View style={{ padding: 10, alignItems: 'center' }}>
+              <ActivityIndicator size="large" color={colors.Brown} />
+            </View>
+          ) : null
+        }
         ListFooterComponent={
           isLoadingMore ? (
             <View style={{ padding: 10, alignItems: 'center' }}>
@@ -1042,47 +1207,77 @@ const HomeScreen = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#9Bd35A', '#689F38']}
+            colors={[colors.Brown, colors.Brown]}
           />
         }
         contentContainerStyle={{
-          paddingBottom: keyboardVisible ? 340 : 80,
-          backgroundColor: 'white',
+          flexGrow: 1,
+          paddingBottom: 80,
+          backgroundColor: 'white'
+
         }}
       />
 
 
 
       {/* Sticky Add New Button */}
+      {/* Sticky Add New Button */}
       {(
-        (userType === 'SuperAdmin') ||
-        (userType === 'SubAdmin' && permissions?.staff?.insert) || (userType === 'main' && permissions?.staff?.insert)
+        userType === 'SuperAdmin' ||
+        (userType === 'SubAdmin' && permissions?.staff?.insert) ||
+        (userType === 'main' && permissions?.staff?.insert)
       ) && (
           <View
             style={{
               position: 'absolute',
               bottom: 20,
-              right: 30,
-              width: 60, // Set the width and height equal for a perfect circle
-              height: 60, // Set height equal to the width
+              left: 20,
+              right: 20,
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
               zIndex: 1,
-            }}>
+            }}
+          >
+            {/* Reset All Staff */}
             <TouchableOpacity
               style={{
+                flex: 1,
+                marginRight: 10,
                 backgroundColor: colors.Brown,
-                borderRadius: 30, // Set borderRadius to half of width/height for a circle
-                height: '100%',
+                borderWidth: 1,
+                borderColor: colors.Brown,
+                borderRadius: 10,
+                paddingVertical: 12,
                 justifyContent: 'center',
                 alignItems: 'center',
                 flexDirection: 'row',
-                gap: 7,
+                gap: 8,
               }}
-              onPress={() => {
-                navigation.navigate('AddStaffScreen');
-              }}>
-              <AntDesign name="plus" color="white" size={18} />
+              onPress={() => OpenResetAllModal(selectedStaff)}
+            >
+              <Image source={phone} style={{ width: 20, height: 20, tintColor: 'white' }} />
+              <Text style={{ color: 'white', fontSize: 14, fontFamily: 'Inter-Medium' }}>Reset All Staff</Text>
             </TouchableOpacity>
 
+            {/* Add Staff */}
+            <TouchableOpacity
+              style={{
+                flex: 1,
+                marginLeft: 10,
+                backgroundColor: colors.Brown,
+                borderRadius: 10,
+                paddingVertical: 12,
+                justifyContent: 'center',
+                alignItems: 'center',
+                flexDirection: 'row',
+                gap: 8,
+              }}
+              onPress={() => navigation.navigate('AddStaffScreen')}
+            >
+              <AntDesign name="plus" color="white" size={18} />
+              <Text style={{ color: 'white', fontSize: 14, fontFamily: 'Inter-Medium' }}>Add Staff</Text>
+            </TouchableOpacity>
           </View>
         )}
       <Modal
@@ -1748,17 +1943,136 @@ const HomeScreen = () => {
             onStartShouldSetResponder={() => true}
             onTouchEnd={e => e.stopPropagation()}
           >
-            {selectedImage && (
-              <Image
-                source={selectedImage}
+            {selectedImage ? (
+              selectedImage.uri ? (
+                <Image
+                  source={selectedImage}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: 150,
+                    resizeMode: 'cover',
+                  }}
+                />
+              ) : (
+                <View
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: 150,
+                    backgroundColor: '#ccc',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontSize: 40, fontWeight: 'bold' }}>
+                    {getInitials(selectedImage.name)}
+                  </Text>
+                </View>
+              )
+            ) : null}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={ResetModalAll}
+        onRequestClose={closeResetModalAll}
+      >
+        <TouchableOpacity
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          }}
+          onPress={closeResetModalAll}
+          activeOpacity={1}
+        >
+          <View
+            style={{
+              backgroundColor: 'white',
+              padding: 20,
+              borderRadius: 8,
+              width: '80%',
+              alignItems: 'center',
+            }}
+            onStartShouldSetResponder={() => true} // Prevent modal close on content click
+            onTouchEnd={e => e.stopPropagation()}
+          >
+            <Text style={{
+              fontSize: 18,
+              fontWeight: 'bold',
+              marginBottom: 10,
+              color: 'black',
+              fontFamily: 'Inter-Medium'
+            }}>
+              Reset Device
+            </Text>
+            <Text style={{
+              fontSize: 14,
+              marginBottom: 20,
+              textAlign: 'center',
+              color: 'black',
+              fontFamily: 'Inter-Medium'
+            }}>
+              Are you sure you want to Reset All Staff Device Ids?
+            </Text>
+
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                width: '100%',
+              }}
+            >
+              {/* Cancel Button */}
+              <TouchableOpacity
                 style={{
-                  width: '100%',
-                  height: '100%',
-                  borderRadius: 150,
-                  resizeMode: 'stretch',
+                  backgroundColor: '#ddd',
+                  padding: 10,
+                  borderRadius: 5,
+                  width: '45%',
+                  justifyContent: 'center',
+                  alignItems: 'center',
                 }}
-              />
-            )}
+                onPress={closeResetModalAll}
+              >
+                <Text style={{
+                  color: 'black',
+                  fontWeight: 'bold',
+                  fontFamily: 'Inter-Regular',
+                }}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              {/* Reset All Button */}
+              <TouchableOpacity
+                style={{
+                  backgroundColor: colors.Brown,
+                  padding: 10,
+                  borderRadius: 5,
+                  width: '45%',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+                onPress={async () => {
+                  await resetAllDeviceId(); // ✅ Call API
+                }}
+              >
+                <Text style={{
+                  color: 'white',
+                  fontWeight: 'bold',
+                  fontFamily: 'Inter-Regular',
+                }}>
+                  Reset
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </TouchableOpacity>
       </Modal>

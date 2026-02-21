@@ -11,7 +11,7 @@ export const IMAGE_BASE_URL = 'https://easyreppo.in/';
 
 export const ENDPOINTS = {
   LOGIN: `${BASE_URL}login.php`,
-  List_Staff: `${BASE_URL}list_staff.php`,
+  List_Staff: `${BASE_URL}list_staff_new.php`,
   Add_Staff: `${BASE_URL}add_staff.php`,
   Staff_Schedule_List: `${BASE_URL}list_schedule.php`,
   Add_Schedule: `${BASE_URL}add_schedule.php`,
@@ -37,6 +37,7 @@ export const ENDPOINTS = {
   AddSubAdmin_History: `${BASE_URL}add_sub_admin_vehicle_history.php`,
   Agency_List: `${BASE_URL}agency_list.php`,
   List_Staff_Subadmin: `${BASE_URL}list_agency_subadmin.php`,
+  list_agency_subadmin_new: `${BASE_URL}list_agency_subadmin_new.php`,
   Add_Agency_Staff: `${BASE_URL}add_agency_staff.php`,
   Staff_Agency_Delete: `${BASE_URL}staff_agency_delete.php`,
   Staff_Agency_Logout: `${BASE_URL}staff_agency_logout.php`,
@@ -66,14 +67,18 @@ export const ENDPOINTS = {
   update_staff_blacklist: `${BASE_URL}update_staff_blacklist.php`,
   delete_staff_blacklist: `${BASE_URL}delete_staff_blacklist.php`,
   UserWiseExpiry: `${BASE_URL}user_wise_expiry.php`,
-
+  reset_all_device_id: `${BASE_URL}reset_all_device_id.php`,
   update_sync_status: `${BASE_URL}update_sync_status.php`,
   full_vehicle_detail_csv_upload: `${BASE_URL}full_vehicle_detail_csv_upload.php`,
   upload_number_wise_export: `${BASE_URL}upload_number_wise_export.php`,
-
-
-
-
+  all_search_history_paginate: `${BASE_URL}all_search_history_paginate.php`,
+  staff_schedule_history: `${BASE_URL}staff_schedule_history.php`,
+  user_vehicle_history: `${BASE_URL}user_vehicle_history.php`,
+  single_staff_detail: `${BASE_URL}single_staff_detail.php`,
+  single_staff_detail_new: `${BASE_URL}single_staff_detail_new.php`,
+  Add_Schedule_new: `${BASE_URL}add_schedule_new.php`,
+  staff_schedule_history_new: `${BASE_URL}staff_schedule_history_new.php`,
+  user_vehicle_history_new: `${BASE_URL}user_vehicle_history_new.php`,
 
 
 

@@ -52,6 +52,7 @@ import RentStaffFinanceList from '../Screens/RentStaffFinanceList';
 import AgencyAddStaffSchedule from '../Screens/AgencyAddStaffSchedule';
 import PDFViewerScreen from '../Screens/PDFViewerScreen';
 import AgencyFiles from '../Screens/AgencyFiles';
+import AllVehicleSearch from '../Screens/AllVehicleSearch';
 
 
 const Stack = createNativeStackNavigator();
@@ -174,6 +175,8 @@ const RouteNavigation = () => {
         <Stack.Screen name='RentStaffFinanceList' component={RentStaffFinanceList} options={{ headerShown: false }} />
         <Stack.Screen name='AgencyAddStaffSchedule' component={AgencyAddStaffSchedule} options={{ headerShown: false }} />
         <Stack.Screen name='AgencyFiles' component={AgencyFiles} options={{ headerShown: false }} />
+        <Stack.Screen name='AllVehicleSearch' component={AllVehicleSearch} options={{ headerShown: false }} />
+
 
 
 

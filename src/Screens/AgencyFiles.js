@@ -189,7 +189,7 @@ const AgencyFiles = () => {
 
         } catch (error) {
             console.log("Excel Download Error:", error);
-            Alert.alert('Error', 'Failed to download Excel');
+
         } finally {
             setDownloadingItems(prev => ({ ...prev, [uploadNumber]: false }));
         }
@@ -288,15 +288,42 @@ const AgencyFiles = () => {
 
                 ) : (
 
-
-
-
-                    < FlatList
+                    <FlatList
                         data={filteredList}
                         keyExtractor={(item, index) => index.toString()}
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={{ padding: 10, paddingBottom: keyboardVisible ? 340 : 30 }}
                         keyboardShouldPersistTaps='handled'
+                        ListEmptyComponent={
+                            !loading && (
+                                <View style={{
+                                    flex: 1,
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    marginTop: 200
+                                }}>
+                                    <Ionicons name="folder-open-outline" size={50} color="#D1D5DB" />
+
+                                    <Text style={{
+                                        marginTop: 10,
+                                        fontSize: 16,
+                                        color: '#6B7280',
+                                        fontFamily: 'Inter-Bold'
+                                    }}>
+                                        No File Exist
+                                    </Text>
+
+                                    <Text style={{
+                                        marginTop: 5,
+                                        fontSize: 12,
+                                        color: '#9CA3AF',
+                                        fontFamily: 'Inter-Regular'
+                                    }}>
+                                        There are no uploaded files available.
+                                    </Text>
+                                </View>
+                            )
+                        }
                         renderItem={({ item, index }) => (
 
                             <View style={{
@@ -429,10 +456,10 @@ const AgencyFiles = () => {
                                         <ActivityIndicator size="small" color="#fff" />
                                     ) : (
                                         <>
-                                            <Ionicons name="download-outline" size={11} color="#fff" />
+                                            <Ionicons name="download-outline" size={10} color="#fff" />
                                             <Text style={{
                                                 color: '#fff',
-                                                fontSize: 9,
+                                                fontSize: 8,
                                                 marginLeft: 4,
                                                 fontFamily: 'Inter-Medium'
                                             }}>

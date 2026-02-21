@@ -146,7 +146,7 @@ const ProfileScreen = ({ navigation }) => {
                 setEmail(data.staff_email);
                 setMobileNumber(data.staff_mobile);
                 setAddress(data.staff_address);
-                setImageUri(data.staff_image); // If it's relative, you already handle full URL in <Image>
+                setImageUri(data.staff_image_profile); // If it's relative, you already handle full URL in <Image>
             } else {
                 console.log('Error:', result.message || 'Failed to load staff data');
             }
