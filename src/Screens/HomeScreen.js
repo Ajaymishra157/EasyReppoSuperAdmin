@@ -125,14 +125,14 @@ const HomeScreen = () => {
       setData(filtered.slice(0, 20));
 
       // थोड़ी delay के बाद scroll position restore करें
-      setTimeout(() => {
-        if (flatListRef.current && currentScrollPosition > 0) {
-          flatListRef.current.scrollToOffset({
-            offset: currentScrollPosition,
-            animated: false
-          });
-        }
-      }, 50);
+      // setTimeout(() => {
+      //   if (flatListRef.current && currentScrollPosition > 0) {
+      //     flatListRef.current.scrollToOffset({
+      //       offset: currentScrollPosition,
+      //       animated: false
+      //     });
+      //   }
+      // }, 500);
     } else {
       // कोई search नहीं है, तो normal fetch करें
       setTimeout(() => {
@@ -165,11 +165,12 @@ const HomeScreen = () => {
   const handleTabPress = (tabKey) => {
     setCurrentScrollPosition(0);
     setSelectedTab(tabKey);
-    // setStaffList([]); // ✅ पुरानी लिस्ट साफ करें
-    // setData([]); // ✅ data भी रीसेट करें
+
     setText(''); // Search text clear करें
     setCurrentPage(1); // Pagination reset करें
-    // Tab change पर scroll top करना चाहिए, इसलिए position preserve न करें
+    // ✅ IMPORTANT — purana data hatao
+    setStaffList([]);
+    setData([]);
 
     fetchData(tabKey, false);
     // setCurrentPage(1); // ✅ पेज रीसेट करें
@@ -1058,105 +1059,29 @@ const HomeScreen = () => {
           })}
         </ScrollView>
       </View>
-      {/* {data.length > 0 && (
+
+
+
+      {/* {StaffLoading && StaffList.length > 0 && (
         <View
           style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            backgroundColor: '#f8f8f8', // Lighter background for better contrast
-            paddingVertical: 10, // Adjusted padding for better spacing
-            paddingHorizontal: 15,
-            borderRadius: 8,
-            marginBottom: 8, // Increased bottom margin for better separation
-            shadowColor: '#000', // Added shadow for better separation from background
-            shadowOpacity: 0.1, // Light shadow effect
-            shadowRadius: 5,
-            elevation: 2, // For Android shadow
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(255,255,255,0.7)',
+            zIndex: 999,
           }}
         >
-          <Text style={{ color: 'black', fontFamily: 'Inter-Bold', marginRight: 20 }}>
-            Admin: <Text style={{ color: 'black', fontFamily: 'Inter-Regular' }}>{AdminCount}</Text>
-          </Text>
-          <Text style={{ color: 'black', fontFamily: 'Inter-Bold' }}>
-            Field: <Text style={{ color: 'black', fontFamily: 'Inter-Regular' }}>{FieldCount}</Text>
-          </Text>
-        </View>
-      )} */}
-      {/* {data.length > 0 && (
-        <View
-          style={{
-            flexDirection: 'row',
-            backgroundColor: '#ddd',
-            padding: 7,
-            borderRadius: 5,
-          }}
-        >
-        
-          <View style={{ width: '8%', justifyContent: 'center', alignItems: 'center' }}>
-            <Text
-              style={{
-                fontWeight: 'bold',
-                fontFamily: 'Inter-Medium',
-                textAlign: 'center',
-                fontSize: 12,
-                color: 'black',
-              }}
-            >
-              #
-            </Text>
-          </View>
-
-        
-          <View style={{ width: '35%', justifyContent: 'center', alignItems: 'center' }}>
-            <Text
-              style={{
-                fontWeight: 'bold',
-                fontFamily: 'Inter-Medium',
-                textAlign: 'center',
-                fontSize: 12,
-                color: 'black',
-              }}
-            >
-              NAME
-            </Text>
-          </View>
-
-
-
-          <View style={{ width: '22%', justifyContent: 'center', alignItems: 'center' }}>
-            <Text
-              style={{
-                fontWeight: 'bold',
-                fontFamily: 'Inter-Medium',
-                textAlign: 'center', // Center alignment for consistency
-                fontSize: 12,
-                color: 'black',
-              }}
-            >
-              DATE
-            </Text>
-          </View>
-          <View style={{ width: '25%', justifyContent: 'center', alignItems: 'center' }}>
-            <Text
-              style={{
-                fontWeight: 'bold',
-                fontFamily: 'Inter-Medium',
-                textAlign: 'center', // Center alignment for consistency
-                fontSize: 12,
-                color: 'black',
-              }}
-            >
-
-            </Text>
-          </View>
-
-        
-          <View style={{ width: '10%', justifyContent: 'center', alignItems: 'center' }} />
+          <ActivityIndicator size="large" color={colors.Brown} />
         </View>
       )} */}
 
       <FlatList
-        ref={flatListRef}
+        // ref={flatListRef}
         keyboardShouldPersistTaps='handled'
         // data={StaffList.slice(0, currentPage * 20)}
         data={data}
@@ -1166,19 +1091,19 @@ const HomeScreen = () => {
         keyExtractor={(item) => item.staff_id.toString()}
         removeClippedSubviews={true}
 
-        onScroll={(event) => {
-          setCurrentScrollPosition(event.nativeEvent.contentOffset.y);
-        }}
-        scrollEventThrottle={16}
+        // onScroll={(event) => {
+        //   setCurrentScrollPosition(event.nativeEvent.contentOffset.y);
+        // }}
+        // scrollEventThrottle={16}
 
         // ✅ टैब बदलने पर ऊपर लोडर दिखाएं
-        ListHeaderComponent={
-          StaffLoading && StaffList.length > 0 ? (
-            <View style={{ padding: 10, alignItems: 'center' }}>
-              <ActivityIndicator size="large" color={colors.Brown} />
-            </View>
-          ) : null
-        }
+        // ListHeaderComponent={
+        //   StaffLoading && StaffList.length > 0 ? (
+        //     <View style={{ padding: 10, alignItems: 'center' }}>
+        //       <ActivityIndicator size="large" color={'red'} />
+        //     </View>
+        //   ) : null
+        // }
         ListFooterComponent={
           isLoadingMore ? (
             <View style={{ padding: 10, alignItems: 'center' }}>

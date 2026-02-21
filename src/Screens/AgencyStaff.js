@@ -133,14 +133,14 @@ const AgencyStaff = () => {
             setData(filtered.slice(0, 20));
 
             // थोड़ी delay के बाद scroll position restore करें
-            setTimeout(() => {
-                if (flatListRef.current && currentScrollPosition > 0) {
-                    flatListRef.current.scrollToOffset({
-                        offset: currentScrollPosition,
-                        animated: false
-                    });
-                }
-            }, 50);
+            // setTimeout(() => {
+            //     if (flatListRef.current && currentScrollPosition > 0) {
+            //         flatListRef.current.scrollToOffset({
+            //             offset: currentScrollPosition,
+            //             animated: false
+            //         });
+            //     }
+            // }, 50);
         } else {
             // कोई search नहीं है, तो normal fetch करें
             setTimeout(() => {
@@ -192,11 +192,12 @@ const AgencyStaff = () => {
     const handleTabPress = (tabKey) => {
         setCurrentScrollPosition(0);
         setSelectedTab(tabKey);
-        // setStaffList([]); // ✅ पुरानी लिस्ट साफ करें
-        // setData([]); // ✅ data भी रीसेट करें
+
         setText(''); // Search text clear करें
         setCurrentPage(1); // Pagination reset करें
         // Tab change पर scroll top करना चाहिए, इसलिए position preserve न करें
+        setStaffList([]);
+        setData([]);
 
         fetchStaff(tabKey, false);
         // setCurrentPage(1); // ✅ पेज रीसेट करें
@@ -332,7 +333,7 @@ const AgencyStaff = () => {
     };
 
     const fetchStaff = async (filterKey = '', shouldPreservePosition = false) => {
-        setLoading(true);
+        setStaffLoading(true);
         try {
             const response = await fetch(ENDPOINTS.list_agency_subadmin_new, {
                 method: 'POST',
@@ -348,11 +349,11 @@ const AgencyStaff = () => {
                 setOriginalStaffData(result.payload);
 
                 // Restore scroll position after data is rendered
-                if (shouldPreservePosition && currentScrollPosition > 0) {
-                    setTimeout(() => {
-                        flatListRef.current?.scrollToOffset({ offset: currentScrollPosition, animated: false });
-                    }, 100);
-                }
+                // if (shouldPreservePosition && currentScrollPosition > 0) {
+                //     setTimeout(() => {
+                //         flatListRef.current?.scrollToOffset({ offset: currentScrollPosition, animated: false });
+                //     }, 100);
+                // }
             } else {
                 setStaffList([]);
                 setOriginalStaffData([]);
@@ -360,7 +361,7 @@ const AgencyStaff = () => {
         } catch (error) {
             console.log('Fetch error:', error.message);
         } finally {
-            setLoading(false);
+            setStaffLoading(false);
         }
     };
 
@@ -939,88 +940,70 @@ const AgencyStaff = () => {
             </View>
 
             {/* Body */}
-            {loading ? (
-                <View style={{ padding: 10 }}>
-                    {[...Array(8)].map((_, index) => (
-                        <StaffShimmer key={index} />
-                    ))}
-                </View>
-            ) : StaffList.length === 0 ? (
 
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-                    <Image
-                        source={Staff}  // Staff icon image you already imported at top
-                        style={{ width: 80, height: 80, marginBottom: 15, }}
-                        resizeMode="contain"
+            <FlatList
+                // ref={flatListRef}
+                keyboardShouldPersistTaps='handled'
+                // data={StaffList.slice(0, currentPage * 20)}
+                data={StaffList}
+                renderItem={renderItem}
+                onEndReached={loadMoreItems} // Trigger when scrolled to the bottom
+                onEndReachedThreshold={0.5} // This determines when to trigger loadMoreItems (0.5 means half the list height)
+                keyExtractor={(item) => item.staff_id.toString()}
+                removeClippedSubviews={true}
+
+                // onScroll={(event) => {
+                //     setCurrentScrollPosition(event.nativeEvent.contentOffset.y);
+                // }}
+                // scrollEventThrottle={16}
+
+                // ✅ टैब बदलने पर ऊपर लोडर दिखाएं
+                // ListHeaderComponent={
+                //     StaffLoading && StaffList.length > 0 ? (
+                //         <View style={{ padding: 10, alignItems: 'center' }}>
+                //             <ActivityIndicator size="large" color={colors.Brown} />
+                //         </View>
+                //     ) : null
+                // }
+                ListFooterComponent={
+                    isLoadingMore ? (
+                        <View style={{ padding: 10, alignItems: 'center' }}>
+                            <ActivityIndicator size="large" color={colors.Brown} />
+                        </View>
+                    ) : null
+                }
+                ListEmptyComponent={
+                    StaffLoading ? (
+                        <View style={{ padding: 10 }}>
+                            {[...Array(7)].map((_, index) => (
+                                <StaffShimmer key={index} />
+                            ))}
+                        </View>
+                    ) : (
+                        <View style={{ height: 600, justifyContent: 'center', alignItems: 'center' }}>
+                            <Image source={Staff} style={{ width: 70, height: 70 }} />
+                            <Text style={{ fontFamily: 'Inter-Regular', color: 'red', marginTop: 10 }}>
+                                No Staff Found
+                            </Text>
+                        </View>
+                    )
+                }
+
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={[colors.Brown, colors.Brown]}
                     />
-                    <Text style={{ fontSize: 18, color: 'black', fontFamily: 'Inter-Regular' }}>
-                        No Staff Found
-                    </Text>
-                </View>
-            ) : (
-                <FlatList
-                    ref={flatListRef}
-                    keyboardShouldPersistTaps='handled'
-                    // data={StaffList.slice(0, currentPage * 20)}
-                    data={StaffList}
-                    renderItem={renderItem}
-                    onEndReached={loadMoreItems} // Trigger when scrolled to the bottom
-                    onEndReachedThreshold={0.5} // This determines when to trigger loadMoreItems (0.5 means half the list height)
-                    keyExtractor={(item) => item.staff_id.toString()}
-                    removeClippedSubviews={true}
+                }
+                contentContainerStyle={{
+                    flexGrow: 1,
+                    paddingBottom: 80,
+                    backgroundColor: 'white'
 
-                    onScroll={(event) => {
-                        setCurrentScrollPosition(event.nativeEvent.contentOffset.y);
-                    }}
-                    scrollEventThrottle={16}
+                }}
+            />
 
-                    // ✅ टैब बदलने पर ऊपर लोडर दिखाएं
-                    ListHeaderComponent={
-                        StaffLoading && StaffList.length > 0 ? (
-                            <View style={{ padding: 10, alignItems: 'center' }}>
-                                <ActivityIndicator size="large" color={colors.Brown} />
-                            </View>
-                        ) : null
-                    }
-                    ListFooterComponent={
-                        isLoadingMore ? (
-                            <View style={{ padding: 10, alignItems: 'center' }}>
-                                <ActivityIndicator size="large" color={colors.Brown} />
-                            </View>
-                        ) : null
-                    }
-                    ListEmptyComponent={
-                        StaffLoading ? (
-                            <View style={{ padding: 10 }}>
-                                {[...Array(7)].map((_, index) => (
-                                    <StaffShimmer key={index} />
-                                ))}
-                            </View>
-                        ) : (
-                            <View style={{ height: 600, justifyContent: 'center', alignItems: 'center' }}>
-                                <Image source={Staff} style={{ width: 70, height: 70 }} />
-                                <Text style={{ fontFamily: 'Inter-Regular', color: 'red', marginTop: 10 }}>
-                                    No Staff Found
-                                </Text>
-                            </View>
-                        )
-                    }
-
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={onRefresh}
-                            colors={[colors.Brown, colors.Brown]}
-                        />
-                    }
-                    contentContainerStyle={{
-                        flexGrow: 1,
-                        paddingBottom: 80,
-                        backgroundColor: 'white'
-
-                    }}
-                />
-            )}
 
             {/* Sticky Add New Button */}
             {/* Sticky Add New Button */}

@@ -11,6 +11,7 @@ import {
     ToastAndroid,
     Keyboard,
     Modal,
+    ActivityIndicator,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import colors from '../CommonFiles/Colors';
@@ -25,7 +26,7 @@ const AddAgencyStaff = () => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [scheduleDays, setScheduleDays] = useState('1 day');
-
+    const [loading, setLoading] = useState(false);
 
     const [keyboardVisible, setKeyboardVisible] = useState(false);
     const [isDropdownVisible, setIsDropdownVisible] = useState(false);
@@ -40,6 +41,8 @@ const AddAgencyStaff = () => {
     // Error states
     const [nameError, setNameError] = useState('');
     const [mobileError, setMobileError] = useState('');
+    const [EmailError, setEmailError] = useState('');
+    const [SubmitError, setSubmitError] = useState('');
     const [passwordError, setPasswordError] = useState('');
     const [staffTypeError, setStaffTypeError] = useState('');
 
@@ -58,7 +61,11 @@ const AddAgencyStaff = () => {
     const handleSelect = (item) => {
         setSelectedType(item);
         setIsDropdownVisible(false);
-        setStaffTypeError('');
+        // ✅ Select hote hi error clear
+        if (staffTypeError) {
+            setStaffTypeError('');
+        }
+
     };
 
 
@@ -132,6 +139,7 @@ const AddAgencyStaff = () => {
 
     const handleSave = async (isAdmin) => {
         if (!validate()) return;
+        setLoading(true);
 
         const payload = {
             rent_agency_id: agencyId,
@@ -190,12 +198,29 @@ const AddAgencyStaff = () => {
                 setBlacklistError(`${payload.staff_name} has been blacklisted\nRemark: ${payload.remark}`);
                 setBlacklistModalVisible(true);
             } else {
-                console.log(data.message || 'Something went wrong');
+                console.log('Add failed:', data.message);
+                // Check if the error is related to mobile number already existing
+                if (data.message === 'Mobile number already exists') {
+                    setMobileError('Mobile number already exists'); // Set the error message to state
+                    // setSubmitError('');
+                } else if (data.message === 'Email address already exists') {
+                    setEmailError('Email address already exists');
+                } else if (
+                    data.message ===
+                    'Mobile number already exists, Email address already exists'
+                ) {
+                    setSubmitError(
+                        'Mobile number already exists, Email address already exists',
+                    );
+                }
             }
+
 
         } catch (error) {
             console.error('API error:', error);
             console.log('Network error, please try again later.');
+        } finally {
+            setLoading(false);   // ✅ Stop loader (IMPORTANT)
         }
     };
 
@@ -244,7 +269,14 @@ const AddAgencyStaff = () => {
                 </Text>
                 <TextInput
                     value={name}
-                    onChangeText={setName}
+                    onChangeText={(text) => {
+                        setName(text);
+
+                        // Typing start hote hi error clear
+                        if (nameError) {
+                            setNameError('');
+                        }
+                    }}
                     placeholder="Enter Name"
                     placeholderTextColor="#999"
                     style={{
@@ -255,7 +287,7 @@ const AddAgencyStaff = () => {
                         fontSize: 16,
                         color: '#000',
                         borderWidth: 1,
-                        borderColor: '#ccc',
+                        borderColor: nameError ? 'red' : '#ccc',
                         marginBottom: 5,
                         fontFamily: 'Inter-Regular'
                     }}
@@ -270,7 +302,12 @@ const AddAgencyStaff = () => {
                 </Text>
                 <TextInput
                     value={mobile}
-                    onChangeText={setMobile}
+                    onChangeText={(text) => {
+                        setMobile(text);
+                        if (mobileError) {
+                            setMobileError('');
+                        }
+                    }}
                     placeholder="Enter Mobile Number"
                     keyboardType="phone-pad"
                     maxLength={10}
@@ -283,7 +320,7 @@ const AddAgencyStaff = () => {
                         fontSize: 16,
                         color: '#000',
                         borderWidth: 1,
-                        borderColor: '#ccc',
+                        borderColor: mobileError ? 'red' : '#ccc',
                         marginBottom: 15,
                         fontFamily: 'Inter-Regular'
 
@@ -310,11 +347,23 @@ const AddAgencyStaff = () => {
                         fontSize: 16,
                         color: '#000',
                         borderWidth: 1,
-                        borderColor: '#ccc',
+                        borderColor: EmailError ? 'red' : '#ddd',
                         marginBottom: 15,
                         fontFamily: 'Inter-Regular'
                     }}
                 />
+
+                {EmailError && (
+                    <Text
+                        style={{
+                            color: 'red',
+                            fontSize: 12,
+                            marginBottom: 10,
+                            fontFamily: 'Inter-Regular',
+                        }}>
+                        {EmailError}
+                    </Text>
+                )}
 
 
                 {/* Password */}
@@ -326,7 +375,7 @@ const AddAgencyStaff = () => {
                         flexDirection: 'row',
                         alignItems: 'center',
                         borderWidth: 1,
-                        borderColor: '#ccc',
+                        borderColor: passwordError ? 'red' : '#ccc',
                         borderRadius: 8,
                         backgroundColor: '#fff',
                         marginBottom: 5,
@@ -335,7 +384,14 @@ const AddAgencyStaff = () => {
                 >
                     <TextInput
                         value={password}
-                        onChangeText={setPassword}
+                        onChangeText={(text) => {
+                            setPassword(text);
+
+                            // Typing start hote hi error clear
+                            if (passwordError) {
+                                setPasswordError('');
+                            }
+                        }}
                         placeholder="Enter Password"
                         secureTextEntry={!showPassword}
                         placeholderTextColor="#999"
@@ -376,7 +432,7 @@ const AddAgencyStaff = () => {
                             flexDirection: 'row',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            borderColor: '#ccc',
+                            borderColor: staffTypeError ? 'red' : '#ccc',
                             borderWidth: 1,
                         }}
                         onPress={toggleDropdown}
@@ -559,11 +615,13 @@ const AddAgencyStaff = () => {
 
                 {/* Save Button */}
                 <TouchableOpacity
+                    disabled={loading}
                     style={{
-                        backgroundColor: colors.Brown,
+                        backgroundColor: loading ? '#a1887f' : colors.Brown,
                         paddingVertical: 14,
                         borderRadius: 8,
                         alignItems: 'center',
+                        opacity: loading ? 0.8 : 1
                     }}
                     onPress={() => {
                         const isAdmin = selectedType?.value === 'subadmin';
@@ -572,10 +630,33 @@ const AddAgencyStaff = () => {
 
 
                 >
-                    <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600', fontFamily: 'Inter-Regular' }}>
-                        {selectedType?.value === 'subadmin' ? 'Next' : 'Save'}
-                    </Text>
+                    {loading ? (
+                        <ActivityIndicator color="#fff" />
+                    ) : (
+                        <Text style={{
+                            color: '#fff',
+                            fontSize: 18,
+                            fontWeight: '600',
+                            fontFamily: 'Inter-Regular'
+                        }}>
+                            {selectedType?.value === 'subadmin' ? 'Next' : 'Save'}
+                        </Text>
+                    )}
                 </TouchableOpacity>
+
+                <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                    {SubmitError && (
+                        <Text
+                            style={{
+                                color: 'red',
+                                fontSize: 13,
+                                marginTop: 10,
+                                fontFamily: 'Inter-Regular',
+                            }}>
+                            {SubmitError}
+                        </Text>
+                    )}
+                </View>
             </ScrollView>
 
             <Modal

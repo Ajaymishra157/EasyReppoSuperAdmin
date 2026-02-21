@@ -81,7 +81,7 @@ const AllVehicleSearch = () => {
         agency_id: 'All',
         agency_name: 'All'
     });
-    const [selectedStaffType, setSelectedStaffType] = useState('All'); // 'Seizer ', 'Admin', 'Subadmin'
+    const [selectedStaffType, setSelectedStaffType] = useState('All'); // 'Seizer', 'Admin', 'Subadmin'
     const [showAgencyDropdown, setShowAgencyDropdown] = useState(false);
     const [showStaffTypeDropdown, setShowStaffTypeDropdown] = useState(false);
     const staffTypeForApi =
@@ -383,7 +383,7 @@ const AllVehicleSearch = () => {
             agency_id: selectedAgency.agency_id,
             agency_name: selectedAgency.agency_name
         });
-        setSelectedStaffType('Seizer ');
+        setSelectedStaffType('Seizer');
         setFromDate(getFirstDateThreeMonthsAgo());
         setTillDate(getFormattedCurrentDate());
         setSelectedFilter('Today');
@@ -566,6 +566,8 @@ const AllVehicleSearch = () => {
             // However, we need to pass rent_agency_id from the filter.
             const rentAgencyId = selectedAgency.agency_id === 'All' ? 'All' : selectedAgency.agency_id;
 
+            console.log("list main rent agency id and staff filter", rentAgencyId, staffTypeForApi, fromdate, tilldate, pageNumber);
+
             const response = await fetch(ENDPOINTS.all_search_history_paginate, {  // changed endpoint
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -580,6 +582,8 @@ const AllVehicleSearch = () => {
             });
 
             const result = await response.json();
+
+            console.log("search ka result", result);
 
 
             if (result.code === 200) {
@@ -638,7 +642,7 @@ const AllVehicleSearch = () => {
 
         // Reset filters to default
         // setSelectedAgency({ id: 0, name: 'MJS' });
-        // setSelectedStaffType('Seizer ');
+        // setSelectedStaffType('Seizer');
 
         await SearchHistoryApi(today, today);
         await fetchPermissions();
@@ -1636,11 +1640,11 @@ const AllVehicleSearch = () => {
                                             });
                                             // Optional: staff type logic
                                             if (item.agency_id === '0') {
-                                                if (!['Admin', 'Seizer '].includes(selectedStaffType)) {
+                                                if (!['Admin', 'Seizer'].includes(selectedStaffType)) {
                                                     setSelectedStaffType('All');
                                                 }
                                             } else {
-                                                if (!['Seizer ', 'Subadmin'].includes(selectedStaffType)) {
+                                                if (!['Seizer', 'Subadmin'].includes(selectedStaffType)) {
                                                     setSelectedStaffType('All');
                                                 }
                                             }
@@ -1717,11 +1721,11 @@ const AllVehicleSearch = () => {
                             let staffOptions = [];
 
                             if (selectedAgency?.agency_id === 'All') {
-                                staffOptions = ['All', 'Seizer ', 'Admin'];
+                                staffOptions = ['All', 'Seizer', 'Admin'];
                             } else if (selectedAgency?.agency_name === 'MJS') {
-                                staffOptions = ['All', 'Admin', 'Seizer '];
+                                staffOptions = ['All', 'Admin', 'Seizer'];
                             } else {
-                                staffOptions = ['All', 'Seizer ', 'Subadmin'];
+                                staffOptions = ['All', 'Seizer', 'Subadmin'];
                             }
 
                             return staffOptions.map(type => {

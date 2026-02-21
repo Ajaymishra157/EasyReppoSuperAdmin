@@ -8,6 +8,7 @@ import {
     Alert,
     TextInput,
     Image,
+    Keyboard,
 
 } from 'react-native';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -17,8 +18,9 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import colors from '../CommonFiles/Colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import StaffListShimmer from '../Component/StaffListShimmer';
+
 import { ENDPOINTS } from '../CommonFiles/Constant';
+import BlackListShimmer from '../Component/BlackListShimmer';
 
 const BlackListUser = () => {
     const navigation = useNavigation();
@@ -27,8 +29,10 @@ const BlackListUser = () => {
 
     const [staffList, setStaffList] = useState([]);
 
-
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [listLoading, setListLoading] = useState(true);
+    const [permissionLoading, setPermissionLoading] = useState(true);
 
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
@@ -56,14 +60,30 @@ const BlackListUser = () => {
         }, []),
     );
 
+    useEffect(() => {
+        const showSub = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+            (e) => setKeyboardHeight(e.endCoordinates.height)
+        );
+        const hideSub = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+            () => setKeyboardHeight(0)
+        );
+
+        return () => {
+            showSub.remove();
+            hideSub.remove();
+        };
+    }, []);
+
 
     const fetchPermissions = async () => {
-        setLoading(true);
+        setPermissionLoading(true);
         try {
             const staff_id = await AsyncStorage.getItem('staff_id');
             if (!staff_id) {
                 console.warn('No staff_id found');
-                setLoading(false);
+                setListLoading(false);
                 return;
             }
             const response = await fetch(ENDPOINTS.List_Staff_Permission, {
@@ -105,7 +125,9 @@ const BlackListUser = () => {
         } catch (error) {
             console.error('Error fetching permissions:', error);
         }
-        setLoading(false);
+        finally {
+            setPermissionLoading(false);
+        }
     }
 
     useEffect(() => {
@@ -155,7 +177,7 @@ const BlackListUser = () => {
     };
 
     const BlackListApi = async () => {
-        setLoading(true);
+        setListLoading(true);
         try {
             const agencyId = await AsyncStorage.getItem('rent_agency_id');
 
@@ -174,7 +196,7 @@ const BlackListUser = () => {
         } catch (err) {
             console.log(err);
         } finally {
-            setLoading(false);
+            setListLoading(false);
         }
     };
 
@@ -462,7 +484,7 @@ const BlackListUser = () => {
                 </View>
             )}
 
-            {loading ? (<StaffListShimmer />
+            {listLoading ? (<BlackListShimmer />
             ) : filteredList.length === 0 ? (
                 <EmptyState
                     text={
@@ -477,6 +499,7 @@ const BlackListUser = () => {
                     keyboardShouldPersistTaps="handled"
                     keyExtractor={(item, index) => index.toString()}
                     renderItem={renderItem}
+                    contentContainerStyle={{ paddingBottom: keyboardHeight + 80 }}
                     refreshing={refreshing}
                     onRefresh={onRefresh}
                 />
@@ -513,10 +536,10 @@ const BlackListUser = () => {
                             style={{
                                 marginRight: 40,
                                 backgroundColor: 'white',
-                                borderRadius: 50,
+                                borderRadius: 30,
                                 padding: 5,
                             }}>
-                            <Entypo name="cross" size={25} color="black" />
+                            <Entypo name="cross" size={20} color="black" />
                         </TouchableOpacity>
                     </View>
 
