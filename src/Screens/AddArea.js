@@ -1,16 +1,17 @@
-import { StyleSheet, Text, TextInput, ToastAndroid, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import React, { useState } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import colors from '../CommonFiles/Colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { ENDPOINTS } from '../CommonFiles/Constant';
+import Toast from 'react-native-toast-message';
 
 const AddArea = () => {
     const navigation = useNavigation();
     const route = useRoute();
     const { manage_email_id, manage_area_name, manage_address, manage_id } = route.params || {};
     console.log("all fileds", manage_email_id, manage_area_name)
-
+    const [loading, setLoading] = useState(false);
     // State variables to store input values
     const [area, setArea] = useState(manage_area_name || '');
     const [areaAddress, setAreaAddress] = useState(manage_address || '');
@@ -27,63 +28,10 @@ const AddArea = () => {
         return regex.test(email);
     };
 
-    // const handleAddArea = async () => {
-    //     let isValid = true;
-
-    //     // Reset error states
-    //     setAreaError('');
-    //     setAreaAddressError('');
-    //     setEmailError('');
-
-    //     // Validation checks
-    //     if (!area) {
-    //         setAreaError('Area is required');
-    //         isValid = false;
-    //     }
-    //     if (!areaAddress) {
-    //         setAreaAddressError('Area address is required');
-    //         isValid = false;
-    //     }
-    //     if (!email) {
-    //         setEmailError('Email is required');
-    //         isValid = false;
-    //     } else if (!validateEmail(email)) {
-    //         setEmailError('Please enter a valid email');
-    //         isValid = false;
-    //     }
-
-    //     // If form is invalid, return early
-    //     if (!isValid) return;
-
-    //     try {
-    //         const response = await fetch(ENDPOINTS.Add_Area, {
-    //             method: 'POST',
-    //             headers: {
-    //                 'Content-Type': 'application/json',
-    //             },
-    //             body: JSON.stringify({
-    //                 area_name: area,
-    //                 address: areaAddress,
-    //                 email_id: email,
-    //             }),
-    //         });
-
-    //         const result = await response.json();
-
-    //         if (result.code === 200) {
-    //             // Successfully added area
-    //             navigation.goBack(); // Navigate back to the previous screen
-    //         } else {
-    //             // Error occurred
-    //             alert(result.message || 'Failed to add area');
-    //         }
-    //     } catch (error) {
-    //         console.error('Error adding area:', error);
-    //     }
-    // };
 
     const handleAddArea = async () => {
         let isValid = true;
+
 
         // Reset error states
         setAreaError('');
@@ -109,6 +57,7 @@ const AddArea = () => {
 
         // If form is invalid, return early
         if (!isValid) return;
+        setLoading(true);
 
         // If manage_email_id exists, it's an update
         if (manage_email_id) {
@@ -131,15 +80,25 @@ const AddArea = () => {
                 const result = await response.json();
 
                 if (result.code === 200) {
-                    // Successfully updated area
-                    navigation.goBack(); // Navigate back to the previous screen
-                    ToastAndroid.show("Area Update Successfully", ToastAndroid.SHORT);
+
+
+                    Toast.show({
+                        type: 'success',
+                        text1: 'Area Update Successfully',
+                        position: 'bottom',
+                        visibilityTime: 2000, // 500 sec
+                    });
+                    setTimeout(() => {
+                        navigation.goBack();
+                    }, 500);
                 } else {
                     // Error occurred
                     alert(result.message || 'Failed to update area');
                 }
             } catch (error) {
                 console.error('Error updating area:', error);
+            } finally {
+                setLoading(false);
             }
         } else {
             // Add API call (if manage_email_id is not provided)
@@ -160,15 +119,25 @@ const AddArea = () => {
 
                 if (result.code === 200) {
                     // Successfully added area
-                    ToastAndroid.show("Area Added Successfully", ToastAndroid.SHORT);
+                    Toast.show({
+                        type: 'success',
+                        text1: 'Area Added Successfully',
+                        position: 'bottom',
+                        visibilityTime: 2000, // 500 sec
+                    });
+                    setTimeout(() => {
+                        navigation.goBack();
+                    }, 500);
 
-                    navigation.goBack(); // Navigate back to the previous screen
+
                 } else {
                     // Error occurred
                     alert(result.message || 'Failed to add area');
                 }
             } catch (error) {
                 console.error('Error adding area:', error);
+            } finally {
+                setLoading(false);
             }
         }
     };
@@ -222,7 +191,7 @@ const AddArea = () => {
                         color: 'black',
                     }}
                 >
-                    Area <Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
+                    Area<Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
                 </Text>
                 <TextInput
                     style={{
@@ -230,15 +199,18 @@ const AddArea = () => {
                         padding: 10,
                         borderRadius: 8,
                         borderWidth: 1,
-                        borderColor: colors.Brown,
-                        marginBottom: 5,
+                        borderColor: areaError ? 'red' : colors.Brown,
+                        marginBottom: emailError ? 0 : 5,
                         fontFamily: 'Inter-Regular',
                         color: 'black',
                     }}
                     placeholder="Enter Area"
                     placeholderTextColor="#ccc"
                     value={area}
-                    onChangeText={setArea}
+                    onChangeText={(text) => {
+                        setArea(text);
+                        if (areaError) setAreaError('');
+                    }}
                 />
                 {areaError ? (
                     <Text
@@ -262,7 +234,7 @@ const AddArea = () => {
                         color: 'black',
                     }}
                 >
-                    Area Address <Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
+                    Area Address<Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
                 </Text>
                 <TextInput
                     style={{
@@ -270,15 +242,22 @@ const AddArea = () => {
                         padding: 10,
                         borderRadius: 8,
                         borderWidth: 1,
-                        borderColor: colors.Brown,
-                        marginBottom: 5,
+                        borderColor: areaAddressError ? 'red' : colors.Brown,
+                        marginBottom: emailError ? 0 : 5,
                         fontFamily: 'Inter-Regular',
                         color: 'black',
+                        height: 100,                // 👈 height increase
+                        textAlignVertical: 'top',
                     }}
                     placeholder="Enter Area Address"
                     placeholderTextColor="#ccc"
                     value={areaAddress}
-                    onChangeText={setAreaAddress}
+                    onChangeText={(text) => {
+                        setAreaAddress(text);
+                        if (areaAddressError) setAreaAddressError('');
+                    }}
+                    multiline={true}               // 👈 multiline enable
+                    numberOfLines={3}
                 />
                 {areaAddressError ? (
                     <Text
@@ -302,7 +281,7 @@ const AddArea = () => {
                         color: 'black',
                     }}
                 >
-                    Email <Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
+                    Email<Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
                 </Text>
                 <TextInput
                     style={{
@@ -310,15 +289,18 @@ const AddArea = () => {
                         padding: 10,
                         borderRadius: 8,
                         borderWidth: 1,
-                        borderColor: colors.Brown,
-                        marginBottom: 5,
+                        borderColor: emailError ? 'red' : colors.Brown,
+                        marginBottom: emailError ? 0 : 5,
                         fontFamily: 'Inter-Regular',
                         color: 'black',
                     }}
                     placeholder="Enter Email"
                     placeholderTextColor="#ccc"
                     value={email}
-                    onChangeText={setEmail}
+                    onChangeText={(text) => {
+                        setEmail(text);
+                        if (emailError) setEmailError('');
+                    }}
                     keyboardType="email-address" // Set keyboard to email type for better UX
                 />
                 {emailError ? (
@@ -342,10 +324,21 @@ const AddArea = () => {
                         borderRadius: 8,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        marginTop: 20
+                        marginTop: 20,
+                        flexDirection: 'row',
+                        opacity: loading ? 0.7 : 1,
                     }}
                     onPress={handleAddArea}
+                    disabled={loading}
                 >
+                    {loading && (
+                        <ActivityIndicator
+                            size="small"
+                            color="#fff"
+                            style={{ marginRight: 8 }}
+                        />
+                    )}
+
                     <Text
                         style={{
                             color: 'white',
@@ -354,7 +347,9 @@ const AddArea = () => {
                             fontFamily: 'Inter-Bold',
                         }}
                     >
-                        {manage_email_id ? 'Update Area' : 'Add Area'}
+                        {manage_email_id
+                            ? (loading ? 'Updating...' : 'Update Area')
+                            : (loading ? 'Adding...' : 'Add Area')}
                     </Text>
                 </TouchableOpacity>
             </View>

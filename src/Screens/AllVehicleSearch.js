@@ -28,6 +28,7 @@ import MapView, { Marker } from 'react-native-maps';
 import Geocoder from 'react-native-geocoding';
 import SearchHistoryShimmer from '../Component/SearchHistoryShimmer';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Toast from 'react-native-toast-message';
 // import { getGoogleApiKey } from '../CommonFiles/LocationService';
 
 Geocoder.init('AIzaSyBvoWcgSBGvofFvJi2tPnOyr7mj7Plc1pk');
@@ -366,6 +367,17 @@ const AllVehicleSearch = () => {
     // Apply all filters (date + agency + staff type)
     const applyFilters = () => {
         closeModal2();
+
+        // 🔥 CHECK if filter actually changed from default
+        const isAgencyChanged = selectedAgency.agency_id !== 'All';
+        const isStaffTypeChanged = selectedStaffType !== 'All';
+
+        if (isAgencyChanged || isStaffTypeChanged) {
+            setIsFilterActive(true);
+        } else {
+            setIsFilterActive(false);
+        }
+
         setSearchLoading(true);
         setPage(1);
         setAllLoaded(false);
@@ -590,8 +602,10 @@ const AllVehicleSearch = () => {
 
                 if (pageNumber === 1) {
                     setSearchHistory(result.payload);
+                    setOriginalSearchHistory(result.payload);
                 } else {
                     setSearchHistory((prev) => [...prev, ...result.payload]);
+                    setOriginalSearchHistory((prev) => [...prev, ...result.payload]);
                 }
 
                 // Agar payload ka size 0 hai → sab data load ho gaya
@@ -627,27 +641,31 @@ const AllVehicleSearch = () => {
         } finally {
             setLoadingMore(false);
             setSearchLoading(false);
+            setHasSearched(true);
         }
     };
 
     const onRefresh = async () => {
         setRefreshing(true);
-        setIsFilterActive(false);
+        setSearchLoading(true);
+
         setSelectedFilter('Today');
+        const three = getFirstDateThreeMonthsAgo()
         const today = getFormattedCurrentDate();
 
         // Set both from and till date to today
-        setFromDate(today);
+        setFromDate(three);
         setTillDate(today);
 
         // Reset filters to default
         // setSelectedAgency({ id: 0, name: 'MJS' });
         // setSelectedStaffType('Seizer');
 
-        await SearchHistoryApi(today, today);
+        await SearchHistoryApi(three, today);
         await fetchPermissions();
 
         setRefreshing(false);
+        setSearchLoading(false);
     };
 
 
@@ -698,9 +716,12 @@ const AllVehicleSearch = () => {
                 console.log('search inside search - success');
                 if (pageNumber === 1) {
                     setSearchHistory(result.payload);
+                    setOriginalSearchHistory(result.payload);
                 } else {
                     console.log('merge search results');
                     setSearchHistory((prev) => [...prev, ...result.payload]);
+                    setOriginalSearchHistory((prev) => [...prev, ...result.payload]);
+
                 }
 
                 // ✅ Agar payload empty hai toh allLoaded true karo
@@ -738,6 +759,7 @@ const AllVehicleSearch = () => {
         } finally {
             setLoadingMore(false);
             setSearchLoading(false);
+            setHasSearched(true);
         }
     };
 
@@ -970,7 +992,13 @@ const AllVehicleSearch = () => {
             const staffId = await AsyncStorage.getItem('staff_id');
 
             if (!staffId) {
-                ToastAndroid.show('No staff ID found', ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'error',
+                    text1: 'No staff ID found',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });;
                 return;
             }
 
@@ -994,11 +1022,17 @@ const AllVehicleSearch = () => {
 
                 }
             } else {
-                ToastAndroid.show(result.message || 'Failed to logout staff', ToastAndroid.SHORT);
+                // Toast.show({
+                //     type: 'error',
+                //     text1: result.message || 'Failed to logout staff',
+                //     position: 'bottom',
+                //     bottomOffset: 60,
+                //     visibilityTime: 2000,
+                // });
             }
         } catch (error) {
             console.log('Logout error:', error.message);
-            ToastAndroid.show('Error logging  out out staff', ToastAndroid.SHORT);
+
         }
     };
 
@@ -1063,10 +1097,10 @@ const AllVehicleSearch = () => {
 
                 {/* Filter icon - now opens the new combined filter modal */}
                 {(
-                    userType === 'SuperAdmin' ||
-                    (userType === 'SubAdmin' && permissions?.search_history?.searchfilter) ||
-                    (userType === 'main' && permissions?.search_history?.searchfilter)
-
+                    (userType === 'SuperAdmin' ||
+                        (userType === 'SubAdmin' && permissions?.search_history?.searchfilter) ||
+                        (userType === 'main' && permissions?.search_history?.searchfilter))
+                    && SearchHistory.length > 0 // ✅ add this check
                 ) && (
 
 
@@ -1094,7 +1128,7 @@ const AllVehicleSearch = () => {
                                         width: 8,
                                         height: 8,
                                         borderRadius: 5,
-                                        backgroundColor: 'white',
+                                        backgroundColor: '#1daa61',
                                     }}
                                 />
                             )}
@@ -1104,95 +1138,96 @@ const AllVehicleSearch = () => {
                         </TouchableOpacity>
                     )}
             </View>
+            {(SearchLoading || originalSearchHistory.length > 0) && (
+                <View style={{ width: '100%', flexDirection: 'row', paddingHorizontal: 10, marginTop: 5 }}>
+                    {/* Search Box */}
+                    <View
+                        style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            flex: 1,
+                            borderWidth: 1,
+                            borderColor: colors.Brown,
+                            borderRadius: 8,
+                            backgroundColor: 'white',
+                            height: 50,
+                            paddingHorizontal: 8,
+                        }}
+                    >
+                        <View style={{
+                            width: 30,  // निश्चित width दी है
+                            height: 50, // पूरी height ली है
+                            justifyContent: 'center',
+                            alignItems: 'center',
 
-            <View style={{ width: '100%', flexDirection: 'row', paddingHorizontal: 10, marginTop: 5 }}>
-                {/* Search Box */}
-                <View
-                    style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        flex: 1,
-                        borderWidth: 1,
-                        borderColor: colors.Brown,
-                        borderRadius: 8,
-                        backgroundColor: 'white',
-                        height: 50,
-                        paddingHorizontal: 8,
-                    }}
-                >
-                    <View style={{
-                        width: 30,  // निश्चित width दी है
-                        height: 50, // पूरी height ली है
-                        justifyContent: 'center',
-                        alignItems: 'center',
+                        }}>
+                            <MaterialIcons name='search' size={24} color='black' />
+                        </View>
 
-                    }}>
-                        <MaterialIcons name='search' size={24} color='black' />
+                        <TextInput
+                            autoCapitalize="words"
+                            style={{
+                                flex: 1,
+                                fontSize: 16,
+                                fontFamily: 'Inter-Regular',
+                                color: 'black',
+                            }}
+                            placeholder="Search Name/Veh No/Agg No"
+                            placeholderTextColor="grey"
+                            value={text}
+                            // onChangeText={setText} // ✅ typing par sirf text set hoga
+                            onChangeText={handleTextChange}
+                        />
+
+                        {text ? (
+                            <TouchableOpacity
+                                // onPress={() => {
+                                //   setText('');
+                                //   setCurrentSearch('');
+
+                                //   setPage(1);
+                                //   setAllLoaded(false);
+
+                                //   setSearchLoading(true);   // loader sabse pehle
+                                //   setSearchHistory([]);     // list clear karo
+                                //   handleSearch('');
+                                // }}
+                                onPress={handleClearSearch}
+                                style={{
+                                    padding: 6,
+                                    borderRadius: 20,
+                                    backgroundColor: '#f2f2f2',
+                                    marginLeft: 5,
+                                }}
+                            >
+                                <Entypo name="cross" size={18} color="black" />
+                            </TouchableOpacity>
+                        ) : null}
                     </View>
 
-                    <TextInput
-                        autoCapitalize="words"
+                    {/* Search Button */}
+                    <TouchableOpacity
+                        // onPress={() => {
+                        //   handleSearch(text);
+
+                        //   setSearchLoading(true);
+                        // }
+                        // }// ✅ ab yaha click se chalega
+                        onPress={handleSearchPress}
                         style={{
-                            flex: 1,
-                            fontSize: 16,
-                            fontFamily: 'Inter-Regular',
-                            color: 'black',
+                            marginLeft: 8,
+                            width: 50,
+                            height: 50,
+                            borderRadius: 8,
+                            backgroundColor: colors.Brown,
+                            justifyContent: 'center',
+                            alignItems: 'center',
                         }}
-                        placeholder="Search Name/Veh No/Agg No"
-                        placeholderTextColor="grey"
-                        value={text}
-                        // onChangeText={setText} // ✅ typing par sirf text set hoga
-                        onChangeText={handleTextChange}
-                    />
-
-                    {text ? (
-                        <TouchableOpacity
-                            // onPress={() => {
-                            //   setText('');
-                            //   setCurrentSearch('');
-
-                            //   setPage(1);
-                            //   setAllLoaded(false);
-
-                            //   setSearchLoading(true);   // loader sabse pehle
-                            //   setSearchHistory([]);     // list clear karo
-                            //   handleSearch('');
-                            // }}
-                            onPress={handleClearSearch}
-                            style={{
-                                padding: 6,
-                                borderRadius: 20,
-                                backgroundColor: '#f2f2f2',
-                                marginLeft: 5,
-                            }}
-                        >
-                            <Entypo name="cross" size={18} color="black" />
-                        </TouchableOpacity>
-                    ) : null}
+                    >
+                        <FontAwesome name="search" size={20} color="white" />
+                    </TouchableOpacity>
                 </View>
-
-                {/* Search Button */}
-                <TouchableOpacity
-                    // onPress={() => {
-                    //   handleSearch(text);
-
-                    //   setSearchLoading(true);
-                    // }
-                    // }// ✅ ab yaha click se chalega
-                    onPress={handleSearchPress}
-                    style={{
-                        marginLeft: 8,
-                        width: 50,
-                        height: 50,
-                        borderRadius: 8,
-                        backgroundColor: colors.Brown,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                    }}
-                >
-                    <FontAwesome name="search" size={20} color="white" />
-                </TouchableOpacity>
-            </View>
+            )}
 
             <View style={{ flex: 1, paddingHorizontal: 10 }}>
                 {SearchLoading ? (
@@ -1593,6 +1628,23 @@ const AllVehicleSearch = () => {
                 >
                     <View
                         style={{
+                            flexDirection: 'row',
+                            justifyContent: 'flex-end',
+                            width: '88%',
+                            paddingVertical: 5,
+                        }}>
+                        <TouchableOpacity
+                            onPress={() => setShowAgencyDropdown(false)}
+                            style={{
+                                marginRight: 10,
+                                backgroundColor: 'white',
+                                borderRadius: 50,
+                            }}>
+                            <Entypo name="cross" size={25} color="black" />
+                        </TouchableOpacity>
+                    </View>
+                    <View
+                        style={{
                             backgroundColor: 'white',
                             width: '85%',
                             borderRadius: 12,
@@ -1605,23 +1657,38 @@ const AllVehicleSearch = () => {
                             Select Agency
                         </Text>
 
-                        {/* 🔥 Search Input */}
-                        <TextInput
-                            placeholder="Search agency..."
-                            placeholderTextColor="#999"
-                            value={agencySearch}
-                            onChangeText={setAgencySearch}
-                            style={{
-                                borderWidth: 1,
-                                borderColor: '#e5e7eb',
-                                borderRadius: 8,
-                                paddingHorizontal: 10,
-                                height: 42,
-                                marginBottom: 12,
-                                fontFamily: 'Inter-Regular',
-                                color: 'black',
-                            }}
-                        />
+                        {/* 🔥 Search Input with Clear Button */}
+                        <View style={{ position: 'relative', marginBottom: 12 }}>
+                            <TextInput
+                                placeholder="Search agency..."
+                                placeholderTextColor="#999"
+                                value={agencySearch}
+                                onChangeText={setAgencySearch}
+                                style={{
+                                    borderWidth: 1,
+                                    borderColor: '#e5e7eb',
+                                    borderRadius: 8,
+                                    paddingHorizontal: 10,
+                                    paddingRight: 40, // 👈 space for cross icon
+                                    height: 42,
+                                    fontFamily: 'Inter-Regular',
+                                    color: 'black',
+                                }}
+                            />
+
+                            {agencySearch?.length > 0 && (
+                                <TouchableOpacity
+                                    onPress={() => setAgencySearch('')}
+                                    style={{
+                                        position: 'absolute',
+                                        right: 10,
+                                        top: 10,
+                                    }}
+                                >
+                                    <AntDesign name="closecircle" size={18} color="#999" />
+                                </TouchableOpacity>
+                            )}
+                        </View>
 
                         <FlatList
                             data={filteredAgencies}
@@ -1676,9 +1743,27 @@ const AllVehicleSearch = () => {
                                 );
                             }}
                             ListEmptyComponent={() => (
-                                <Text style={{ textAlign: 'center', marginTop: 20, color: '#999' }}>
-                                    No agency found
-                                </Text>
+                                <View style={{ alignItems: 'center', marginTop: 30 }}>
+                                    <Image
+                                        source={require('../assets/images/enterprise.png')}
+                                        style={{
+                                            width: 40,
+                                            height: 40,
+                                            resizeMode: 'contain',
+                                            marginBottom: 10,
+                                            opacity: 0.7,
+                                        }}
+                                    />
+                                    <Text
+                                        style={{
+                                            textAlign: 'center',
+                                            color: '#999',
+                                            fontFamily: 'Inter-Regular',
+                                        }}
+                                    >
+                                        No agency found
+                                    </Text>
+                                </View>
                             )}
                         />
                     </View>
@@ -1696,6 +1781,23 @@ const AllVehicleSearch = () => {
                     }}
                     onPress={() => setShowStaffTypeDropdown(false)}
                 >
+                    <View
+                        style={{
+                            flexDirection: 'row',
+                            justifyContent: 'flex-end',
+                            width: '85%',
+                            paddingVertical: 5,
+                        }}>
+                        <TouchableOpacity
+                            onPress={() => setShowStaffTypeDropdown(false)}
+                            style={{
+                                marginRight: 10,
+                                backgroundColor: 'white',
+                                borderRadius: 50,
+                            }}>
+                            <Entypo name="cross" size={25} color="black" />
+                        </TouchableOpacity>
+                    </View>
                     <View
                         style={{
                             backgroundColor: 'white',

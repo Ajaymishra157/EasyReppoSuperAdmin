@@ -15,6 +15,7 @@ import MapView, { Marker } from 'react-native-maps';
 import Geocoder from 'react-native-geocoding';
 import SearchHistoryShimmer from '../Component/SearchHistoryShimmer';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Toast from 'react-native-toast-message';
 
 Geocoder.init('AIzaSyBvoWcgSBGvofFvJi2tPnOyr7mj7Plc1pk');
 
@@ -560,7 +561,13 @@ const OtherAppSearchHistory = () => {
             const staffId = await AsyncStorage.getItem('staff_id');
 
             if (!staffId) {
-                ToastAndroid.show('No staff ID found', ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'error',
+                    text1: 'No staff ID found',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });;
                 return;
             }
 
@@ -584,11 +591,17 @@ const OtherAppSearchHistory = () => {
 
                 }
             } else {
-                ToastAndroid.show(result.message || 'Failed to logout staff', ToastAndroid.SHORT);
+                // Toast.show({
+                //     type: 'error',
+                //     text1: result.message || 'Failed to logout staff',
+                //     position: 'bottom',
+                //     bottomOffset: 60,
+                //     visibilityTime: 2000,
+                // });
             }
         } catch (error) {
             console.log('Logout error:', error.message);
-            ToastAndroid.show('Error logging  out out staff', ToastAndroid.SHORT);
+
         }
     };
 

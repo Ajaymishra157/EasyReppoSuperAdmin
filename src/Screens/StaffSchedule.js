@@ -6,14 +6,17 @@ import {
   View,
   RefreshControl,
   ActivityIndicator,
-  ToastAndroid,
+
   Modal,
   FlatList,
   TextInput,
   Image,
-  Linking
+  Linking,
+  TouchableWithoutFeedback,
+  Dimensions,
+  Keyboard
 } from 'react-native';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import colors from '../CommonFiles/Colors';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -26,37 +29,53 @@ import EvilIcons from 'react-native-vector-icons/EvilIcons'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons'
 import StaffShimmer from '../Component/StaffShimmer';
+import Toast from 'react-native-toast-message';
 
 const StaffSchedule = () => {
   const Schedule = require('../assets/images/schedule.png');
   const account = require('../assets/images/user.png');
   const navigation = useNavigation();
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [staffSchedule, setstaffSchedule] = useState([]);
   const [staffLoading, setstaffLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-
+  const SCREEN_HEIGHT = Dimensions.get('window').height;
+  const MODAL_HEIGHT = 150;
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [InfoModal, SetInfoModal] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
-
   const [modalVisible, setModalVisible] = useState(false);
-
+  const [modalPosition, setModalPosition] = useState({ top: 0, left: 0, width: 0, height: 0 });
   const [ConfrimationModal, setConfrimationModal] = useState(false);
-
+  const modalPositionRef = useRef({ top: 0, left: 0 });
   const [data, setData] = useState(staffSchedule.slice(0, 20));  // Load first 20 items initially
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1); // Keep track of current page for loading data
   const [text, setText] = useState(null);
   const [originalSchedule, setoriginalSchedule] = useState([]);
-
   const [userType, setUsertype] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
-
-
+  console.log("selectedImage", selectedImage);
   const [permissions, setPermissions] = useState({});
-  console.log("staff Permission ye hai ab", permissions);
+
 
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => setKeyboardHeight(e.endCoordinates.height)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardHeight(0)
+    );
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const fetchPermissions = async () => {
     setLoading(true);
@@ -119,7 +138,14 @@ const StaffSchedule = () => {
       const staffId = await AsyncStorage.getItem('staff_id');
 
       if (!staffId) {
-        ToastAndroid.show('No staff ID found', ToastAndroid.SHORT);
+
+        Toast.show({
+          type: 'error',
+          text1: 'No staff ID found',
+          position: 'bottom',
+          bottomOffset: 60,
+          visibilityTime: 2000,
+        });
         return;
       }
 
@@ -144,11 +170,17 @@ const StaffSchedule = () => {
 
         }
       } else {
-        ToastAndroid.show(result.message || 'Failed to logout staff', ToastAndroid.SHORT);
+        // Toast.show({
+        //   type: 'error',
+        //   text1: result.message || 'Failed to logout staff',
+        //   position: 'bottom',
+        //   bottomOffset: 60,
+        //   visibilityTime: 2000,
+        // });
       }
     } catch (error) {
       console.log('Logout error:', error.message);
-      ToastAndroid.show('Error logging  out out staff', ToastAndroid.SHORT);
+
     }
   };
 
@@ -209,6 +241,12 @@ const StaffSchedule = () => {
 
   };
 
+  const getInitials = (name) => {
+    if (!name) return '';
+    const words = name.trim().split(' ');
+    if (words.length === 1) return words[0][0].toUpperCase();
+    return (words[0][0] + words[1][0]).toUpperCase();
+  };
   const renderItem = ({ item, index }) => (
     <View
       key={item.staff_schedule_id}
@@ -216,6 +254,7 @@ const StaffSchedule = () => {
         flexDirection: 'row',
         backgroundColor: '#fff',
         padding: 10,
+        marginHorizontal: 10,
         marginBottom: 7,
         borderRadius: 5,
         borderWidth: 1,
@@ -231,8 +270,11 @@ const StaffSchedule = () => {
               ? { uri: `${encodeURI(item.staff_image)}` }
               : account;
 
-            setSelectedImage(imgSrc);  // set image
-            setModalVisible(true);     // open modal
+            setSelectedImage({
+              uri: item.staff_image ? encodeURI(item.staff_image) : null,
+              name: item.schedule_staff_name
+            });
+            setModalVisible(true);
           }}
           activeOpacity={0.8}
           style={{
@@ -242,17 +284,22 @@ const StaffSchedule = () => {
             overflow: 'hidden',
             borderWidth: 1,
             borderColor: '#ccc',
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: !item.staff_image ? '#ccc' : 'transparent'
           }}
         >
-          <Image
-            source={
-              item.staff_image
-                ? { uri: `${encodeURI(item.staff_image)}` }
-                : account
-            }
-            style={{ width: '100%', height: '100%' }}
-            resizeMode="contain"
-          />
+          {item.staff_image ? (
+            <Image
+              source={{ uri: encodeURI(item.staff_image) }}
+              style={{ width: '100%', height: '100%' }}
+              resizeMode="cover"
+            />
+          ) : (
+            <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold' }}>
+              {getInitials(item.schedule_staff_name)}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -328,7 +375,7 @@ const StaffSchedule = () => {
 
         {/* {(!permissions?.staff_schedule || permissions?.staff_schedule?.update || permissions?.staff_schedule?.delete) && ( */}
         <TouchableOpacity
-          onPress={() => OpenModal(item)}
+          onPress={(event) => OpenModal(item, event)}
           style={{
             width: '100%',
             justifyContent: 'center',
@@ -342,9 +389,28 @@ const StaffSchedule = () => {
     </View>
   );
 
-  const OpenModal = staff => {
-    setSelectedStaff(staff);
-    setIsModalVisible(true); // Open the modal
+
+
+  const OpenModal = (item, event) => {
+    setSelectedStaff(item);
+
+    event.currentTarget.measure((x, y, width, height, pageX, pageY) => {
+
+      let calculatedTop = pageY + height;
+
+      // 👇 Check if modal will go outside screen
+      if (pageY + height + MODAL_HEIGHT > SCREEN_HEIGHT) {
+        // Open above the button
+        calculatedTop = pageY - MODAL_HEIGHT;
+      }
+
+      modalPositionRef.current = {
+        top: calculatedTop,
+        left: pageX - 155,
+      };
+
+      setIsModalVisible(true);
+    });
   };
 
   const handleCloseModal = () => {
@@ -428,10 +494,13 @@ const StaffSchedule = () => {
 
       if (response.ok) {
         if (result.code === 200) {
-          ToastAndroid.show(
-            'Schedule Deleted Successfully',
-            ToastAndroid.SHORT,
-          );
+          Toast.show({
+            type: 'success',
+            text1: 'Schedule Deleted Successfully',
+            position: 'bottom',
+            bottomOffset: 60,
+            visibilityTime: 2000,
+          });
           StaffScheduleApi();
         } else {
           console.log('Error:', 'Failed to load staff data');
@@ -451,9 +520,19 @@ const StaffSchedule = () => {
 
   useFocusEffect(
     useCallback(() => {
+      setText('');
       StaffScheduleApi();
     }, []), // Empty array ensures this is called only when the screen is focused
   );
+
+
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     if (!text || text.trim() === '') {
+  //       StaffScheduleApi();
+  //     }
+  //   }, [text])
+  // );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -534,67 +613,69 @@ const StaffSchedule = () => {
           Staff Schedule
         </Text>
       </View>
-      <View style={{ width: '100%', paddingHorizontal: 10 }}>
-        <View
-          style={{
-            width: '100%',
-
-            borderWidth: 1,
-            borderColor: colors.Brown,
-            marginTop: 5,
-            marginBottom: 5,
-            borderRadius: 8,
-            height: 50,
-            backgroundColor: 'white',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            borderColor: colors.Brown,
-
-          }}>
-          <View style={{
-            width: 30,  // निश्चित width दी है
-            height: 50, // पूरी height ली है
-            justifyContent: 'center',
-            alignItems: 'center',
-
-          }}>
-            <MaterialIcons name='search' size={24} color='black' />
-          </View>
-          <TextInput
+      {(staffLoading || originalSchedule.length > 0) && (
+        <View style={{ width: '100%', paddingHorizontal: 10 }}>
+          <View
             style={{
-              flex: 1,
-              fontSize: 16,
-              fontFamily: 'Inter-Regular',
+              width: '100%',
 
-              color: 'black',
+              borderWidth: 1,
+              borderColor: colors.Brown,
+              marginTop: 5,
+              marginBottom: 5,
+              borderRadius: 8,
               height: 50,
-            }}
+              backgroundColor: 'white',
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              borderColor: colors.Brown,
 
-            placeholder="Search Schedule/Mobile no"
-            placeholderTextColor="grey"
-            value={text}
-            onChangeText={handleTextChange}
-          />
-          {text ? (
-            <TouchableOpacity
-              onPress={() => {
+            }}>
+            <View style={{
+              width: 30,  // निश्चित width दी है
+              height: 50, // पूरी height ली है
+              justifyContent: 'center',
+              alignItems: 'center',
 
-                setText(''); // Clear the search text
-                setstaffSchedule(originalSchedule);
-
-              }}
+            }}>
+              <MaterialIcons name='search' size={24} color='black' />
+            </View>
+            <TextInput
               style={{
-                marginRight: 7,
-                height: 40,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}>
-              <Entypo name="cross" size={20} color="black" />
-            </TouchableOpacity>
-          ) : null}
+                flex: 1,
+                fontSize: 16,
+                fontFamily: 'Inter-Regular',
+
+                color: 'black',
+                height: 50,
+              }}
+
+              placeholder="Search Schedule/Mobile no"
+              placeholderTextColor="grey"
+              value={text}
+              onChangeText={handleTextChange}
+            />
+            {text ? (
+              <TouchableOpacity
+                onPress={() => {
+
+                  setText(''); // Clear the search text
+                  setstaffSchedule(originalSchedule);
+
+                }}
+                style={{
+                  marginRight: 7,
+                  height: 40,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}>
+                <Entypo name="cross" size={20} color="black" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
         </View>
-      </View>
+      )}
       {/* Table Header */}
 
 
@@ -639,8 +720,8 @@ const StaffSchedule = () => {
         }
 
         contentContainerStyle={{
-          paddingBottom: 80,
-          backgroundColor: 'white',
+          paddingBottom: keyboardHeight + 80,
+          backgroundColor: '#f7f7f7',
         }}
       />
 
@@ -832,171 +913,95 @@ const StaffSchedule = () => {
 
       <Modal
         visible={isModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={handleCloseModal}>
-        <TouchableOpacity
-          style={{
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          }}
-          activeOpacity={1}
-          onPress={handleCloseModal}>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'flex-end',
-              width: '80%',
-              paddingVertical: 5,
-            }}>
-            <TouchableOpacity
-              onPress={handleCloseModal}
-              style={{
-                marginRight: 5,
-                backgroundColor: 'white',
-                borderRadius: 50,
-              }}>
-              <Entypo name="cross" size={25} color="black" />
-            </TouchableOpacity>
-          </View>
-          <View
-            style={{
-              backgroundColor: 'white',
-              padding: 10,
-              borderRadius: 15,
-              width: '80%',
-              alignItems: 'center',
-              elevation: 5, // Adds shadow for Android
-              shadowColor: '#000', // Shadow for iOS
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 5,
-            }}
-            onStartShouldSetResponder={() => true} // Prevent modal from closing on content click
-            onTouchEnd={e => e.stopPropagation()}>
+        animationType="fade"
+        transparent
+        onRequestClose={handleCloseModal}
+      >
+        <TouchableWithoutFeedback onPress={handleCloseModal}>
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }}>
             <View
               style={{
-                flexDirection: 'row',
-                width: '100%',
-                justifyContent: 'center',
-              }}>
+                position: 'absolute',
+                top: modalPositionRef.current.top,
+                left: modalPositionRef.current.left,
+                backgroundColor: 'white',
+                padding: 8,               // reduced padding
+                borderRadius: 10,         // slightly smaller
+                width: 180,               // reduced width
+                elevation: 6,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+              }}
+            >
               <Text
                 style={{
-                  fontSize: 18,
-                  fontWeight: 'bold',
-                  marginBottom: 20,
+                  fontSize: 15,           // smaller font
+                  fontFamily: 'Inter-SemiBold',
+                  marginBottom: 8,        // less margin
                   color: 'black',
-                  fontFamily: 'Inter-Regular',
-                }}>
+                }}
+              >
                 Select Action
               </Text>
 
-            </View>
-            <View style={{ gap: 3, width: '80%' }}>
-
-
-              {/* Info Staff Button */}
+              {/* Info Schedule */}
               <TouchableOpacity
                 style={{
-                  borderColor: colors.Brown,
-                  borderWidth: 1,
-                  borderRadius: 10,
-                  width: '100%',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  paddingVertical: 12,
-                  marginTop: 10,
                   flexDirection: 'row',
-                  gap: 15,
+                  alignItems: 'center',
+                  paddingVertical: 6,       // reduced vertical padding
+                  borderBottomWidth: 1,
+                  borderColor: '#eee',
                 }}
                 onPress={() => {
                   SetInfoModal(true);
                   setIsModalVisible(false);
-                }}>
-                <AntDesign name="infocirlceo" size={20} color="black" />
-
-                <Text
-                  style={{
-                    color: 'black',
-                    fontFamily: 'Inter-Regular',
-                    fontSize: 16,
-                  }}>
-                  Information Schedule
-                </Text>
+                }}
+              >
+                <AntDesign name="infocirlceo" size={18} color="#000" style={{ marginRight: 8 }} />
+                <Text style={{ fontSize: 13, color: '#000' }}>Information Schedule</Text>
               </TouchableOpacity>
 
-              {/* Update Leave Button */}
-
-              {(
-                userType === 'SuperAdmin' ||
+              {/* Update Schedule */}
+              {(userType === 'SuperAdmin' ||
                 (userType === 'SubAdmin' && permissions?.staff_schedule?.update) ||
-                (userType === 'main' && permissions?.staff_schedule?.update)
-              ) && (
-
+                (userType === 'main' && permissions?.staff_schedule?.update)) && (
                   <TouchableOpacity
                     style={{
-                      borderColor: 'black',
-                      borderWidth: 1,
-                      borderRadius: 10,
-                      width: '100%',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      paddingVertical: 12,
-                      marginTop: 10,
                       flexDirection: 'row',
-                      gap: 15,
+                      alignItems: 'center',
+                      paddingVertical: 6,
+                      borderBottomWidth: 1,
+                      borderColor: '#eee',
                     }}
-                    onPress={handleEdit}>
-                    <AntDesign name="edit" size={24} color="black" />
-                    <Text
-                      style={{
-                        color: 'black',
-                        fontFamily: 'Inter-Regular',
-                        fontSize: 16,
-                      }}>
-                      Update Schedule
-                    </Text>
+                    onPress={handleEdit}
+                  >
+                    <AntDesign name="edit" size={18} color="#3B82F6" style={{ marginRight: 8 }} />
+                    <Text style={{ fontSize: 13, color: '#3B82F6' }}>Update Schedule</Text>
                   </TouchableOpacity>
                 )}
 
-              {/* Delete Leave Button */}
-
-              {(
-                userType === 'SuperAdmin' ||
+              {/* Delete Schedule */}
+              {(userType === 'SuperAdmin' ||
                 (userType === 'SubAdmin' && permissions?.staff_schedule?.delete) ||
-                (userType === 'main' && permissions?.staff_schedule?.delete)
-              ) && (
+                (userType === 'main' && permissions?.staff_schedule?.delete)) && (
                   <TouchableOpacity
                     style={{
-                      borderColor: 'red',
-                      borderWidth: 1,
-                      borderRadius: 10,
-                      width: '100%',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      paddingVertical: 12,
                       flexDirection: 'row',
-                      gap: 15,
-                      marginTop: 10,
+                      alignItems: 'center',
+                      paddingVertical: 6,
                     }}
-                    onPress={handleDelete}>
-                    <AntDesign name="delete" size={24} color="red" />
-                    <Text
-                      style={{
-                        color: 'red',
-                        fontFamily: 'Inter-Regular',
-                        fontSize: 16,
-                      }}>
-                      Delete Schedule
-                    </Text>
+                    onPress={handleDelete}
+                  >
+                    <AntDesign name="delete" size={18} color="#DC2626" style={{ marginRight: 8 }} />
+                    <Text style={{ fontSize: 13, color: '#DC2626' }}>Delete Schedule</Text>
                   </TouchableOpacity>
                 )}
-
             </View>
           </View>
-        </TouchableOpacity>
+        </TouchableWithoutFeedback>
       </Modal>
 
       <Modal visible={InfoModal} transparent={true} animationType="slide">
@@ -1263,34 +1268,42 @@ const StaffSchedule = () => {
             flex: 1,
             justifyContent: 'center',
             alignItems: 'center',
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            backgroundColor: 'rgba(0,0,0,0.7)',
           }}
-          onPress={() => setModalVisible(false)}
           activeOpacity={1}
+          onPress={() => setModalVisible(false)}
         >
           <View
             style={{
               width: '80%',
               height: '40%',
-              backgroundColor: 'white',
-              borderRadius: 150,
+
+              backgroundColor: selectedImage?.uri ? 'white' : '#ccc',
               justifyContent: 'center',
               alignItems: 'center',
+              overflow: 'hidden',
+              borderRadius: 150,
+
             }}
             onStartShouldSetResponder={() => true}
             onTouchEnd={e => e.stopPropagation()}
           >
-            {selectedImage && (
+
+            {selectedImage?.uri ? (
               <Image
-                source={selectedImage}
+                source={{ uri: selectedImage.uri }}
                 style={{
                   width: '100%',
                   height: '100%',
-                  borderRadius: 150,
-                  resizeMode: 'stretch',
+                  resizeMode: 'cover'
                 }}
               />
+            ) : (
+              <Text style={{ fontSize: 60, color: 'white', fontWeight: 'bold' }}>
+                {getInitials(selectedImage?.name)}
+              </Text>
             )}
+
           </View>
         </TouchableOpacity>
       </Modal>

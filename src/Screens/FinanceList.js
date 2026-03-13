@@ -1,4 +1,4 @@
-import { Text, TouchableOpacity, View, FlatList, ToastAndroid, ActivityIndicator, Image, TextInput } from 'react-native';
+import { Text, TouchableOpacity, View, FlatList, ActivityIndicator, Image, TextInput } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import CheckBox from '@react-native-community/checkbox';
 import colors from '../CommonFiles/Colors';
@@ -6,6 +6,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ENDPOINTS } from '../CommonFiles/Constant';
+import Toast from 'react-native-toast-message';
 
 const FinanceList = () => {
     const Finance = require('../assets/images/budget.png');
@@ -19,6 +20,7 @@ const FinanceList = () => {
     const [searchText, setSearchText] = useState('');
     const [filteredList, setFilteredList] = useState([]);
     const [tempFinanceList, setTempFinanceList] = useState([]);
+    const [saveLoading, setSaveLoading] = useState(false);
 
     const [selectAll, setSelectAll] = useState(false);
 
@@ -31,7 +33,14 @@ const FinanceList = () => {
             const staffId = await AsyncStorage.getItem('staff_id');
 
             if (!staffId) {
-                ToastAndroid.show('No staff ID found', ToastAndroid.SHORT);
+
+                Toast.show({
+                    type: 'error',
+                    text1: 'No staff ID found',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                })
                 return;
             }
 
@@ -55,11 +64,17 @@ const FinanceList = () => {
 
                 }
             } else {
-                ToastAndroid.show(result.message || 'Failed to logout staff', ToastAndroid.SHORT);
+                // Toast.show({
+                //     type: 'error',
+                //     text1: result.message || 'Failed to logout staff',
+                //     position: 'bottom',
+                //     bottomOffset: 60,
+                //     visibilityTime: 2000,
+                // });
+
             }
         } catch (error) {
             console.log('Logout error:', error.message);
-            ToastAndroid.show('Error logging out staff', ToastAndroid.SHORT);
         }
     };
 
@@ -162,7 +177,9 @@ const FinanceList = () => {
 
     const handleSave = async () => {
 
+
         try {
+            setSaveLoading(true);
             const selectedItems = tempFinanceList.filter(item => item.staff_checkbox);
             const financeNames = selectedItems.map(item => item.finance_name).join(',');
 
@@ -184,15 +201,31 @@ const FinanceList = () => {
 
             if (result.code == 200) {
                 setSearchText('');
-                ToastAndroid.show("List updated successfully", ToastAndroid.SHORT);
+
+                Toast.show({
+                    type: 'success',
+                    text1: 'List updated successfully',
+                    position: 'bottom',
+                    visibilityTime: 2000,
+                });
                 setFinanceList(tempFinanceList); // 🔥 permanent save
                 setFilteredList(tempFinanceList);
                 setIsEditMode(false);
             } else {
-                ToastAndroid.show("Failed to update list", ToastAndroid.SHORT);
+
+                Toast.show({
+                    type: 'error',
+                    text1: 'Failed to update list',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
+
             }
         } catch (error) {
             console.log("Error updating list:", error.message);
+        } finally {
+            setSaveLoading(false); // 🔥 stop loading
         }
     };
 
@@ -448,18 +481,24 @@ const FinanceList = () => {
                         margin: 20,
                         paddingVertical: 12,
                         borderRadius: 8,
-                        alignItems: 'center'
+                        alignItems: 'center',
+                        opacity: saveLoading ? 0.7 : 1
                     }}
                     onPress={handleSave}
+                    disabled={saveLoading}
                 >
-                    <Text style={{
-                        color: 'white',
-                        fontSize: 16,
-                        fontWeight: 'bold',
-                        fontFamily: 'Inter-Regular'
-                    }}>
-                        Update
-                    </Text>
+                    {saveLoading ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                        <Text style={{
+                            color: 'white',
+                            fontSize: 16,
+                            fontWeight: 'bold',
+                            fontFamily: 'Inter-Regular'
+                        }}>
+                            Update
+                        </Text>
+                    )}
                 </TouchableOpacity>
             )}
         </View>

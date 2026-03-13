@@ -15,6 +15,7 @@ export const ENDPOINTS = {
   Add_Staff: `${BASE_URL}add_staff.php`,
   Staff_Schedule_List: `${BASE_URL}list_schedule.php`,
   Add_Schedule: `${BASE_URL}add_schedule.php`,
+  Add_Schedule_Testing: `${BASE_URL}add_schedule_testing.php`,//delete ho jane ke bad wapis schedule add nahi hota tha nikita se karwaya
   search_history_paginate: `${BASE_URL}search_history_paginate.php`,
   Delete_Staff: `${BASE_URL}delete_staff.php`,
   Update_Staff: `${BASE_URL}update_staff.php`,
@@ -79,6 +80,8 @@ export const ENDPOINTS = {
   Add_Schedule_new: `${BASE_URL}add_schedule_new.php`,
   staff_schedule_history_new: `${BASE_URL}staff_schedule_history_new.php`,
   user_vehicle_history_new: `${BASE_URL}user_vehicle_history_new.php`,
+  update_profile_img: `${BASE_URL}update_profile_img.php`,
+
 
 
 

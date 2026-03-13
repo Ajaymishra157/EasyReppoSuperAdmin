@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Dimensions, Image, ToastAndroid } from 'react-native';
+import { View, Text, TouchableOpacity, Dimensions, Image } from 'react-native';
 import Entypo from 'react-native-vector-icons/Entypo';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Fontisto from 'react-native-vector-icons/Fontisto';
@@ -12,6 +12,7 @@ import colors from '../CommonFiles/Colors';
 import { useNavigation, useIsFocused, useRoute, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ENDPOINTS } from '../CommonFiles/Constant';
+import Toast from 'react-native-toast-message';
 
 const { width } = Dimensions.get('window');
 
@@ -31,7 +32,13 @@ const Bottomtab = () => {
             const staffId = await AsyncStorage.getItem('staff_id');
 
             if (!staffId) {
-                ToastAndroid.show('No staff ID found', ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'error',
+                    text1: 'No staff ID found',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
                 return;
             }
 
@@ -58,11 +65,18 @@ const Bottomtab = () => {
 
                 }
             } else {
-                // ToastAndroid.show(result.message || 'Failed to logout staff', ToastAndroid.SHORT);
+                // Toast.show({
+                //     type: 'error',
+                //     text1: result?.message || 'Failed to logout staff',
+                //     position: 'bottom',
+                //     bottomOffset: 60,
+                //     visibilityTime: 2000,
+                // });
+
+
             }
         } catch (error) {
             console.log('Logout error:', error.message);
-            ToastAndroid.show('Error logging out staff', ToastAndroid.SHORT);
         }
     };
 
@@ -166,11 +180,11 @@ const Bottomtab = () => {
                     style={getTabStyle('Dashboard')}
                     onPress={() => handleTabPress('Dashboard')}
                 >
-                    <SimpleLineIcons name="settings" size={28} color={getIconTintColor('Dashboard')} />
+                    <Ionicons name="grid-outline" size={28} color={getIconTintColor('Dashboard')} />
 
 
                     <Text style={{ color: getTextColor('Dashboard'), fontFamily: 'Inter-Regular', fontSize: 12, marginTop: 3 }}>
-                        Setting
+                        Dashboard
                     </Text>
                 </TouchableOpacity>
             )}

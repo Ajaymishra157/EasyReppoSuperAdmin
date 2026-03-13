@@ -3,7 +3,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  ToastAndroid,
+
   TouchableOpacity,
   View,
   Image,
@@ -17,6 +17,7 @@ import { ENDPOINTS } from '../CommonFiles/Constant';
 import { useNavigation } from '@react-navigation/native';
 import DeviceInfo from 'react-native-device-info';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
 
 const LoginScreen = () => {
   const logo = require('../assets/images/logo.png');
@@ -90,7 +91,13 @@ const LoginScreen = () => {
 
         // Check response status
         if (data.code == 200) {
-          ToastAndroid.show('Login Successfully', ToastAndroid.SHORT);
+          Toast.show({
+            type: 'success',
+            text1: 'Login Successfully',
+            position: 'bottom',
+            bottomOffset: 60,
+            visibilityTime: 2000,
+          });
           const staffId = data.payload.id;
 
 
@@ -148,7 +155,7 @@ const LoginScreen = () => {
               borderWidth: 1,
               borderRadius: 8,
               paddingHorizontal: 12,
-              marginBottom: 7,
+              marginBottom: EmailError ? 0 : 7,
             }}>
             <Ionicons name="phone-portrait-outline" size={20} color="gray" />
             <TextInput
@@ -174,7 +181,6 @@ const LoginScreen = () => {
                 color: 'red',
                 fontSize: 14,
                 marginBottom: 5,
-                marginLeft: 15,
                 fontFamily: 'Inter-Regular',
               }}>
               {EmailError}
@@ -190,7 +196,7 @@ const LoginScreen = () => {
               borderWidth: 1,
               borderRadius: 8,
               paddingHorizontal: 12,
-              marginBottom: 7,
+              marginBottom: passwordError ? 0 : 7,
               marginTop: 5,
             }}>
             <Ionicons name="lock-closed-outline" size={20} color="gray" />
@@ -223,45 +229,45 @@ const LoginScreen = () => {
                 color: 'red',
                 fontSize: 14,
                 marginBottom: 5,
-                marginLeft: 15,
+
                 fontFamily: 'Inter-Regular',
               }}>
               {passwordError}
             </Text>
           ) : null}
-          {Loading ? (
-            <View>
-              <ActivityIndicator size="small" color={'#3b82f6'} />
-            </View>
-          ) : (
-            <TouchableOpacity
+          <TouchableOpacity
+            style={{
+              backgroundColor: colors.Brown,
+              paddingVertical: 12,
+              borderRadius: 8,
+              alignItems: 'center',
+              marginTop: 10,
+              flexDirection: 'row',
+              justifyContent: 'center',
+              opacity: Loading ? 0.7 : 1,
+            }}
+            onPress={handleLogin}
+            disabled={Loading}
+          >
+            {Loading && (
+              <ActivityIndicator
+                size="small"
+                color="#fff"
+                style={{ marginRight: 8 }}
+              />
+            )}
+
+            <Text
               style={{
-                backgroundColor: colors.Brown,
-                paddingVertical: 12,
-                borderRadius: 8,
-                alignItems: 'center',
-                marginTop: 10,
+                color: 'white',
+                fontWeight: '600',
+                fontSize: 16,
+                fontFamily: 'Inter-Regular',
               }}
-              onPress={handleLogin}
-
-            // onPress={() => {
-            //   navigation.navigate('AppSetting');
-            // }}
-
-
-
             >
-              <Text
-                style={{
-                  color: 'white',
-                  fontWeight: '600',
-                  fontSize: 16,
-                  fontFamily: 'Inter-Regular',
-                }}>
-                Login
-              </Text>
-            </TouchableOpacity>
-          )}
+              {Loading ? 'Please wait...' : 'Login'}
+            </Text>
+          </TouchableOpacity>
           {loginError ? (
             <Text
               style={{

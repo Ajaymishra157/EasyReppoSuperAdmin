@@ -28,6 +28,7 @@ import MapView, { Marker } from 'react-native-maps';
 import Geocoder from 'react-native-geocoding';
 import SearchHistoryShimmer from '../Component/SearchHistoryShimmer';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Toast from 'react-native-toast-message';
 // import { getGoogleApiKey } from '../CommonFiles/LocationService';
 
 Geocoder.init('AIzaSyBvoWcgSBGvofFvJi2tPnOyr7mj7Plc1pk');
@@ -494,8 +495,10 @@ const SearchHistory = () => {
         console.log("success hua search api main");
         if (pageNumber === 1) {
           setSearchHistory(result.payload);
+          setOriginalSearchHistory(result.payload);
         } else {
           setSearchHistory((prev) => [...prev, ...result.payload]);
+          setOriginalSearchHistory((prev) => [...prev, ...result.payload]);
         }
 
         // Agar payload ka size 0 hai → sab data load ho gaya
@@ -530,6 +533,7 @@ const SearchHistory = () => {
     } finally {
       setLoadingMore(false);
       setSearchLoading(false);
+      setHasSearched(true);
     }
   };
 
@@ -537,13 +541,14 @@ const SearchHistory = () => {
     setRefreshing(true);
     setIsFilterActive(false);
     setSelectedFilter('Today');
+    const three = getFirstDateThreeMonthsAgo()
     const today = getFormattedCurrentDate();
 
     // Set both from and till date to today
-    setFromDate(today);
+    setFromDate(three);
     setTillDate(today);
 
-    await SearchHistoryApi(today, today);
+    await SearchHistoryApi(three, today);
     await fetchPermissions();
 
     setRefreshing(false);
@@ -844,7 +849,13 @@ const SearchHistory = () => {
       const staffId = await AsyncStorage.getItem('staff_id');
 
       if (!staffId) {
-        ToastAndroid.show('No staff ID found', ToastAndroid.SHORT);
+        Toast.show({
+          type: 'error',
+          text1: 'No staff ID found',
+          position: 'bottom',
+          bottomOffset: 60,
+          visibilityTime: 2000,
+        });;
         return;
       }
 
@@ -868,11 +879,17 @@ const SearchHistory = () => {
 
         }
       } else {
-        ToastAndroid.show(result.message || 'Failed to logout staff', ToastAndroid.SHORT);
+        // Toast.show({
+        //   type: 'error',
+        //   text1: result.message || 'Failed to logout staff',
+        //   position: 'bottom',
+        //   bottomOffset: 60,
+        //   visibilityTime: 2000,
+        // });
       }
     } catch (error) {
       console.log('Logout error:', error.message);
-      ToastAndroid.show('Error logging  out out staff', ToastAndroid.SHORT);
+
     }
   };
 
@@ -978,119 +995,110 @@ const SearchHistory = () => {
           )} */}
       </View>
 
-      <View style={{ width: '100%', flexDirection: 'row', paddingHorizontal: 10, marginTop: 5 }}>
-        {/* Search Box */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            flex: 1,
-            borderWidth: 1,
-            borderColor: colors.Brown,
-            borderRadius: 8,
-            backgroundColor: 'white',
-            height: 50,
-            paddingHorizontal: 8,
-          }}
-        >
-          <View style={{
-            width: 30,  // निश्चित width दी है
-            height: 50, // पूरी height ली है
-            justifyContent: 'center',
-            alignItems: 'center',
+      {(SearchLoading || originalSearchHistory.length > 0) && (
 
-          }}>
-            <MaterialIcons name='search' size={24} color='black' />
+        <View style={{ width: '100%', flexDirection: 'row', paddingHorizontal: 10, marginTop: 5 }}>
+          {/* Search Box */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              flex: 1,
+              borderWidth: 1,
+              borderColor: colors.Brown,
+              borderRadius: 8,
+              backgroundColor: 'white',
+              height: 50,
+              paddingHorizontal: 8,
+            }}
+          >
+            <View style={{
+              width: 30,  // निश्चित width दी है
+              height: 50, // पूरी height ली है
+              justifyContent: 'center',
+              alignItems: 'center',
+
+            }}>
+              <MaterialIcons name='search' size={24} color='black' />
+            </View>
+
+            <TextInput
+              autoCapitalize="words"
+              style={{
+                flex: 1,
+                fontSize: 16,
+                fontFamily: 'Inter-Regular',
+                color: 'black',
+              }}
+              placeholder="Search Name/Veh No/Agg No"
+              placeholderTextColor="grey"
+              value={text}
+              // onChangeText={setText} // ✅ typing par sirf text set hoga
+              onChangeText={handleTextChange}
+            />
+
+            {text ? (
+              <TouchableOpacity
+                // onPress={() => {
+                //   setText('');
+                //   setCurrentSearch('');
+
+                //   setPage(1);
+                //   setAllLoaded(false);
+
+                //   setSearchLoading(true);   // loader sabse pehle
+                //   setSearchHistory([]);     // list clear karo
+                //   handleSearch('');
+                // }}
+                onPress={handleClearSearch}
+                style={{
+                  padding: 6,
+                  borderRadius: 20,
+                  backgroundColor: '#f2f2f2',
+                  marginLeft: 5,
+                }}
+              >
+                <Entypo name="cross" size={18} color="black" />
+              </TouchableOpacity>
+            ) : null}
           </View>
 
-          <TextInput
-            autoCapitalize="words"
+          {/* Search Button */}
+          <TouchableOpacity
+            // onPress={() => {
+            //   handleSearch(text);
+
+            //   setSearchLoading(true);
+            // }
+            // }// ✅ ab yaha click se chalega
+            onPress={handleSearchPress}
             style={{
-              flex: 1,
-              fontSize: 16,
-              fontFamily: 'Inter-Regular',
-              color: 'black',
+              marginLeft: 8,
+              width: 50,
+              height: 50,
+              borderRadius: 8,
+              backgroundColor: colors.Brown,
+              justifyContent: 'center',
+              alignItems: 'center',
             }}
-            placeholder="Search Name/Veh No/Agg No"
-            placeholderTextColor="grey"
-            value={text}
-            // onChangeText={setText} // ✅ typing par sirf text set hoga
-            onChangeText={handleTextChange}
-          />
-
-          {text ? (
-            <TouchableOpacity
-              // onPress={() => {
-              //   setText('');
-              //   setCurrentSearch('');
-
-              //   setPage(1);
-              //   setAllLoaded(false);
-
-              //   setSearchLoading(true);   // loader sabse pehle
-              //   setSearchHistory([]);     // list clear karo
-              //   handleSearch('');
-              // }}
-              onPress={handleClearSearch}
-              style={{
-                padding: 6,
-                borderRadius: 20,
-                backgroundColor: '#f2f2f2',
-                marginLeft: 5,
-              }}
-            >
-              <Entypo name="cross" size={18} color="black" />
-            </TouchableOpacity>
-          ) : null}
+          >
+            <FontAwesome name="search" size={20} color="white" />
+          </TouchableOpacity>
         </View>
+      )}
 
-        {/* Search Button */}
-        <TouchableOpacity
-          // onPress={() => {
-          //   handleSearch(text);
-
-          //   setSearchLoading(true);
-          // }
-          // }// ✅ ab yaha click se chalega
-          onPress={handleSearchPress}
-          style={{
-            marginLeft: 8,
-            width: 50,
-            height: 50,
-            borderRadius: 8,
-            backgroundColor: colors.Brown,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <FontAwesome name="search" size={20} color="white" />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView
-        style={{ flex: 1 }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={['#8B4513', '#8B4513']}
-          />
-        }
-        contentContainerStyle={{ paddingHorizontal: 10 }}>
-        {/* Loading Indicator */}
+      <View style={{ flex: 1, paddingHorizontal: 10 }}>
         {SearchLoading ? (
           <SearchHistoryShimmer />
         ) : SearchHistory.length === 0 ? (
-          hasSearched ? ( // ✅ Agar search kiya hai aur data nahi mila
-            <View style={{ height: 600, justifyContent: 'center', alignItems: 'center' }}>
+          hasSearched ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
               <Image source={History} style={{ width: 70, height: 70 }} />
               <Text style={{ fontFamily: 'Inter-Regular', color: 'red', marginTop: 10 }}>
                 No Search History Found
               </Text>
             </View>
-          ) : ( // ✅ Agar abhi tak search nahi kiya (initial load)
+          ) : (
             <SearchHistoryShimmer />
           )
         ) : (
@@ -1099,21 +1107,43 @@ const SearchHistory = () => {
             keyExtractor={(item) => item.history_id.toString()}
             renderItem={renderItem}
             onEndReached={loadMoreData}
-            onEndReachedThreshold={0.5}
+            onEndReachedThreshold={0.3}
+            initialNumToRender={15}
+            maxToRenderPerBatch={15}
+            windowSize={10}
+            removeClippedSubviews={true}
             keyboardShouldPersistTaps="handled"
             ListFooterComponent={
               loadingMore ? (
-                <ActivityIndicator size="small" color={colors.Brown} style={{ marginVertical: 10 }} />
+                <ActivityIndicator
+                  size="small"
+                  color={colors.Brown}
+                  style={{ marginVertical: 10 }}
+                />
               ) : allLoaded ? (
-                <Text style={{ textAlign: 'center', padding: 10, color: 'grey', fontFamily: 'Inter-Regular' }}>
+                <Text
+                  style={{
+                    textAlign: 'center',
+                    padding: 10,
+                    color: 'grey',
+                    fontFamily: 'Inter-Regular'
+                  }}
+                >
                   No more data
                 </Text>
               ) : null
             }
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={['#8B4513', '#8B4513']}
+              />
+            }
           />
         )}
 
-      </ScrollView>
+      </View>
       <Modal visible={modalVisible} transparent={true} animationType="slide">
         <TouchableOpacity
           style={{

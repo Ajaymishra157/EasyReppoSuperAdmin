@@ -1,14 +1,14 @@
-import { ActivityIndicator, FlatList, Image, Modal, RefreshControl, StyleSheet, Text, ToastAndroid, TouchableOpacity, View, TextInput, ScrollView } from 'react-native'
+import { ActivityIndicator, FlatList, Image, Modal, RefreshControl, StyleSheet, Text, TouchableOpacity, View, TextInput, ScrollView } from 'react-native'
 import React, { useCallback, useState } from 'react'
 import colors from '../CommonFiles/Colors'
 import { ENDPOINTS } from '../CommonFiles/Constant';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Entypo from 'react-native-vector-icons/Entypo';
-import StaffShimmer from '../Component/StaffShimmer';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import EvilIcons from 'react-native-vector-icons/EvilIcons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import StaffVehicleShimmer from '../Component/StaffVehicleShimmer';
 
 
 const StaffVehicleRecords = () => {
@@ -21,7 +21,53 @@ const StaffVehicleRecords = () => {
     const [modalVisible, setModalVisible] = useState(false); // Modal show/hide
     const [selectedItem, setSelectedItem] = useState(null);
 
+    const ITEMS_PER_PAGE = 20;
+
+    const [visibleData, setVisibleData] = useState([]);
+    const [page, setPage] = useState(1);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+
     const navigation = useNavigation();
+
+    const formatDateTime = (dateString) => {
+        if (!dateString) return '--';
+
+        const dateObj = new Date(dateString);
+
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const year = dateObj.getFullYear();
+
+        let hours = dateObj.getHours();
+        const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+
+        hours = hours % 12;
+        hours = hours ? hours : 12; // 0 -> 12
+
+        return `${day}-${month}-${year} ${hours}:${minutes} ${ampm}`;
+    };
+
+    const loadMore = () => {
+        if (!hasMore || loadingMore) return;
+
+        setLoadingMore(true);
+
+        setTimeout(() => {
+            const nextPage = page + 1;
+            const startIndex = page * ITEMS_PER_PAGE;
+            const endIndex = startIndex + ITEMS_PER_PAGE;
+
+            const newData = StaffList.slice(startIndex, endIndex);
+
+            setVisibleData(prev => [...prev, ...newData]);
+            setPage(nextPage);
+            setHasMore(endIndex < StaffList.length);
+            setLoadingMore(false);
+        }, 500); // small delay for smooth loader
+    };
 
     const fetchData = async () => {
         setStaffLoading(true);
@@ -42,6 +88,12 @@ const StaffVehicleRecords = () => {
                 if (result.code === 200) {
                     setStaffList(result.payload); // Successfully received data
                     setoriginalStaffData(result.payload);
+
+                    // 👇 Reset pagination
+                    const firstBatch = result.payload.slice(0, ITEMS_PER_PAGE);
+                    setVisibleData(firstBatch);
+                    setPage(1);
+                    setHasMore(result.payload.length > ITEMS_PER_PAGE);
                 } else {
                     console.log('Error:', 'Failed to load staff data');
                 }
@@ -67,76 +119,129 @@ const StaffVehicleRecords = () => {
         }, [text]), // Empty array ensures this is called only when the screen is focused
     );
 
-    const renderItem = ({ item }) => (
-        <TouchableOpacity
-            key={item.id}
+    const renderItem = ({ item, index }) => (
+        <View
             style={{
-                flexDirection: 'row',
                 backgroundColor: '#fff',
-                padding: 10,
-                marginHorizontal: 13,
-                marginBottom: 7,
-                borderRadius: 5,
+                paddingVertical: 12,
+                paddingHorizontal: 14,
+                borderRadius: 6,
+                marginVertical: 7,
+                marginHorizontal: 15,
                 borderWidth: 1,
                 borderColor: '#ddd',
-                alignItems: 'center',
-                justifyContent: 'space-between',
+                position: 'relative'
             }}
-            activeOpacity={0.8}
         >
-            {/* Left: Staff Info with Labels */}
-            <View style={{ flexDirection: 'column', flex: 1 }}>
-                {/* Staff Name */}
-                <View style={{ flexDirection: 'row', marginBottom: 4, flexWrap: 'wrap' }}>
-                    <Text style={{ fontSize: 12, fontFamily: 'Inter-Bold', color: 'gray', width: 120 }}>
-                        Staff Name:
-                    </Text>
-                    <Text style={{ fontSize: 12, fontFamily: 'Inter-Regular', color: 'black', flex: 1, flexWrap: 'wrap' }}>
-                        {item.staff_name || '----'}
-                    </Text>
-                </View>
 
-                {/* Vehicle Registration Number */}
-                <View style={{ flexDirection: 'row', marginBottom: 4, flexWrap: 'wrap' }}>
-                    <Text style={{ fontSize: 12, fontFamily: 'Inter-Bold', color: 'gray', width: 120 }}>
-                        Registration No:
-                    </Text>
-                    <Text style={{ fontSize: 12, fontFamily: 'Inter-Regular', color: 'black', flex: 1, flexWrap: 'wrap' }}>
-                        {item.vehicle_registration_number || '----'}
-                    </Text>
-                </View>
+            {/* INDEX (Optional - hata sakte ho agar nahi chahiye) */}
+            <Text style={{
+                fontSize: 11,
+                color: '#2c3e50',
+                marginBottom: 4,
+                fontFamily: 'Inter-Bold'
+            }}>
+                #{index + 1}
+            </Text>
 
-                {/* Vehicle Name */}
-                <View style={{ flexDirection: 'row', marginBottom: 4, flexWrap: 'wrap' }}>
-                    <Text style={{ fontSize: 12, fontFamily: 'Inter-Bold', color: 'gray', width: 120 }}>
-                        Vehicle Name:
-                    </Text>
-                    <Text style={{ fontSize: 12, fontFamily: 'Inter-Regular', color: 'black', flex: 1, flexWrap: 'wrap' }}>
-                        {item.vehicle_name || '----'}
-                    </Text>
-                </View>
-            </View>
+            {/* STAFF NAME */}
+            <Text style={{ marginTop: 2 }}>
+                <Text style={{
+                    fontSize: 13,
+                    color: '#2c3e50',
+                    fontFamily: 'Inter-Bold'
+                }}>
+                    Staff Name :
+                </Text>
 
+                <Text style={{
+                    fontSize: 13,
+                    color: '#7f8c8d',
+                    fontFamily: 'Inter-Regular'
+                }}>
+                    {" "}{item.staff_name || '--'}
+                </Text>
+            </Text>
 
+            {/* REGISTRATION NUMBER */}
+            <Text style={{ marginTop: 6 }}>
+                <Text style={{
+                    fontSize: 12,
+                    color: '#2c3e50',
+                    fontFamily: 'Inter-Bold'
+                }}>
+                    Registration No :
+                </Text>
 
-            {/* Right: Info Icon */}
+                <Text style={{
+                    fontSize: 12,
+                    color: '#7f8c8d',
+                    fontFamily: 'Inter-Regular'
+                }}>
+                    {" "}{item.vehicle_registration_number || '--'}
+                </Text>
+            </Text>
+
+            {/* VEHICLE NAME */}
+            <Text style={{ marginTop: 6 }}>
+                <Text style={{
+                    fontSize: 12,
+                    color: '#2c3e50',
+                    fontFamily: 'Inter-Bold'
+                }}>
+                    Vehicle Name :
+                </Text>
+
+                <Text style={{
+                    fontSize: 12,
+                    color: '#7f8c8d',
+                    fontFamily: 'Inter-Regular'
+                }}>
+                    {" "}{item.vehicle_name || '--'}
+                </Text>
+            </Text>
+
+            {/* ENTRY DATE */}
+            <Text style={{ marginTop: 5 }}>
+                <Text style={{
+                    fontSize: 12,
+                    color: '#2c3e50',
+                    fontFamily: 'Inter-Bold'
+                }}>
+                    Entry On :
+                </Text>
+
+                <Text style={{
+                    fontSize: 12,
+                    color: '#7f8c8d',
+                    fontFamily: 'Inter-Regular'
+                }}>
+                    {" "}{formatDateTime(item.entrydate)}
+                </Text>
+            </Text>
+
+            {/* INFO ICON */}
             <TouchableOpacity
                 onPress={() => {
-                    setSelectedItem(item);   // Modal me ye item show hoga
-                    setModalVisible(true);   // Modal open
+                    setSelectedItem(item);
+                    setModalVisible(true);
                 }}
                 style={{
-                    width: 35,
-                    height: 35,
-                    borderRadius: 18,
+                    position: 'absolute',
+                    right: 10,
+                    top: 10,
+                    width: 34,
+                    height: 34,
+                    borderRadius: 17,
                     backgroundColor: '#f0f0f0',
                     justifyContent: 'center',
                     alignItems: 'center',
                 }}
             >
-                <AntDesign name="infocirlceo" size={20} color="black" />
+                <AntDesign name="infocirlceo" size={18} color="#2c3e50" />
             </TouchableOpacity>
-        </TouchableOpacity>
+
+        </View>
     );
 
     const onRefresh = async () => {
@@ -149,26 +254,27 @@ const StaffVehicleRecords = () => {
 
 
     const handleTextChange = (inputText) => {
-        console.log("handletext", inputText);
         setText(inputText);
 
-        // If inputText is empty, show the original data
-        if (inputText == '') {
-            setStaffList(originalStaffData);  // Reset to original data
+        let filteredData = [];
+
+        if (inputText === '') {
+            filteredData = originalStaffData;
         } else {
-            // Filter data based on Name, Reg No, or Agg No
-            const filtered = originalStaffData.filter(item => {
-                const lowerCaseInput = inputText.toLowerCase();
-                return (
-                    item.staff_name.toLowerCase().includes(lowerCaseInput) ||
-                    item.vehicle_registration_number.toLowerCase().includes(lowerCaseInput)
-
-
-                );
-            });
-
-            setStaffList(filtered); // Update filtered data state
+            const lowerCaseInput = inputText.toLowerCase();
+            filteredData = originalStaffData.filter(item =>
+                item.staff_name.toLowerCase().includes(lowerCaseInput) ||
+                item.vehicle_registration_number.toLowerCase().includes(lowerCaseInput)
+            );
         }
+
+        setStaffList(filteredData);
+
+        // 👇 Reset pagination
+        const firstBatch = filteredData.slice(0, ITEMS_PER_PAGE);
+        setVisibleData(firstBatch);
+        setPage(1);
+        setHasMore(filteredData.length > ITEMS_PER_PAGE);
     };
 
 
@@ -213,83 +319,87 @@ const StaffVehicleRecords = () => {
                 </Text>
 
             </View>
-
-            <View style={{ width: '100%', paddingHorizontal: 10 }}>
-                <View
-                    style={{
-                        width: '100%',
-
-                        borderWidth: 1,
-                        borderColor: colors.Brown,
-                        marginTop: 5,
-                        marginBottom: 5,
-                        borderRadius: 8,
-                        height: 50,
-                        backgroundColor: 'white',
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        borderColor: colors.Brown,
-
-                    }}>
-                    <View style={{
-                        width: 30,  // निश्चित width दी है
-                        height: 50, // पूरी height ली है
-                        justifyContent: 'center',
-                        alignItems: 'center',
-
-                    }}>
-                        <MaterialIcons name='search' size={24} color='black' />
-                    </View>
-                    <TextInput
+            {(StaffLoading || originalStaffData.length > 0) && (
+                <View style={{ width: '100%', paddingHorizontal: 10 }}>
+                    <View
                         style={{
-                            flex: 1,
-                            fontSize: 16,
-                            fontFamily: 'Inter-Regular',
+                            width: '100%',
 
-                            color: 'black',
+                            borderWidth: 1,
+                            borderColor: colors.Brown,
+                            marginTop: 5,
+                            marginBottom: 5,
+                            borderRadius: 8,
                             height: 50,
-                        }}
+                            backgroundColor: 'white',
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            borderColor: colors.Brown,
 
-                        placeholder="Search Staff Name/Rc No"
-                        placeholderTextColor="grey"
-                        value={text}
-                        onChangeText={handleTextChange}
-                    />
-                    {text ? (
-                        <TouchableOpacity
-                            onPress={() => {
+                        }}>
+                        <View style={{
+                            width: 30,  // निश्चित width दी है
+                            height: 50, // पूरी height ली है
+                            justifyContent: 'center',
+                            alignItems: 'center',
 
-                                setText(''); // Clear the search text
-                                setStaffList(originalStaffData);
-
-                            }}
+                        }}>
+                            <MaterialIcons name='search' size={24} color='black' />
+                        </View>
+                        <TextInput
                             style={{
-                                marginRight: 7,
-                                height: 40,
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                            }}>
-                            <Entypo name="cross" size={20} color="black" />
-                        </TouchableOpacity>
-                    ) : null}
+                                flex: 1,
+                                fontSize: 16,
+                                fontFamily: 'Inter-Regular',
+
+                                color: 'black',
+                                height: 50,
+                            }}
+
+                            placeholder="Search Staff Name/Rc No"
+                            placeholderTextColor="grey"
+                            value={text}
+                            onChangeText={handleTextChange}
+                        />
+                        {text ? (
+                            <TouchableOpacity
+                                onPress={() => {
+                                    setText('');
+                                    setStaffList(originalStaffData);
+                                }}
+                                style={{
+                                    marginRight: 10,
+                                    backgroundColor: '#f0f0f0',
+                                    borderRadius: 20,
+                                    padding: 6,
+                                    elevation: 2, // Android shadow
+                                    shadowColor: '#000', // iOS shadow
+                                    shadowOpacity: 0.1,
+                                    shadowRadius: 3,
+                                }}
+                            >
+                                <Entypo name="cross" size={18} color="black" />
+                            </TouchableOpacity>
+                        ) : null}
+                    </View>
                 </View>
-            </View>
+            )}
             <FlatList
                 keyboardShouldPersistTaps='handled'
-                data={StaffList}
+                data={visibleData}
                 renderItem={renderItem}
 
                 keyExtractor={(item) => item.id.toString()}
                 removeClippedSubviews={true}
-
+                onEndReached={loadMore}
+                onEndReachedThreshold={0.5}
+                initialNumToRender={20}
+                maxToRenderPerBatch={20}
+                windowSize={5}
                 ListEmptyComponent={
                     StaffLoading ? (
-                        <View style={{ padding: 10 }}>
-                            {[...Array(7)].map((_, index) => (
-                                <StaffShimmer key={index} />
-                            ))}
-                        </View>
+                        <StaffVehicleShimmer />
                     ) : (
                         <View style={{ height: 600, justifyContent: 'center', alignItems: 'center' }}>
                             <Image source={Staff} style={{ width: 70, height: 70 }} />
@@ -304,13 +414,20 @@ const StaffVehicleRecords = () => {
                     <RefreshControl
                         refreshing={refreshing}
                         onRefresh={onRefresh}
-                        colors={['#9Bd35A', '#689F38']}
+                        colors={['#022e29', '#022e29']}
                     />
                 }
                 contentContainerStyle={{
                     paddingBottom: 80,
                     backgroundColor: 'white',
                 }}
+                ListFooterComponent={
+                    loadingMore ? (
+                        <View style={{ padding: 15 }}>
+                            <ActivityIndicator size="small" color={colors.Brown} />
+                        </View>
+                    ) : null
+                }
             />
             <Modal
                 visible={modalVisible}
@@ -377,7 +494,7 @@ const StaffVehicleRecords = () => {
                                     color: 'black'
                                 }}
                             >
-                                Staff & Vehicle Details
+                                Staff Vehicle Confirm List
                             </Text>
                         </View>
 
@@ -395,8 +512,12 @@ const StaffVehicleRecords = () => {
                                     { label: 'Chasis No', value: selectedItem.vehicle_chesis_number || '----' },
                                     { label: 'Agreement No', value: selectedItem.vehicle_agreement_number || '----' },
                                     { label: 'Customer', value: selectedItem.customer_name || '----' },
-                                    { label: 'Finance Person', value: selectedItem.finance_person_name || '----' },
-                                    { label: 'Finance Contact', value: selectedItem.finance_contact_number || '----' },
+                                    { label: 'Finance Name', value: selectedItem.finance_name || '----' },
+                                    { label: 'Finance Person Name', value: selectedItem.finance_person_name || '----' },
+                                    { label: 'Finance Contact Number', value: selectedItem.finance_contact_number || '----' },
+
+                                    { label: 'Files Upload Name', value: selectedItem.upload_file_name || '----' },
+                                    { label: 'Entry On', value: formatDateTime(selectedItem.entrydate) || '----' },
                                 ].map((item, index) => (
                                     <View
                                         key={index}

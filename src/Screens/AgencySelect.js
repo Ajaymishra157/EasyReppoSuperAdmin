@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TouchableOpacity, FlatList, ActivityIndicator, ToastAndroid, TextInput, Modal, Switch, RefreshControl, Image } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, FlatList, ActivityIndicator, TextInput, Modal, Switch, RefreshControl, Image, Keyboard, Platform } from 'react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -10,6 +10,7 @@ import Entypo from 'react-native-vector-icons/Entypo';
 import AgencyListShimmer from '../Component/AgencyListShimmer';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Toast from 'react-native-toast-message';
 
 const AgencySelect = () => {
     const navigation = useNavigation();
@@ -21,8 +22,9 @@ const AgencySelect = () => {
     const [userType, setUsertype] = useState(null);
     const [selectedStaff, setSelectedStaff] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
-
+    const [visiblePasswords, setVisiblePasswords] = useState({});
     const [isModalVisible, setIsModalVisible] = useState(false);
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedAgencyId, setSelectedAgencyId] = useState(null);
@@ -50,6 +52,22 @@ const AgencySelect = () => {
 
     };
 
+    useEffect(() => {
+        const showSub = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+            (e) => setKeyboardHeight(e.endCoordinates.height)
+        );
+        const hideSub = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+            () => setKeyboardHeight(0)
+        );
+
+        return () => {
+            showSub.remove();
+            hideSub.remove();
+        };
+    }, []);
+
     // const handleDelete = () => {
     //     setShowDeleteModal(true);
     //     setIsModalVisible(false);
@@ -75,17 +93,34 @@ const AgencySelect = () => {
 
             const result = await response.json();
             if (result.code === 200) {
-                ToastAndroid.show('Agency deleted successfully', ToastAndroid.SHORT);
-                // Remove from list
+                Toast.show({
+                    type: 'success',
+                    text1: 'Agency deleted successfully',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });                // Remove from list
                 const updated = agencies.filter(agency => agency.agency_id !== agencyId);
                 setAgencies(updated);
                 setoriginalStaffData(updated);
             } else {
-                ToastAndroid.show(result.message || 'Failed to delete agency', ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'error',
+                    text1: result.message || 'Failed to delete agency',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
             }
         } catch (error) {
             console.error('Delete error:', error);
-            ToastAndroid.show('Error deleting agency', ToastAndroid.SHORT);
+            Toast.show({
+                type: 'error',
+                text1: 'Error deleting agency',
+                position: 'bottom',
+                bottomOffset: 60,
+                visibilityTime: 2000,
+            });
         }
     };
 
@@ -160,6 +195,69 @@ const AgencySelect = () => {
 
     }
 
+    const handleToggle = async (value, item) => {
+        const agencyId = item.agency_id;
+
+        setAgencyToggles(prev => ({
+            ...prev,
+            [agencyId]: true,
+        }));
+
+        setIsAgencyEnabled(prev => ({
+            ...prev,
+            [agencyId]: value,
+        }));
+
+        try {
+            const result = await updateRentAgencyStatus(
+                agencyId,
+                value ? 'On' : 'Off'
+            );
+            if (result.code === 200) {
+                Toast.show({
+                    type: 'success',
+                    text1: 'Agency status updated successfully',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
+            } else {
+                Toast.show({
+                    type: 'error',
+                    text1: result.message || 'Failed to update status',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
+
+                // revert
+                setIsAgencyEnabled(prev => ({
+                    ...prev,
+                    [agencyId]: !value,
+                }));
+            }
+        } catch (error) {
+            Toast.show({
+                type: 'error',
+                text1: 'Error updating agency status',
+                position: 'bottom',
+                bottomOffset: 60,
+                visibilityTime: 2000,
+            });
+
+            // revert
+            setIsAgencyEnabled(prev => ({
+                ...prev,
+                [agencyId]: !value,
+            }));
+        } finally {
+            setAgencyToggles(prev => ({
+                ...prev,
+                [agencyId]: false,
+            }));
+        }
+    };
+
     useEffect(() => {
         fetchPermissions();
     }, []);
@@ -230,9 +328,12 @@ const AgencySelect = () => {
 
     useFocusEffect(
         useCallback(() => {
-            fetchAgencyList();
-        }, [])
-    )
+            // Only fetch if search text is empty
+            if (text === '') {
+                fetchAgencyList();
+            }
+        }, [text])
+    );
 
 
     const updateRentAgencyStatus = async (agencyId, action) => {
@@ -262,7 +363,6 @@ const AgencySelect = () => {
             await fetchPermissions();
         } catch (error) {
             console.error('Error during refresh:', error);
-            ToastAndroid.show('Refresh failed', ToastAndroid.SHORT);
         } finally {
             setRefreshing(false);
         }
@@ -271,10 +371,17 @@ const AgencySelect = () => {
     const formatDateTime = (dateTime) => {
         if (!dateTime) return '--';
 
-        const [date, time] = dateTime.split(' ');
-        const [year, month, day] = date.split('-');
+        const [datePart, timePart] = dateTime.split(' ');
+        const [year, month, day] = datePart.split('-');
+        const [hour, minute] = timePart.split(':');
 
-        return `${day}-${month}-${year} ${time}`;
+        let hours = parseInt(hour, 10);
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+
+        hours = hours % 12;
+        hours = hours ? hours : 12; // 0 ko 12 banana
+
+        return `${day}-${month}-${year} ${hours}:${minute} ${ampm}`;
     };
 
 
@@ -314,68 +421,75 @@ const AgencySelect = () => {
                     Agency List
                 </Text>
             </View>
-
-            <View style={{ width: '100%', paddingHorizontal: 10 }}>
-                <View
-                    style={{
-                        width: '100%',
-
-                        borderWidth: 1,
-                        borderColor: colors.Brown,
-                        marginTop: 5,
-                        marginBottom: 5,
-                        borderRadius: 8,
-                        height: 50,
-                        backgroundColor: 'white',
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        borderColor: colors.Brown,
-
-                    }}>
-                    <View style={{
-                        width: 30,  // निश्चित width दी है
-                        height: 50, // पूरी height ली है
-                        justifyContent: 'center',
-                        alignItems: 'center',
-
-                    }}>
-                        <MaterialIcons name='search' size={24} color='black' />
-                    </View>
-                    <TextInput
+            {(loading || (originalStaffData.length > 0)) && !(!loading && originalStaffData.length === 0) && (
+                <View style={{ width: '100%', paddingHorizontal: 12, }}>
+                    <View
                         style={{
-                            flex: 1,
-                            fontSize: 16,
-                            fontFamily: 'Inter-Regular',
+                            width: '100%',
 
-                            color: 'black',
+                            borderWidth: 1,
+                            borderColor: colors.Brown,
+                            marginTop: 5,
+                            marginBottom: 5,
+                            borderRadius: 8,
                             height: 50,
-                        }}
+                            backgroundColor: 'white',
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            borderColor: colors.Brown,
 
-                        placeholder="Search Name/Mobile No"
-                        placeholderTextColor="grey"
-                        value={text}
-                        onChangeText={handleTextChange}
-                    />
-                    {text ? (
-                        <TouchableOpacity
-                            onPress={() => {
+                        }}>
+                        <View style={{
+                            width: 30,  // निश्चित width दी है
+                            height: 50, // पूरी height ली है
+                            justifyContent: 'center',
+                            alignItems: 'center',
 
-                                setText(''); // Clear the search text
-                                setAgencies(originalStaffData);
-
-                            }}
+                        }}>
+                            <MaterialIcons name='search' size={24} color='black' />
+                        </View>
+                        <TextInput
                             style={{
-                                marginRight: 7,
-                                height: 40,
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                            }}>
-                            <Entypo name="cross" size={20} color="black" />
-                        </TouchableOpacity>
-                    ) : null}
+                                flex: 1,
+                                fontSize: 16,
+                                fontFamily: 'Inter-Regular',
+
+                                color: 'black',
+                                height: 50,
+                            }}
+
+                            placeholder="Search Name/Mobile No"
+                            placeholderTextColor="grey"
+                            value={text}
+                            onChangeText={handleTextChange}
+                        />
+                        {text ? (
+                            <View
+                                style={{
+                                    flexDirection: 'row',
+                                    justifyContent: 'flex-end',
+                                    alignItems: 'center',
+                                }}>
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        setText('');
+                                        setAgencies(originalStaffData);
+                                    }}
+                                    style={{
+                                        marginRight: 10,
+                                        backgroundColor: 'white',
+                                        borderRadius: 30,
+                                        padding: 5,
+                                        elevation: 2, // Android shadow
+                                    }}>
+                                    <Entypo name="cross" size={20} color="black" />
+                                </TouchableOpacity>
+                            </View>
+                        ) : null}
+                    </View>
                 </View>
-            </View>
+            )}
 
             {loading ? (
                 <AgencyListShimmer />
@@ -398,200 +512,228 @@ const AgencySelect = () => {
                 <FlatList
                     data={agencies}
                     keyExtractor={(item, index) => item.id?.toString() || index.toString()}
-                    contentContainerStyle={{ padding: 10, paddingBottom: 80 }}
+                    contentContainerStyle={{ padding: 10, paddingBottom: keyboardHeight + 80 }}
                     keyboardShouldPersistTaps='handled'
-
                     renderItem={({ item }) => (
                         <View
                             style={{
-                                backgroundColor: 'white',
+                                backgroundColor: '#fff',
+                                marginVertical: 8,
+                                marginHorizontal: 5,
+                                borderRadius: 14,
+                                borderWidth: 1, borderColor: '#ddd',
                                 padding: 10,
-                                marginVertical: 10,
-                                borderRadius: 8,
-                                borderWidth: 1,
-                                borderColor: 'black',
+                                elevation: 4,
                                 position: 'relative',
-                                flexWrap: 'wrap',
-                                flexShrink: 1,
-
 
                             }}
                         >
-
-
-
-                            {/* {(
-                                userType === 'SuperAdmin' ||
-                                !permissions?.rent_agency ||
-                                permissions?.rent_agency?.update ||
-                                permissions?.rent_agency?.delete
-                            ) && (
-                                    <TouchableOpacity
-                                        onPress={() => OpenModal(item)}
-                                        style={{
-                                            position: 'absolute',
-                                            right: 8,
-                                            top: 8,
-                                            padding: 2,
-                                            zIndex: 2,
-                                        }}
-                                    >
-                                        <Entypo name="dots-three-vertical" size={18} color="black" />
-                                    </TouchableOpacity>
-                                )} */}
-                            {/* Top-right 4 action icons */}
-                            <TouchableOpacity
-                                onPress={() => handleAgencySelect(item)}
+                            {/* Header Row */}
+                            <View
                                 style={{
-                                    position: 'absolute',
-                                    right: 8,
-                                    top: 90,
+                                    flexDirection: 'row',
+                                    alignItems: 'flex-start',
+
                                 }}
                             >
-                                <Ionicons name="arrow-forward" color="black" size={28} />
-                            </TouchableOpacity>
-
-
-                            <View style={{}}>
-
-                                <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: 10, width: '100%' }}>
-                                    {
-                                        agencyToggles[item.agency_id] ? (
-                                            <ActivityIndicator size="small" color={colors.Brown} />
-                                        ) : (
-                                            <Switch
-                                                trackColor={{ false: "#f54949", true: "#1cd181" }}
-                                                thumbColor="#ebecee"
-                                                ios_backgroundColor="#3e3e3e"
-                                                disabled={!!agencyToggles[item.agency_id]}
-                                                onValueChange={async value => {
-                                                    const agencyId = item.agency_id;
-
-                                                    setAgencyToggles(prev => ({
-                                                        ...prev,
-                                                        [agencyId]: true,
-                                                    }));
-
-                                                    setIsAgencyEnabled(prev => ({
-                                                        ...prev,
-                                                        [agencyId]: value,
-                                                    }));
-
-                                                    try {
-                                                        const result = await updateRentAgencyStatus(agencyId, value ? 'On' : 'Off');
-
-                                                        if (result.code === 200) {
-                                                            ToastAndroid.show(`Agency status updated successfully`, ToastAndroid.SHORT);
-                                                        } else {
-                                                            ToastAndroid.show(result.message || 'Failed to update status', ToastAndroid.SHORT);
-                                                            // Revert toggle on failure
-                                                            setIsAgencyEnabled(prev => ({
-                                                                ...prev,
-                                                                [agencyId]: !value,
-                                                            }));
-                                                        }
-                                                    } catch (error) {
-                                                        ToastAndroid.show('Error updating agency status', ToastAndroid.SHORT);
-                                                        // Revert toggle on error
-                                                        setIsAgencyEnabled(prev => ({
-                                                            ...prev,
-                                                            [agencyId]: !value,
-                                                        }));
-                                                    } finally {
-                                                        setAgencyToggles(prev => ({
-                                                            ...prev,
-                                                            [agencyId]: false,
-                                                        }));
-                                                    }
-                                                }}
-
-                                                value={
-                                                    isAgencyEnabled[item.agency_id] !== undefined
-                                                        ? isAgencyEnabled[item.agency_id]
-                                                        : item.agency_status === 'Active' // ya jo bhi API status field hai
-                                                }
-                                            />
-                                        )
-                                    }
-                                </View>
-                                {/* Agency Name */}
-                                <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                                    <Ionicons
-                                        name="business-outline"
-                                        size={18}
-                                        color={colors.accentBlue}
-                                        style={{ marginRight: 8, marginTop: 2 }}
-                                    />
+                                {/* Left Section */}
+                                <View style={{ flexDirection: 'row', flex: 1 }}>
+                                    <View
+                                        style={{
+                                            height: 45,
+                                            width: 45,
+                                            borderRadius: 10,
+                                            backgroundColor: '#dafdf8',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            marginRight: 10,
+                                        }}
+                                    >
+                                        <Ionicons name="business" size={22} color={colors.Brown} />
+                                    </View>
 
                                     <View style={{ flex: 1 }}>
                                         <Text
                                             style={{
-                                                fontFamily: 'Inter-Bold',
                                                 fontSize: 16,
-                                                color: 'black',
+                                                fontFamily: 'Inter-Bold',
+                                                color: '#111',
+                                                textTransform: 'uppercase',
+                                            }}
+                                            numberOfLines={2}   // ✅ Allow 2 lines
+                                        >
+                                            {item.agency_name || '--'}
+                                        </Text>
+
+                                        <Text
+                                            style={{
+                                                fontSize: 13,
+                                                fontFamily: 'Inter-Regular',
+                                                color: '#666',
+                                                marginTop: 2,
                                             }}
                                         >
-                                            Agency Name:{' '}
-                                            <Text
-                                                style={{
-                                                    fontFamily: 'Inter-Regular',
-                                                    color: 'black',
-                                                    textTransform: 'uppercase',
-                                                }}
-                                            >
-                                                {item.agency_name || '--'}
-                                            </Text>
+                                            Created: {formatDateTime(item.agency_entry_date)}
                                         </Text>
                                     </View>
                                 </View>
 
+                                {/* Right Section - Toggle */}
+                                <View style={{ height: 30, justifyContent: 'center' }}>
+                                    {agencyToggles[item.agency_id] ? (
+                                        <ActivityIndicator
+                                            size="small"
+                                            color={colors.Brown}
+                                        />
+                                    ) : (
+                                        <Switch
+                                            trackColor={{ false: "#f54949", true: "#1cd181" }}
+                                            thumbColor="#ebecee"
+                                            value={
+                                                isAgencyEnabled[item.agency_id] !== undefined
+                                                    ? isAgencyEnabled[item.agency_id]
+                                                    : item.agency_status === 'Active'
+                                            }
+                                            onValueChange={(value) => handleToggle(value, item)}
+                                        />
+                                    )}
+                                </View>
+                            </View>
 
-
-
+                            {/* Divider */}
+                            <View
+                                style={{
+                                    height: 1,
+                                    backgroundColor: '#eee',
+                                    marginVertical: 10,
+                                }}
+                            />
+                            {/* Details Section */}
+                            <View style={{ gap: 10 }}>
                                 {/* Mobile */}
-                                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}>
-                                    <Ionicons name="call-outline" size={18} color={colors.accentBlue} style={{ marginRight: 8 }} />
-                                    <Text style={{ fontFamily: 'Inter-Bold', fontSize: 16, color: 'black' }}>
-                                        Mobile:{' '}
-                                        <Text style={{ fontFamily: 'Inter-Regular' }}>
+                                <View style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between'
+                                }}>
+
+                                    {/* Left Section */}
+                                    <View style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        flex: 1
+                                    }}>
+                                        <Ionicons name="call-outline" size={16} color="#666" />
+
+                                        <Text style={{
+                                            marginLeft: 8,
+                                            fontSize: 14,
+                                            fontFamily: 'Inter-Bold',
+                                            color: '#444'
+                                        }}>
+                                            Mobile:
+                                        </Text>
+
+                                        <Text style={{
+                                            marginLeft: 6,
+                                            fontSize: 14,
+                                            fontFamily: 'Inter-Regular',
+                                            color: '#000',
+                                            flexShrink: 1
+                                        }}>
                                             {item.agency_mobile || '--'}
                                         </Text>
-                                    </Text>
+                                    </View>
+
+                                    {/* Arrow Button */}
+                                    <TouchableOpacity
+                                        onPress={() => handleAgencySelect(item)}
+                                        activeOpacity={0.7}
+                                        style={{
+                                            height: 28,
+                                            width: 28,
+                                            borderRadius: 14,
+                                            backgroundColor: colors.Brown,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            marginLeft: 10, marginRight: 3
+                                        }}
+                                    >
+                                        <Ionicons name="arrow-forward" size={16} color="#fff" />
+                                    </TouchableOpacity>
+
                                 </View>
 
                                 {/* Username */}
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <Ionicons name="person-outline" size={18} color={colors.accentBlue} style={{ marginRight: 8 }} />
-                                    <Text style={{ fontFamily: 'Inter-Bold', fontSize: 16, color: 'black' }}>
-                                        Username:{' '}
-                                        <Text style={{ fontFamily: 'Inter-Regular' }}>
-                                            {item.agency_username || '--'}
-                                        </Text>
+                                    <Ionicons name="person-outline" size={16} color="#666" />
+                                    <Text style={{
+                                        marginLeft: 8,
+                                        fontSize: 14,
+                                        fontFamily: 'Inter-Bold',
+                                        color: '#444'
+                                    }}>
+                                        Username:
+                                    </Text>
+                                    <Text style={{
+                                        marginLeft: 6,
+                                        fontSize: 14,
+                                        fontFamily: 'Inter-Regular',
+                                        color: '#000',
+                                        flexShrink: 1
+                                    }}>
+                                        {item.agency_username || '--'}
                                     </Text>
                                 </View>
 
                                 {/* Password */}
-                                <View style={{ flexDirection: 'row', alignItems: 'center', }}>
-                                    <Ionicons name="lock-closed-outline" size={18} color={colors.accentBlue} style={{ marginRight: 8 }} />
-                                    <Text style={{ fontFamily: 'Inter-Bold', fontSize: 16, color: 'black' }}>
-                                        Password:{' '}
-                                        <Text style={{ fontFamily: 'Inter-Regular' }}>
-                                            {item.agency_password || '--'}
-                                        </Text>
-                                    </Text>
-                                </View>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
-                                    <Ionicons name="time-outline" size={18} color={colors.accentBlue} style={{ marginRight: 8 }} />
-                                    <Text style={{ fontFamily: 'Inter-Bold', fontSize: 16, color: 'black', flexShrink: 1 }}>
-                                        Agency Create At:{' '}
-                                        <Text style={{ fontFamily: 'Inter-Regular' }}>
-                                            {formatDateTime(item.agency_entry_date)}
-                                        </Text>
-                                    </Text>
-                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <Ionicons name="lock-closed-outline" size={16} color="#666" />
 
+                                    <Text style={{
+                                        marginLeft: 8,
+                                        fontSize: 14,
+                                        fontFamily: 'Inter-Bold',
+                                        color: '#444'
+                                    }}>
+                                        Password:
+                                    </Text>
+
+                                    <Text style={{
+                                        marginLeft: 6,
+                                        fontSize: 14,
+                                        fontFamily: 'Inter-Regular',
+                                        color: '#000',
+                                        flex: 1
+                                    }}>
+                                        {visiblePasswords[item.agency_id]
+                                            ? item.agency_password || '--'
+                                            : item.agency_password
+                                                ? '*'.repeat(item.agency_password.length)
+                                                : '--'}
+                                    </Text>
+
+                                    <TouchableOpacity
+                                        onPress={() =>
+                                            setVisiblePasswords(prev => ({
+                                                ...prev,
+                                                [item.agency_id]: !prev[item.agency_id]
+                                            }))
+                                        }
+                                        style={{ paddingRight: 5, }}
+                                    >
+                                        <Ionicons
+                                            name={visiblePasswords[item.agency_id] ? "eye-off-outline" : "eye-outline"}
+                                            size={22}
+                                            color="#666"
+                                        />
+                                    </TouchableOpacity>
+                                </View>
 
                             </View>
+
+
+
                         </View>
                     )}
 

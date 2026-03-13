@@ -3,7 +3,6 @@ import {
     StyleSheet,
     Text,
     TextInput,
-    ToastAndroid,
     TouchableOpacity,
     View,
     FlatList,
@@ -16,6 +15,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ENDPOINTS } from '../CommonFiles/Constant';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
 
 
 const AgencyAddStaffSchedule = () => {
@@ -121,7 +121,13 @@ const AgencyAddStaffSchedule = () => {
             const staffId = await AsyncStorage.getItem('staff_id');
 
             if (!staffId) {
-                ToastAndroid.show('No staff ID found', ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'error',
+                    text1: 'No staff ID found',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });;
                 return;
             }
 
@@ -145,11 +151,17 @@ const AgencyAddStaffSchedule = () => {
 
                 }
             } else {
-                // ToastAndroid.show(result.message || 'Failed to logout staff', ToastAndroid.SHORT);
+                // Toast.show({
+                //     type: 'error',
+                //     text1: result.message || 'Failed to logout staff',
+                //     position: 'bottom',
+                //     bottomOffset: 60,
+                //     visibilityTime: 2000, // 2 sec
+                // });
             }
         } catch (error) {
             console.log('Logout error:', error.message);
-            ToastAndroid.show('Error logging  out out staff', ToastAndroid.SHORT);
+
         }
     };
 
@@ -339,7 +351,7 @@ const AgencyAddStaffSchedule = () => {
 
     //       // Check response status
     //       if (data.code == 200) {
-    //         ToastAndroid.show('Schedule Add Successfully', ToastAndroid.SHORT);
+    //        
     //         navigation.goBack();
     //       } else {
     //       }
@@ -388,10 +400,7 @@ const AgencyAddStaffSchedule = () => {
     //         console.log('Response:', data);
 
     //         if (data.code === 200) {
-    //           ToastAndroid.show(
-    //             'Schedule Updated Successfully',
-    //             ToastAndroid.SHORT,
-    //           );
+    //          
     //           navigation.navigate('StaffSchedule');
     //         } else {
     //           console.log('Update failed:', data.message);
@@ -415,10 +424,7 @@ const AgencyAddStaffSchedule = () => {
 
     //         // Check response status
     //         if (data.code === 200) {
-    //           ToastAndroid.show(
-    //             'Schedule Added Successfully',
-    //             ToastAndroid.SHORT,
-    //           );
+    //           
     //           navigation.navigate('StaffSchedule');
     //         } else {
     //           console.log('Add failed:', data.message);
@@ -481,10 +487,7 @@ const AgencyAddStaffSchedule = () => {
     //         console.log('Response:', data);
 
     //         if (data.code === 200) {
-    //           ToastAndroid.show(
-    //             'Schedule Updated Successfully',
-    //             ToastAndroid.SHORT,
-    //           );
+    //          
     //           navigation.goBack();
     //         } else {
     //           console.log('Update failed:', data.message);
@@ -511,10 +514,7 @@ const AgencyAddStaffSchedule = () => {
     //         console.log('Response:', data);
 
     //         if (data.code === 200) {
-    //           ToastAndroid.show(
-    //             'Schedule Added Successfully',
-    //             ToastAndroid.SHORT,
-    //           );
+    //          
     //           navigation.goBack();
     //         } else {
     //           console.log('Add failed:', data.message);
@@ -567,8 +567,17 @@ const AgencyAddStaffSchedule = () => {
             console.log('Response:', data);
 
             if (data.code === 200) {
-                ToastAndroid.show('Schedule Updated Successfully', ToastAndroid.SHORT);
-                navigation.goBack();
+                Toast.show({
+                    type: 'success',
+                    text1: 'Schedule Updated Successfully',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000, // 2 sec
+                });
+
+                setTimeout(() => {
+                    navigation.goBack();
+                }, 500); // 0.5 sec delay before going back
             } else {
                 console.log('Update failed:', data.message);
             }
@@ -609,8 +618,17 @@ const AgencyAddStaffSchedule = () => {
             console.log('Response:', data);
 
             if (data.code === 200) {
-                ToastAndroid.show('Schedule Added Successfully', ToastAndroid.SHORT);
-                navigation.goBack();
+                Toast.show({
+                    type: 'success',
+                    text1: 'Schedule Added Successfully',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000, // 2 sec
+                });
+
+                setTimeout(() => {
+                    navigation.goBack();
+                }, 500); // 0.5 sec delay before going back
             } else {
                 console.log('Add failed:', data.message);
             }

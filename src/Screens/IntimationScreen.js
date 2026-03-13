@@ -8,11 +8,11 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  ToastAndroid,
   TouchableOpacity,
   View,
   Linking,
-  ActivityIndicator
+  ActivityIndicator,
+  Modal
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -26,9 +26,11 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import AntDesign from 'react-native-vector-icons/AntDesign'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import FileViewer from 'react-native-file-viewer';
+import Toast from 'react-native-toast-message';
 
 const IntimationScreen = () => {
   const whatsapp = require('../assets/images/whatsapp.png');
+  const Map = require('../assets/images/map.png');
 
 
 
@@ -38,7 +40,7 @@ const IntimationScreen = () => {
   const navigation = useNavigation();
 
   const [text, setText] = useState(null);
-
+  const [screenEntryTime, setScreenEntryTime] = useState(null);
   const [startDate, setStartDate] = useState(new Date()); // Default to current date
   const [endDate, setEndDate] = useState(null); // Set endDate to null initially
 
@@ -48,6 +50,7 @@ const IntimationScreen = () => {
 
   const [isAreaVisible, setIsAreaVisible] = useState(false);
   const [areaList, setAreaList] = useState([]);
+  const [modalVisible, setModalVisible] = useState(false);
   const [filteredAreaList, setFilteredAreaList] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedArea, setSelectedArea] = useState('');
@@ -69,6 +72,11 @@ const IntimationScreen = () => {
       fetchUsertype();
     }, []),
   );
+
+  useEffect(() => {
+    const now = new Date();
+    setScreenEntryTime(now);
+  }, []);
 
   const [ReppoAgency, setReppoAgency] = useState('');
   const [ReppoAddress, setReppoAddress] = useState('');
@@ -194,16 +202,27 @@ const IntimationScreen = () => {
     }
   };
 
+  // useEffect(() => {
+  //   if (filteredAreaList.length > 0) {
+  //     const defaultArea = filteredAreaList[0]; // First area in the list
+  //     setSelectedArea(defaultArea.manage_area_name);
+  //     setselectedAreaId(defaultArea.manage_email_id);
+  //     setAreaEmail(defaultArea.manage_emailid); // Add this line
+  //     setAreaAddress(defaultArea.manage_address); // Add this line
+
+  //   }
+  // }, [filteredAreaList]);
+
   useEffect(() => {
-    if (filteredAreaList.length > 0) {
-      const defaultArea = filteredAreaList[0]; // First area in the list
+    if (areaList.length > 0 && !selectedArea) {
+      const defaultArea = areaList[0];
+
       setSelectedArea(defaultArea.manage_area_name);
       setselectedAreaId(defaultArea.manage_email_id);
-      setAreaEmail(defaultArea.manage_emailid); // Add this line
-      setAreaAddress(defaultArea.manage_address); // Add this line
-
+      setAreaEmail(defaultArea.manage_emailid);
+      setAreaAddress(defaultArea.manage_address);
     }
-  }, [filteredAreaList]);
+  }, [areaList]);
 
   // Handle area selection
   const handleSelectArea = (item) => {
@@ -414,12 +433,23 @@ const IntimationScreen = () => {
 
       if (response.ok) {
         if (result.code == 200) {
-          ToastAndroid.show("Intimation Submitted Successfully", ToastAndroid.SHORT);
+          Toast.show({
+            type: 'success',
+            text1: 'Intimation Submitted Successfully',
+            position: 'bottom',
+            bottomOffset: 60,
+            visibilityTime: 2000,
+          });
+
           setId(result.payload.id);
           setAgencyEmail(result.payload.agency_email);
-          if (shouldNavigateBack == true) {
-            navigation.goBack(); // Yaha navigation hona chahiye
+
+          if (shouldNavigateBack === true) {
+            setTimeout(() => {
+              navigation.goBack();
+            }, 500);
           }
+
           return result.payload.id;
         } else {
           console.log('Error:', 'Failed to load staff data');
@@ -694,8 +724,13 @@ money even after several reminders. We are going to repossess the vehicle
 
     if (!id) {
       // If no ID is returned, show a message and stop further execution
-      ToastAndroid.show("Intimation submission failed. Please try again.", ToastAndroid.SHORT);
-      if (type === 'pre') setPreLoading(false);
+      Toast.show({
+        type: 'error',
+        text1: 'Intimation submission failed. Please try again.',
+        position: 'bottom',
+        bottomOffset: 60,
+        visibilityTime: 2000,
+      }); if (type === 'pre') setPreLoading(false);
       if (type === 'post') setPostLoading(false);
       return;
     }
@@ -715,25 +750,55 @@ money even after several reminders. We are going to repossess the vehicle
       const result = await response.json();
       console.log("emailsend:-", result);
       if (response.ok) {
-        // Check the code in the response to decide which message to show
+
         if (result.code === 200) {
-          ToastAndroid.show('Mail Send Successfully', ToastAndroid.SHORT);
+          Toast.show({
+            type: 'success',
+            text1: 'Mail Send Successfully',
+            position: 'bottom',
+            bottomOffset: 60,
+            visibilityTime: 2000,
+          });
           // navigation.goBack();
           setShowAfterMailButtons(true);
         } else if (result.code === 400) {
           // Handle case for code 400
-          ToastAndroid.show(result.message || 'Something went wrong', ToastAndroid.SHORT);
+          Toast.show({
+            type: 'error',
+            text1: result.message || 'Something went wrong',
+            position: 'bottom',
+            bottomOffset: 60,
+            visibilityTime: 2000,
+          });
         } else {
           // Handle other cases or unknown codes
-          ToastAndroid.show('Failed to send mail. Please try again later.', ToastAndroid.SHORT);
+          Toast.show({
+            type: 'error',
+            text1: 'Failed to send mail. Please try again later.',
+            position: 'bottom',
+            bottomOffset: 60,
+            visibilityTime: 2000,
+          });
         }
       } else {
         console.log('HTTP Error:', result.message || 'Something went wrong');
-        ToastAndroid.show(result.message || 'Something went wrong', ToastAndroid.SHORT);
+        Toast.show({
+          type: 'error',
+          text1: result.message || 'Something went wrong',
+          position: 'bottom',
+          bottomOffset: 60,
+          visibilityTime: 2000,
+        });
       }
     } catch (error) {
       console.log('Error fetching data:', error.message);
-      ToastAndroid.show('Error fetching data. Please try again later.', ToastAndroid.SHORT);
+      Toast.show({
+        type: 'error',
+        text1: 'Error fetching data. Please try again later.',
+        position: 'bottom',
+        bottomOffset: 60,
+        visibilityTime: 2000,
+      });
     } finally {
       if (type === 'pre') setPreLoading(false);
       if (type === 'post') setPostLoading(false);
@@ -949,6 +1014,29 @@ even after several reminders. We had repossessed the vehicle.
     navigation.goBack();
     setPreMailLoading(true);
 
+    const now = screenEntryTime;
+
+    // Weekday (Thu)
+    const weekday = now.toLocaleDateString('en-US', { weekday: 'short' });
+
+    // Month (Feb)
+    const month = now.toLocaleDateString('en-US', { month: 'short' });
+
+    // Date (26)
+    const date = now.getDate();
+
+    // Year (2026)
+    const year = now.getFullYear();
+
+    // Time (01:52 PM)
+    const timee = now.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    const formattedDateTime = `${weekday}, ${month} ${date}, ${year} AT ${timee}`;
+
     const htmlContent = `
       <html>
   <head>
@@ -1088,7 +1176,7 @@ even after several reminders. We had repossessed the vehicle.
 
       <div class="agency-info2">
     <span><strong>${SelectedAgency || '----------'}</strong> &lt;${AgencyEmail || '----------'}&gt;</span>
-    <span>${vehicleDetails.email_entrydate || '----------'}</span>
+     <span>${formattedDateTime ? formattedDateTime : '----------'}</span>
   </div>
 
     <div class="agency-info3">
@@ -1234,6 +1322,29 @@ even after several reminders. We had repossessed the vehicle.
     navigation.goBack();
     setPostMailLoading(true);
 
+    const now = screenEntryTime;
+
+    // Weekday (Thu)
+    const weekday = now.toLocaleDateString('en-US', { weekday: 'short' });
+
+    // Month (Feb)
+    const month = now.toLocaleDateString('en-US', { month: 'short' });
+
+    // Date (26)
+    const date = now.getDate();
+
+    // Year (2026)
+    const year = now.getFullYear();
+
+    // Time (01:52 PM)
+    const timee = now.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    const formattedDateTime = `${weekday}, ${month} ${date}, ${year} AT ${timee}`;
+
     const htmlContent = `
         <html>
           <head>
@@ -1356,7 +1467,7 @@ even after several reminders. We had repossessed the vehicle.
             <!-- Agency Info -->
             <div class="agency-info2">
               <span><strong>${SelectedAgency || '----------'}</strong> &lt;${AgencyEmail || '----------'}&gt;</span>
-              <span>${vehicleDetails.email_entrydate || '----------'}</span>
+              <span>${formattedDateTime ? formattedDateTime : '----------'}</span>
             </div>
 
             <!-- Recipient Info -->
@@ -1964,17 +2075,17 @@ even after several reminders. We had repossessed the vehicle.
           )}
 
           {/* Search Text button */}
-          {selectedType !== 'Cancel' && selectedType !== 'Select Type' && ( // Only render this if 'isCancelled' is false
+          {selectedType !== 'Cancel' && selectedType !== 'Select Type' && (
             <View style={{ flex: 1 }}>
-
-              {/* Area Dropdown */}
+              {/* Area Dropdown Trigger */}
               <Text
                 style={{
                   fontSize: 14,
-
+                  fontWeight: 'bold',
                   marginBottom: 5,
                   fontFamily: 'Inter-Medium',
                   color: 'black',
+                  marginTop: 10
                 }}>
                 Select Area
               </Text>
@@ -1990,7 +2101,12 @@ even after several reminders. We had repossessed the vehicle.
                   borderWidth: 1,
                   marginBottom: 3
                 }}
-                onPress={() => setIsAreaVisible(!isAreaVisible)}>
+                onPress={() => {
+                  // ✅ Reset search and show full list when opening modal
+                  setSearchQuery('');
+                  setFilteredAreaList(areaList);
+                  setModalVisible(true);
+                }}>
                 <Text
                   style={{
                     fontSize: 16,
@@ -1999,12 +2115,7 @@ even after several reminders. We had repossessed the vehicle.
                   }}>
                   {selectedArea ? selectedArea : 'Select Area'}
                 </Text>
-
-                <Ionicons
-                  name={isAreaVisible ? 'chevron-up' : 'chevron-down'}
-                  size={20}
-                  color="black"
-                />
+                <Ionicons name="chevron-down" size={20} color="black" />
               </TouchableOpacity>
 
               {AreaError ? (
@@ -2020,67 +2131,182 @@ even after several reminders. We had repossessed the vehicle.
                 </Text>
               ) : null}
 
-
-
-              {/* Dropdown and Search Input */}
-              {isAreaVisible && (
-                <View
+              {/* Modal for Area Selection */}
+              <Modal
+                animationType="fade"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => {
+                  // ✅ Reset when closed via back button (Android)
+                  setSearchQuery('');
+                  setFilteredAreaList(areaList);
+                  setModalVisible(false);
+                }}>
+                <TouchableOpacity
                   style={{
-                    position: 'absolute',
-                    top: '85%',
-                    left: 0,
-                    right: 0,
-                    backgroundColor: 'white',
-                    borderRadius: 8,
-                    borderColor: '#ddd',
-                    borderWidth: 1,
-                    zIndex: 1,
-                    marginTop: 2,
+                    flex: 1,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                  }}
+                  activeOpacity={1}
+                  onPress={() => {
+                    // ✅ Reset when tapping outside the modal
+                    setSearchQuery('');
+                    setFilteredAreaList(areaList);
+                    setModalVisible(false);
                   }}>
-                  {/* Search Input for filtering dropdown */}
-                  <TextInput
+                  <View
                     style={{
-                      height: 40,
-                      borderColor: '#ddd',
-                      borderWidth: 1,
-                      borderRadius: 8,
-                      paddingLeft: 10,
-                      color: 'black'
+                      width: '90%',
+                      maxHeight: '70%',
+                      backgroundColor: 'white',
+                      borderRadius: 12,
+                      padding: 16,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.25,
+                      shadowRadius: 4,
+                      elevation: 5,
                     }}
-                    placeholder="Search Area"
-                    placeholderTextColor='#ccc'
-                    value={searchQuery}
-                    onChangeText={handleSearch}
-                  />
-
-                  {/* Scrollable dropdown list */}
-                  <ScrollView nestedScrollEnabled={true} style={{ maxHeight: 150 }} keyboardShouldPersistTaps='handled'  >
-                    {filteredAreaList.map((item) => (
+                    onStartShouldSetResponder={() => true}>
+                    {/* Header with title and close button */}
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: 12,
+                      }}>
+                      <Text style={{ fontSize: 18, fontWeight: 'bold', color: 'black' }}>
+                        Select Area
+                      </Text>
                       <TouchableOpacity
-                        key={item.manage_email_id}
+                        onPress={() => {
+                          // ✅ Reset when clicking close button
+                          setSearchQuery('');
+                          setFilteredAreaList(areaList);
+                          setModalVisible(false);
+                        }}>
+                        <Ionicons name="close" size={24} color="black" />
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Search Input with clear button */}
+                    <View style={{ position: 'relative', marginBottom: 12 }}>
+                      <TextInput
                         style={{
-                          padding: 12,
-                          borderBottomColor: '#ddd',
-                          borderBottomWidth: 1,
+                          height: 40,
+                          borderColor: '#ddd',
+                          borderWidth: 1,
+                          borderRadius: 8,
+                          paddingLeft: 10,
+                          paddingRight: 40,
+                          color: 'black',
+                          fontFamily: 'Inter-Regular',
                         }}
-                        onPress={() => handleSelectArea(item)}
-                      >
-                        <Text
+                        placeholder="Search Area"
+                        placeholderTextColor="#ccc"
+                        value={searchQuery}
+                        onChangeText={handleSearch}
+                      />
+                      {searchQuery.length > 0 && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            setSearchQuery('');
+                            setFilteredAreaList(areaList);
+                          }}
                           style={{
-                            fontSize: 16,
-                            fontFamily: 'Inter-Regular',
-                            color: 'black',
+                            position: 'absolute',
+                            right: 10,
+                            top: 10,
+                          }}>
+                          <Ionicons name="close-circle" size={20} color="#999" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+
+                    {/* Scrollable List of Areas */}
+                    <ScrollView
+                      nestedScrollEnabled={true}
+                      style={{ maxHeight: 300 }}
+                      keyboardShouldPersistTaps="handled"
+                      showsVerticalScrollIndicator={false}>
+                      {filteredAreaList.length > 0 ? (
+                        <FlatList
+                          data={filteredAreaList}
+                          keyExtractor={(item) => item.manage_email_id.toString()}
+                          style={{ maxHeight: 300 }}
+                          keyboardShouldPersistTaps="handled"
+                          initialNumToRender={15}
+                          maxToRenderPerBatch={15}
+                          windowSize={5}
+                          showsVerticalScrollIndicator={false}
+                          renderItem={({ item }) => (
+                            <TouchableOpacity
+                              style={{
+                                padding: 12,
+                                borderBottomColor: '#ddd',
+                                borderBottomWidth: 1,
+                                flexDirection: 'row',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                backgroundColor:
+                                  item.manage_area_name === selectedArea ? colors.selected : 'white',
+                              }}
+                              onPress={() => {
+                                handleSelectArea(item);
+                                setSearchQuery('');
+                                setFilteredAreaList(areaList);
+                                setModalVisible(false);
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  fontSize: 15,
+                                  fontFamily: 'Inter-Regular',
+                                  color: 'black',
+                                }}
+                              >
+                                {item.manage_area_name}
+                              </Text>
+
+                              {item.manage_area_name === selectedArea && (
+                                <Ionicons name="checkmark-circle" size={22} color={colors.Brown} />
+                              )}
+                            </TouchableOpacity>
+                          )}
+                        />
+                      ) : (
+                        <View
+                          style={{
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            paddingVertical: 30,
                           }}
                         >
-                          {item.manage_area_name}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
+                          <Image
+                            source={Map}
+                            style={{ width: 40, height: 40, marginBottom: 15 }}
+                            resizeMode="contain"
+                          />
 
-                </View>
-              )}
-
+                          <Text
+                            style={{
+                              textAlign: 'center',
+                              fontSize: 16,
+                              color: '#999',
+                              fontFamily: 'Inter-Regular',
+                            }}
+                          >
+                            No area found
+                          </Text>
+                        </View>
+                      )}
+                    </ScrollView>
+                  </View>
+                </TouchableOpacity>
+              </Modal>
             </View>
           )}
           {selectedType !== 'Cancel' && selectedType !== 'Select Type' && (

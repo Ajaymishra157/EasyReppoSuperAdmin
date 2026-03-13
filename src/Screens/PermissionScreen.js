@@ -1,4 +1,4 @@
-import { ScrollView, Text, ToastAndroid, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import CheckBox from '@react-native-community/checkbox';
@@ -6,6 +6,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import colors from '../CommonFiles/Colors';
 import { ENDPOINTS } from '../CommonFiles/Constant';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
 
 const PermissionScreen = () => {
     const navigation = useNavigation();
@@ -14,7 +15,7 @@ const PermissionScreen = () => {
 
     const { staff_id, staff_name, staff_type } = route.params || {};
 
-
+    const [loading, setLoading] = useState(false);
 
     // All permission states
     const [staffAdd, setStaffAdd] = useState(false);
@@ -24,6 +25,7 @@ const PermissionScreen = () => {
     const [staffAccountStatus, setstaffAccountStatus] = useState(false)
     const [FinanceList, setFinanceList] = useState(false);
     const [staffreset, setstaffReset] = useState(false);
+    const [allStaffReset, setAllStaffReset] = useState(false);
     const [staffinternetStatus, setstaffInternetStatus] = useState(false);
     const [staffiCard, setStaffiCard] = useState(false);
 
@@ -128,6 +130,7 @@ const PermissionScreen = () => {
                     financelist: setFinanceList,
                     internetstatus: setstaffInternetStatus,
                     staffreset: setstaffReset,
+                    allstaffreset: setAllStaffReset,
                     icard: setStaffiCard,
                 });
 
@@ -223,11 +226,14 @@ const PermissionScreen = () => {
 
 
     const handleSave = async () => {
+
+        if (loading) return;
+
+        setLoading(true);
         try {
             // const staffId = await AsyncStorage.getItem('staff_id');
 
             // if (!staffId) {
-            //     ToastAndroid.show("Staff ID not found", ToastAndroid.SHORT);
             //     return;
             // }
 
@@ -241,7 +247,8 @@ const PermissionScreen = () => {
                 "Account Status": "Accountstatus",
                 "Finance List": "financelist",
                 "Internet Status": "internetstatus",
-                "Staff Reset": "staffreset",
+                "Single Staff Reset": "staffreset",
+                "All Staff Reset": "allstaffreset",
                 "PrePost Mail": "prepostmail",
                 "Whatsapp": "whatsapp",
                 "PrePost Download": "prepostdownload",
@@ -259,8 +266,8 @@ const PermissionScreen = () => {
             const modules = [
                 {
                     name: "Staff",
-                    states: [staffAdd, staffDelete, staffUpdate, staffView, staffAccountStatus, FinanceList, staffinternetStatus, staffreset, staffiCard],
-                    labels: ["Add", "Delete", "Update", "View", "Account Status", "Finance List", "Internet Status", "Staff Reset", "iCard"],
+                    states: [staffAdd, staffDelete, staffUpdate, staffView, staffAccountStatus, FinanceList, staffinternetStatus, staffreset, allStaffReset, staffiCard],
+                    labels: ["Add", "Delete", "Update", "View", "Account Status", "Finance List", "Internet Status", "Single Staff Reset", "All Staff Reset", "iCard"],
                 },
                 {
                     name: "Staff_Schedule",
@@ -355,14 +362,38 @@ const PermissionScreen = () => {
             const result = await response.json();
 
             if (result.code === 200) {
-                ToastAndroid.show("✅ Permissions saved successfully!", ToastAndroid.SHORT);
-                navigation.goBack();
+                Toast.show({
+                    type: 'success',
+                    text1: '✅ Permissions saved successfully!',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
+
+                setTimeout(() => {
+                    navigation.goBack();
+                }, 500); // 500ms delay
             } else {
-                ToastAndroid.show(result.message || "❌ Failed to save permissions", ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'error',
+                    text1: result.message || '❌ Failed to save permissions',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
             }
         } catch (error) {
-            console.error("❌ Save Permissions Error:", error);
-            ToastAndroid.show("Something went wrong", ToastAndroid.SHORT);
+            console.error('❌ Save Permissions Error:', error);
+            setLoading(false);
+            Toast.show({
+                type: 'error',
+                text1: 'Something went wrong',
+                position: 'bottom',
+                bottomOffset: 60,
+                visibilityTime: 2000,
+            });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -417,7 +448,7 @@ const PermissionScreen = () => {
             <ScrollView contentContainerStyle={{ padding: 15, paddingBottom: 100, }} keyboardShouldPersistTaps='handled'>
                 {(staff_type === 'main' || staff_type === 'subadmin') ? (
                     <>
-                        <PermissionBlock title="Staff" states={[staffAdd, staffDelete, staffUpdate, staffAccountStatus, FinanceList, staffinternetStatus, staffreset, staffiCard]} setters={[setStaffAdd, setStaffDelete, setStaffUpdate, setstaffAccountStatus, setFinanceList, setstaffInternetStatus, setstaffReset, setStaffiCard]} labels={["Add", "Delete", "Update", "Account Status", "Finance List", "Internet Status", "Staff Reset", "iCard"]} />
+                        <PermissionBlock title="Staff" states={[staffAdd, staffDelete, staffUpdate, staffAccountStatus, FinanceList, staffinternetStatus, staffreset, allStaffReset, staffiCard]} setters={[setStaffAdd, setStaffDelete, setStaffUpdate, setstaffAccountStatus, setFinanceList, setstaffInternetStatus, setstaffReset, setAllStaffReset, setStaffiCard]} labels={["Add", "Delete", "Update", "Account Status", "Finance List", "Internet Status", "Single Staff Reset", "All Staff Reset", "iCard"]} />
                         <PermissionBlock title="Schedule" states={[scheduleAdd, scheduleDelete, scheduleUpdate]} setters={[setScheduleAdd, setScheduleDelete, setScheduleUpdate]} labels={["Add", "Delete", "Update"]} />
                         <PermissionBlock title="Search History" states={[searchhistoryFilter]} setters={[setsearchhistoryFilter]} labels={["Search Filter"]} />
 
@@ -427,7 +458,7 @@ const PermissionScreen = () => {
                     <>
 
 
-                        <PermissionBlock title="Staff" states={[staffAdd, staffDelete, staffUpdate, staffAccountStatus, FinanceList, staffinternetStatus, staffreset, staffiCard]} setters={[setStaffAdd, setStaffDelete, setStaffUpdate, setstaffAccountStatus, setFinanceList, setstaffInternetStatus, setstaffReset, setStaffiCard]} labels={["Add", "Delete", "Update", "Account Status", "Finance List", "Internet Status", "Staff Reset", "iCard"]} />
+                        <PermissionBlock title="Staff" states={[staffAdd, staffDelete, staffUpdate, staffAccountStatus, FinanceList, staffinternetStatus, staffreset, allStaffReset, staffiCard]} setters={[setStaffAdd, setStaffDelete, setStaffUpdate, setstaffAccountStatus, setFinanceList, setstaffInternetStatus, setstaffReset, setAllStaffReset, setStaffiCard]} labels={["Add", "Delete", "Update", "Account Status", "Finance List", "Internet Status", "Single Staff Reset", "All Staff Reset", "iCard"]} />
                         <PermissionBlock title="Schedule" states={[scheduleAdd, scheduleDelete, scheduleUpdate]} setters={[setScheduleAdd, setScheduleDelete, setScheduleUpdate]} labels={["Add", "Delete", "Update"]} />
                         <PermissionBlock title="Intimation" states={[intimationAdd, intimationprepostmail, intimationwhatsapp]} setters={[setIntimationAdd, setintimationPrepostmail, setintimationWhatsapp]} labels={["Add", "PrePost Download", "Whatsapp"]} />
                         <PermissionBlock title="Area" states={[areaAdd, areaDelete, areaUpdate,]} setters={[setAreaAdd, setAreaDelete, setAreaUpdate,]} labels={["Add", "Delete", "Update"]} />
@@ -472,8 +503,15 @@ const PermissionScreen = () => {
                 borderRadius: 8,
                 alignItems: 'center',
             }}>
-                <TouchableOpacity onPress={handleSave} disabled={!anyPermissionSelected()} style={{ width: '100%', flexDirection: 'row', justifyContent: 'center', }}>
-                    <Text style={{ color: 'white', fontSize: 18, fontFamily: 'Inter-SemiBold' }}>Save</Text>
+                <TouchableOpacity onPress={handleSave}
+                    disabled={!anyPermissionSelected() || loading} style={{ width: '100%', flexDirection: 'row', justifyContent: 'center', }}>
+                    {loading ? (
+                        <ActivityIndicator size="small" color="white" />
+                    ) : (
+                        <Text style={{ color: 'white', fontSize: 18, fontFamily: 'Inter-SemiBold' }}>
+                            Save
+                        </Text>
+                    )}
                 </TouchableOpacity>
             </View>
             {/* )} */}

@@ -9,9 +9,11 @@ import {
     TextInput,
     Image,
     Keyboard,
+    Dimensions,
+    TouchableWithoutFeedback,
 
 } from 'react-native';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Entypo from 'react-native-vector-icons/Entypo';
 import AntDesign from 'react-native-vector-icons/AntDesign';
@@ -25,7 +27,8 @@ import BlackListShimmer from '../Component/BlackListShimmer';
 const BlackListUser = () => {
     const navigation = useNavigation();
     const [refreshing, setRefreshing] = useState(false);
-
+    const SCREEN_HEIGHT = Dimensions.get('window').height;
+    const MODAL_HEIGHT = 130;
 
     const [staffList, setStaffList] = useState([]);
 
@@ -35,6 +38,7 @@ const BlackListUser = () => {
     const [permissionLoading, setPermissionLoading] = useState(true);
 
     const [isModalVisible, setIsModalVisible] = useState(false);
+    const modalPositionRef = useRef({ top: 0, left: 0 });
     const [selectedItem, setSelectedItem] = useState(null);
 
     const [searchText, setSearchText] = useState('');
@@ -44,6 +48,50 @@ const BlackListUser = () => {
     const [permissions, setPermissions] = useState({});
     console.log("Blacklist User", permissions);
     const [userType, setUsertype] = useState(null);
+
+    const formatDateTime = (dateString) => {
+        if (!dateString) return '--';
+
+        const dateObj = new Date(dateString);
+
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const year = dateObj.getFullYear();
+
+        let hours = dateObj.getHours();
+        const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+
+        hours = hours % 12;
+        hours = hours ? hours : 12; // 0 -> 12
+
+        return `${day}-${month}-${year} ${hours}:${minutes} ${ampm}`;
+    };
+
+
+    const OpenModal = (item, event) => {
+        setSelectedItem(item);
+
+        event.currentTarget.measure((x, y, width, height, pageX, pageY) => {
+
+            let calculatedTop = pageY + height;
+
+            // 👇 Check if modal will go outside screen
+            if (pageY + height + MODAL_HEIGHT > SCREEN_HEIGHT) {
+                // Open above the button
+                calculatedTop = pageY - MODAL_HEIGHT;
+            }
+
+            modalPositionRef.current = {
+                top: calculatedTop,
+                left: pageX - 155,
+            };
+            setIsModalVisible(true);
+        });
+
+
+    };
 
     useFocusEffect(
         React.useCallback(() => {
@@ -117,10 +165,10 @@ const BlackListUser = () => {
                 });
 
                 setPermissions(permData);
-                setIsLoadingPermissions(false);
+                // setIsLoadingPermissions(false);
             } else {
                 console.warn('Failed to fetch permissions or no payload');
-                setIsLoadingPermissions(false);
+                // setIsLoadingPermissions(false);
             }
         } catch (error) {
             console.error('Error fetching permissions:', error);
@@ -227,105 +275,108 @@ const BlackListUser = () => {
         });
     };
 
-    const renderItem = ({ item }) => (
+    const renderItem = ({ item, index }) => (
         <View
             style={{
                 backgroundColor: '#fff',
+                paddingVertical: 12,
+                paddingHorizontal: 14,
+                borderRadius: 6,
+                marginVertical: 7,
                 marginHorizontal: 15,
-                marginVertical: 8,
-                padding: 14,
-                borderRadius: 14,
-                elevation: 4,
-                shadowColor: '#000',
-                shadowOpacity: 0.08,
-                shadowRadius: 6,
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
+                borderWidth: 1,
+                borderColor: '#ddd',
+                position: 'relative'
             }}
         >
-            {/* Left Content */}
-            <View style={{ flex: 1, gap: 6 }}>
 
-                {/* Name */}
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                    <Text
-                        style={{
-                            fontSize: 13,
-                            color: '#777',
-                            fontFamily: 'Inter-Regular',
-                            width: 60,
-                        }}
-                    >
-                        Name:
-                    </Text>
-                    <Text
-                        style={{
-                            fontSize: 14,
-                            color: '#333',
-                            fontFamily: 'Inter-Medium',
-                            flex: 1,
-                            flexWrap: 'wrap',
-                        }}
-                    >
-                        {item.staff_name}
-                    </Text>
-                </View>
+            {/* INDEX */}
+            <Text style={{
+                fontSize: 11,
+                color: '#2c3e50',
+                marginBottom: 4,
+                fontFamily: 'Inter-Bold'
+            }}>
+                #{index + 1}
+            </Text>
 
-                {/* Mobile */}
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                    <Text
-                        style={{
-                            fontSize: 13,
-                            color: '#777',
-                            fontFamily: 'Inter-Regular',
-                            width: 60,
-                        }}
-                    >
-                        Mobile:
-                    </Text>
-                    <Text
-                        style={{
-                            fontSize: 14,
-                            color: '#333',
-                            fontFamily: 'Inter-Medium',
-                            flex: 1,
-                            flexWrap: 'wrap',
-                        }}
-                    >
-                        {item.staff_mobile}
-                    </Text>
-                </View>
+            {/* NAME */}
+            <Text style={{ marginTop: 2 }}>
+                <Text style={{
+                    fontSize: 13,
+                    color: '#2c3e50',
+                    fontFamily: 'Inter-Bold'
+                }}>
+                    Name :
+                </Text>
 
-                {/* Remark */}
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                    <Text
-                        style={{
-                            fontSize: 13,
-                            color: '#777',
-                            fontFamily: 'Inter-Regular',
-                            width: 60,
-                        }}
-                    >
-                        Remark:
-                    </Text>
-                    <Text
-                        style={{
-                            fontSize: 13,
-                            color: '#333',
-                            fontFamily: 'Inter-Regular',
-                            lineHeight: 18,
-                            flex: 1,
-                            flexWrap: 'wrap',
-                        }}
-                    >
-                        {item.remark || '---'}
-                    </Text>
-                </View>
+                <Text style={{
+                    fontSize: 13,
+                    color: '#7f8c8d',
+                    fontFamily: 'Inter-Regular'
+                }}>
+                    {" "}{item.staff_name}
+                </Text>
+            </Text>
 
-            </View>
+            {/* MOBILE */}
+            <Text style={{ marginTop: 5 }}>
+                <Text style={{
+                    fontSize: 12,
+                    color: '#2c3e50',
+                    fontFamily: 'Inter-Bold'
+                }}>
+                    Mobile :
+                </Text>
 
-            {/* Right Menu */}
+                <Text style={{
+                    fontSize: 12,
+                    color: '#7f8c8d',
+                    fontFamily: 'Inter-Regular'
+                }}>
+                    {" "}{item.staff_mobile}
+                </Text>
+            </Text>
+
+            {/* REMARK */}
+            <Text style={{ marginTop: 5 }}>
+                <Text style={{
+                    fontSize: 12,
+                    color: '#2c3e50',
+                    fontFamily: 'Inter-Bold'
+                }}>
+                    Remark :
+                </Text>
+
+                <Text style={{
+                    fontSize: 12,
+                    color: '#7f8c8d',
+                    fontFamily: 'Inter-Regular'
+                }}>
+                    {" "}{item.remark || '--'}
+                </Text>
+            </Text>
+
+            {/* ENTRY DATE */}
+            <Text style={{ marginTop: 5 }}>
+                <Text style={{
+                    fontSize: 12,
+                    color: '#2c3e50',
+                    fontFamily: 'Inter-Bold'
+                }}>
+                    Entry On :
+                </Text>
+
+                <Text style={{
+                    fontSize: 12,
+                    color: '#7f8c8d',
+                    fontFamily: 'Inter-Regular'
+                }}>
+                    {" "}{formatDateTime(item.entry_date)}
+                </Text>
+            </Text>
+
+            {/* MENU ICON */}
             {(
                 userType === 'SuperAdmin' ||
                 (userType === 'SubAdmin' && (
@@ -336,18 +387,18 @@ const BlackListUser = () => {
                 ))
             ) && (
                     <TouchableOpacity
-                        onPress={() => {
-                            setSelectedItem(item);
-                            setIsModalVisible(true);
-                        }}
+                        onPress={(event) => OpenModal(item, event)}
                         style={{
-                            paddingLeft: 10,
-                            paddingTop: 4,
+                            position: 'absolute',
+                            right: 5,
+                            top: 5,
+                            padding: 6,
                         }}
                     >
-                        <Entypo name="dots-three-vertical" size={18} color="#000" />
+                        <Entypo name="dots-three-vertical" size={18} color="#2c3e50" />
                     </TouchableOpacity>
                 )}
+
         </View>
     );
 
@@ -364,8 +415,8 @@ const BlackListUser = () => {
             {/* Image Container */}
             <View
                 style={{
-                    width: 110,
-                    height: 110,
+                    width: 90,
+                    height: 90,
                     borderRadius: 55,
                     backgroundColor: '#f3f3f3',
                     justifyContent: 'center',
@@ -379,8 +430,8 @@ const BlackListUser = () => {
                 <Image
                     source={require('../assets/images/team.png')}
                     style={{
-                        width: 65,
-                        height: 65,
+                        width: 50,
+                        height: 50,
                         resizeMode: 'contain',
                     }}
                 />
@@ -389,7 +440,7 @@ const BlackListUser = () => {
             {/* Main Text */}
             <Text
                 style={{
-                    fontSize: 17,
+                    fontSize: 14,
                     color: 'red',
                     fontFamily: 'Inter-SemiBold',
                     textAlign: 'center',
@@ -400,7 +451,7 @@ const BlackListUser = () => {
             {/* Sub Text */}
             <Text
                 style={{
-                    fontSize: 13,
+                    fontSize: 11,
                     color: '#999',
                     fontFamily: 'Inter-Regular',
                     textAlign: 'center',
@@ -455,7 +506,7 @@ const BlackListUser = () => {
                     Black List Staffs
                 </Text>
             </View>
-            {filteredList.length !== 0 && (
+            {(listLoading || staffList.length > 0) && (
                 <View
                     style={{
                         backgroundColor: '#fff',
@@ -465,9 +516,12 @@ const BlackListUser = () => {
                         flexDirection: 'row',
                         alignItems: 'center',
                         elevation: 3,
-                        borderWidth: 1, borderColor: colors.Brown
-                    }}>
+                        borderWidth: 1,
+                        borderColor: colors.Brown,
+                    }}
+                >
                     <Ionicons name="search" size={20} color="#777" />
+
                     <TextInput
                         placeholder="Search By Name Or Mobile"
                         placeholderTextColor="#999"
@@ -481,6 +535,17 @@ const BlackListUser = () => {
                             fontFamily: 'Inter-Regular',
                         }}
                     />
+
+                    {searchText?.length > 0 && (
+                        <TouchableOpacity
+                            onPress={() => {
+                                setSearchText('');
+                                Keyboard.dismiss(); // optional 👈
+                            }}
+                        >
+                            <AntDesign name="closecircle" size={18} color="#999" />
+                        </TouchableOpacity>
+                    )}
                 </View>
             )}
 
@@ -506,113 +571,106 @@ const BlackListUser = () => {
 
             )}
 
-            {/* 🔹 MODAL */}
             <Modal
                 visible={isModalVisible}
-                animationType="slide"
+                animationType="fade"
                 transparent
-                onRequestClose={() => setIsModalVisible(false)}>
+                onRequestClose={() => setIsModalVisible(false)}
+            >
+                <TouchableWithoutFeedback onPress={() => setIsModalVisible(false)}>
+                    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}>
 
-                <TouchableOpacity
-                    style={{
-                        flex: 1,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        backgroundColor: 'rgba(0,0,0,0.5)',
-                    }}
-                    activeOpacity={1}
-                    onPress={() => setIsModalVisible(false)}>
-
-                    {/* Cross Button */}
-                    <View
-                        style={{
-                            flexDirection: 'row',
-                            justifyContent: 'flex-end',
-                            width: '80%',
-                            paddingVertical: 5,
-                        }}>
-                        <TouchableOpacity
-                            onPress={() => setIsModalVisible(false)}
+                        <View
                             style={{
-                                marginRight: 40,
+                                position: 'absolute',
+                                top: modalPositionRef.current.top,
+                                left: modalPositionRef.current.left,
                                 backgroundColor: 'white',
-                                borderRadius: 30,
-                                padding: 5,
-                            }}>
-                            <Entypo name="cross" size={20} color="black" />
-                        </TouchableOpacity>
+                                paddingVertical: 6,
+                                borderRadius: 12,
+                                width: 170,
+                                elevation: 6,
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.2,
+                                shadowRadius: 4,
+                            }}
+                        >
+                            {/* Title */}
+                            <Text
+                                style={{
+                                    fontSize: 14,
+                                    fontFamily: 'Inter-SemiBold',
+                                    paddingHorizontal: 12,
+                                    paddingVertical: 6,
+                                    color: 'black',
+                                }}
+                            >
+                                Select Action
+                            </Text>
+
+                            {/* Edit */}
+                            {(
+                                userType === 'SuperAdmin' ||
+                                (userType === 'SubAdmin' && permissions?.black_list_staffs?.update) ||
+                                (userType === 'main' && permissions?.black_list_staffs?.update)
+                            ) && (
+                                    <TouchableOpacity
+                                        onPress={handleEdit}
+                                        style={{
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            paddingVertical: 8,
+                                            paddingHorizontal: 12,
+                                            borderTopWidth: 1,
+                                            borderColor: '#eee',
+                                        }}
+                                    >
+                                        <AntDesign name="edit" size={16} color="#3B82F6" />
+                                        <Text
+                                            style={{
+                                                fontSize: 13,
+                                                marginLeft: 8,
+                                                color: '#3B82F6',
+                                            }}
+                                        >
+                                            Edit Staff
+                                        </Text>
+                                    </TouchableOpacity>
+                                )}
+
+                            {/* Delete */}
+                            {(
+                                userType === 'SuperAdmin' ||
+                                (userType === 'SubAdmin' && permissions?.black_list_staffs?.delete) ||
+                                (userType === 'main' && permissions?.black_list_staffs?.delete)
+                            ) && (
+                                    <TouchableOpacity
+                                        onPress={handleDelete}
+                                        style={{
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            paddingVertical: 8,
+                                            paddingHorizontal: 12,
+                                            borderTopWidth: 1,
+                                            borderColor: '#eee',
+                                        }}
+                                    >
+                                        <AntDesign name="delete" size={16} color="#DC2626" />
+                                        <Text
+                                            style={{
+                                                fontSize: 13,
+                                                marginLeft: 8,
+                                                color: '#DC2626',
+                                            }}
+                                        >
+                                            Delete Staff
+                                        </Text>
+                                    </TouchableOpacity>
+                                )}
+                        </View>
                     </View>
-
-                    {/* Modal Box */}
-                    <View
-                        style={{
-                            backgroundColor: 'white',
-                            padding: 15,
-                            borderRadius: 15,
-                            width: '60%',
-                            alignItems: 'center',
-                            elevation: 5,
-                        }}
-                        onStartShouldSetResponder={() => true}>
-
-                        <Text
-                            style={{
-                                fontSize: 15,
-                                fontFamily: 'Inter-SemiBold',
-                                color: 'black',
-                                marginBottom: 15,
-                            }}>
-                            Select Action
-                        </Text>
-                        {(
-                            (userType === 'SuperAdmin') ||
-                            (userType === 'SubAdmin' && permissions?.black_list_staffs?.update) || (userType === 'main' && permissions?.black_list_staffs?.update)
-                        ) && (
-
-                                <TouchableOpacity
-                                    onPress={handleEdit}
-                                    style={{
-                                        borderColor: '#000',
-                                        borderWidth: 1,
-                                        borderRadius: 10,
-                                        width: '100%',
-                                        paddingVertical: 12,
-                                        flexDirection: 'row',
-                                        justifyContent: 'center',
-                                        gap: 10,
-                                    }}>
-                                    <AntDesign name="edit" size={18} color="black" />
-                                    <Text style={{ fontFamily: 'Inter-Regular', color: '#000' }}>
-                                        Edit
-                                    </Text>
-                                </TouchableOpacity>
-                            )}
-                        {(
-                            (userType === 'SuperAdmin') ||
-                            (userType === 'SubAdmin' && permissions?.black_list_staffs?.delete) || (userType === 'main' && permissions?.black_list_staffs?.delete)
-                        ) && (
-                                <TouchableOpacity
-                                    onPress={handleDelete}
-                                    style={{
-                                        borderColor: 'red',
-                                        borderWidth: 1,
-                                        borderRadius: 10,
-                                        width: '100%',
-                                        paddingVertical: 12,
-                                        flexDirection: 'row',
-                                        justifyContent: 'center',
-                                        gap: 10,
-                                        marginTop: 10,
-                                    }}>
-                                    <AntDesign name="delete" size={18} color="red" />
-                                    <Text style={{ fontFamily: 'Inter-Regular', color: 'red' }}>
-                                        Delete
-                                    </Text>
-                                </TouchableOpacity>
-                            )}
-
-                    </View>
-                </TouchableOpacity>
+                </TouchableWithoutFeedback>
             </Modal>
 
             <Modal

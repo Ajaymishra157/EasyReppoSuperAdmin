@@ -1,4 +1,4 @@
-import { ActivityIndicator, Alert, FlatList, Image, Modal, PermissionsAndroid, ScrollView, StyleSheet, Text, TextInput, ToastAndroid, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, Alert, FlatList, Image, Keyboard, Modal, PermissionsAndroid, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import colors from '../CommonFiles/Colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -17,6 +17,7 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Toast from 'react-native-toast-message';
 
 const ListingScreen = () => {
   const list = require('../assets/images/List.png');
@@ -27,13 +28,16 @@ const ListingScreen = () => {
   const [List, setList] = useState([]);
   const [ListLoading, setListLoading] = useState(false);
 
-  const [errorMessage, setErrorMessage] = useState('');
+  // Pagination states
+  const [visibleData, setVisibleData] = useState([]);
+  const [page, setPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const ITEMS_PER_PAGE = 100;
 
+  const [errorMessage, setErrorMessage] = useState('');
   const [fromErrorMessage, setFromErrorMessage] = useState('');
   const [toDateErrorMessage, setToDateErrorMessage] = useState('');
-
-
-
 
   const [selectedHistory, setSelectedHistory] = useState(null);
   console.log("selected history", selectedHistory);
@@ -48,38 +52,25 @@ const ListingScreen = () => {
   const [PostMailLoading, setPostMailLoading] = useState(false);
 
   const [modalVisible2, setModalVisible2] = useState(false);
-  const [fromDate, setFromDate] = useState('');
-
-  const [toDate, setToDate] = useState('');
-
+  const [fromDate, setFromDate] = useState(new Date());
+  const [toDate, setToDate] = useState(new Date());
   const [resultCount, setResultCount] = useState(0);
-
   const [showFromPicker, setShowFromPicker] = useState(false);
   const [showToPicker, setShowToPicker] = useState(false);
-
   const [financeList, setFinanceList] = useState([]);
-
   const [filteredData, setFilteredData] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const [selectedType, setSelectedType] = useState(null);
-
-
   const [isFilterActive, setIsFilterActive] = useState(false);
-
   const [ResetButtonVisible, setResetButtonVisible] = useState(false);
-
   const [refreshing, setRefreshing] = useState(false);
-
-
   const [PrePdfLoading, setPrePdfLoading] = useState(false);
   const [PostPdfLoading, setPostPdfLoading] = useState(false);
-
   const [text, setText] = useState(null);
   const [originalPsoList, setOriginalPsoList] = useState([]);
-
   const [userType, setUsertype] = useState(null);
-
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
 
 
@@ -98,9 +89,24 @@ const ListingScreen = () => {
     }, []),
   );
 
-
   const [permissions, setPermissions] = useState({});
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => setKeyboardHeight(e.endCoordinates.height)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardHeight(0)
+    );
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const fetchPermissions = async () => {
     setLoading(true);
@@ -154,9 +160,6 @@ const ListingScreen = () => {
     fetchPermissions();
   }, []);
 
-
-
-
   const openModal = item => {
     setSelectedHistory(item); // Set selected item data to show in the modal
     setModalVisible(true); // Show the modal
@@ -164,13 +167,18 @@ const ListingScreen = () => {
     setPostLoading(false);
   };
 
-
   const closeModal = () => {
     setModalVisible(false); // Hide the modal
     setSelectedHistory(null); // Clear the selected item data
   };
 
-
+  // Function to reset pagination based on full List
+  const resetPagination = (fullList) => {
+    const firstBatch = fullList.slice(0, ITEMS_PER_PAGE);
+    setVisibleData(firstBatch);
+    setPage(1);
+    setHasMore(fullList.length > ITEMS_PER_PAGE);
+  };
 
   const intimationList = async (filterPayload = null) => {
     console.log("ye hai filterpayload", filterPayload)
@@ -182,42 +190,44 @@ const ListingScreen = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(filterPayload || {})
-
       });
 
       const result = await response.json();
 
       if (response.ok) {
         if (result.code === 200) {
-          setList(result.payload); // Successfully received data
-          setId(result.payload.id);
-          setOriginalPsoList(result.payload);
-          // setIsFilterActive(true);
-          setResultCount(result.payload.length);
+          const fullList = result.payload;
+          setList(fullList); // Successfully received data
+          setOriginalPsoList(fullList);
+          setResultCount(fullList.length);
+          resetPagination(fullList); // Reset pagination with new data
         } else {
-
           console.log('Error:', 'Failed to load staff data');
           setList([]);
+          setOriginalPsoList([]);
+          setVisibleData([]);
           setResultCount(0);
+          setHasMore(false);
         }
       } else {
         console.log('HTTP Error:', result.message || 'Something went wrong');
         setResultCount(0);
+        setVisibleData([]);
+        setHasMore(false);
       }
     } catch (error) {
       console.log('Error fetching data:', error.message);
       setResultCount(0);
+      setVisibleData([]);
+      setHasMore(false);
     } finally {
       setListLoading(false);
-
     }
   };
 
   useEffect(() => {
     intimationList();
   }, []);
-
-
 
   const PrePostEmailSendApi = async (type, id) => {
     console.log("type ye hai", type, id);
@@ -227,8 +237,6 @@ const ListingScreen = () => {
     } else if (type === 'post') {
       setPostLoading(true); // Show loader for Post button
     }
-
-
 
     try {
       const response = await fetch(ENDPOINTS.Mail_Send_Pdf, {
@@ -247,22 +255,50 @@ const ListingScreen = () => {
       if (response.ok) {
         // Check the code in the response to decide which message to show
         if (result.code === 200) {
-          ToastAndroid.show('Mail Send Successfully', ToastAndroid.SHORT);
+          Toast.show({
+            type: 'success',
+            text1: 'Mail Send Successfully',
+            position: 'bottom',
+            bottomOffset: 60,
+            visibilityTime: 2000,
+          });
           setModalVisible(false);
         } else if (result.code === 400) {
-          // Handle case for code 400
-          ToastAndroid.show(result.message || 'Something went wrong', ToastAndroid.SHORT);
+          Toast.show({
+            type: 'error',
+            text1: result.message || 'Something went wrong',
+            position: 'bottom',
+            bottomOffset: 60,
+            visibilityTime: 2000,
+          });
         } else {
-          // Handle other cases or unknown codes
-          ToastAndroid.show('Failed to send mail. Please try again later.', ToastAndroid.SHORT);
+          Toast.show({
+            type: 'error',
+            text1: 'Failed to send mail. Please try again later.',
+            position: 'bottom',
+            bottomOffset: 60,
+            visibilityTime: 2000,
+          });
         }
       } else {
         console.log('HTTP Error:', result.message || 'Something went wrong');
-        ToastAndroid.show(result.message || 'Something went wrong', ToastAndroid.SHORT);
+        Toast.show({
+          type: 'error',
+          text1: result.message || 'Something went wrong',
+          position: 'bottom',
+          bottomOffset: 60,
+          visibilityTime: 2000,
+        });
       }
     } catch (error) {
       console.log('Error fetching data:', error.message);
-      ToastAndroid.show('Error fetching data. Please try again later.', ToastAndroid.SHORT);
+      Toast.show({
+        type: 'error',
+        text1: 'Error fetching data. Please try again later.',
+        position: 'bottom',
+        bottomOffset: 60,
+        visibilityTime: 2000,
+      });
     } finally {
       if (type === 'pre') setPreLoading(false);
       if (type === 'post') setPostLoading(false);
@@ -286,7 +322,6 @@ const ListingScreen = () => {
           console.log('Storage permission granted');
         } else {
           console.log('Storage permission denied');
-
         }
       } catch (err) {
         console.warn(err);
@@ -301,28 +336,25 @@ const ListingScreen = () => {
   const handleTextChange = (inputText) => {
     setText(inputText);
 
-    // If inputText is empty, show the original data
+    let filteredList = [];
     if (inputText === '') {
-      setList(originalPsoList);  // Reset to original data
-      setResultCount(originalPsoList.length);
-
-
+      filteredList = originalPsoList;  // Reset to original data
     } else {
       // Filter data based on Name, Reg No, or Agg No
-      const filtered = originalPsoList.filter(item => {
-        const lowerCaseInput = inputText.toLowerCase();
+      const lowerCaseInput = inputText.toLowerCase();
+      filteredList = originalPsoList.filter(item => {
         return (
-          item.customer_name.toLowerCase().includes(lowerCaseInput) ||
-          item.rc_no.toLowerCase().includes(lowerCaseInput) ||
-          item.engine_no.toLowerCase().includes(lowerCaseInput) ||
-          item.chassis_no.toLowerCase().includes(lowerCaseInput)
-
+          item.customer_name?.toLowerCase().includes(lowerCaseInput) ||
+          item.rc_no?.toLowerCase().includes(lowerCaseInput) ||
+          item.engine_no?.toLowerCase().includes(lowerCaseInput) ||
+          item.chassis_no?.toLowerCase().includes(lowerCaseInput)
         );
       });
-
-      setList(filtered); // Update filtered data state
-      setResultCount(filtered.length)
     }
+
+    setList(filteredList);
+    setResultCount(filteredList.length);
+    resetPagination(filteredList); // Reset pagination with filtered list
   };
 
   const PreDownloadPDF = async () => {
@@ -740,15 +772,10 @@ const ListingScreen = () => {
     }
   };
 
-
-
-
   const PrePdfAfterMail = async () => {
 
     setPreMailLoading(true);
     setModalVisible(false);
-
-
 
     const htmlContent = `
         <html>
@@ -986,8 +1013,6 @@ const ListingScreen = () => {
     </html>
     
         `;
-
-
 
     try {
       // Generate PDF from HTML content
@@ -1295,28 +1320,62 @@ const ListingScreen = () => {
     }
   };
 
-  const renderItem2 = ({ item }) => (
-    <TouchableOpacity
-      onPress={() => {
-        setSelectedType(item.finance_name);
-        setIsDropdownVisible(false);
-      }}
-      style={{
-        padding: 10,
-        borderBottomWidth: 1,
-        borderColor: '#eee'
-      }}>
-      <Text style={{ color: 'black', fontFamily: 'Inter-Regular' }}>{item.finance_name}</Text>
-    </TouchableOpacity>
-  );
+  const renderItem2 = ({ item }) => {
+    const isSelected = selectedType === item.finance_name;
+
+    return (
+      <TouchableOpacity
+        onPress={() => {
+          setSelectedType(item.finance_name);
+          setIsDropdownVisible(false);
+          // ✅ REMOVE ERROR WHEN SELECTED
+          setErrorMessage('');
+        }}
+        style={{
+          padding: 12,
+          backgroundColor: isSelected ? colors.light_brown : 'white',
+          borderBottomWidth: 1,
+          borderBottomColor: '#eee',
+        }}
+      >
+        <Text style={{
+          fontFamily: 'Inter-Regular',
+          color: isSelected ? 'black' : 'black',
+          fontWeight: isSelected ? 'bold' : 'normal'
+        }}>
+          {item.finance_name}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   const onRefresh = async () => {
+    setRefreshing(true);
     await intimationList();
     await fetchPermissions();
-
+    setRefreshing(false);
+    setIsFilterActive(false);
   }
 
+  // Load more items for pagination
+  const loadMore = () => {
+    if (!hasMore || loadingMore || ListLoading) return;
 
+    setLoadingMore(true);
+
+    // Simulate network delay for smoother UX
+    setTimeout(() => {
+      const nextPage = page + 1;
+      const startIndex = page * ITEMS_PER_PAGE;
+      const endIndex = startIndex + ITEMS_PER_PAGE;
+
+      const newItems = List.slice(startIndex, endIndex);
+      setVisibleData(prev => [...prev, ...newItems]);
+      setPage(nextPage);
+      setHasMore(endIndex < List.length);
+      setLoadingMore(false);
+    }, 500);
+  };
 
   // Render each item in the table
   const renderItem = ({ item, index }) => (
@@ -1344,7 +1403,6 @@ const ListingScreen = () => {
             justifyContent: 'center',
             alignItems: 'center',
             flexDirection: 'row',
-
             height: 30
           }}>
           <AntDesign name="infocirlceo" size={20} color="black" />
@@ -1369,9 +1427,6 @@ const ListingScreen = () => {
     return `${day}-${month}-${year}`;
   };
 
-
-
-
   useEffect(() => {
     fetchFinanceList();
   }, []);
@@ -1387,13 +1442,18 @@ const ListingScreen = () => {
       const response = await fetch(ENDPOINTS.Finance_List(rentAgencyId, staff_id));
       const result = await response.json();
 
-
       if (result.code === 200 && Array.isArray(result.payload)) {
         setFinanceList(result.payload);
         setFilteredData(result.payload)
       } else {
         setFinanceList([]);
-        ToastAndroid.show("No finance data found", ToastAndroid.SHORT);
+        Toast.show({
+          type: 'error',
+          text1: 'No finance data found',
+          position: 'bottom',
+          bottomOffset: 60,
+          visibilityTime: 2000,
+        });
       }
     } catch (error) {
       console.log("Finance list fetch error:", error.message);
@@ -1409,8 +1469,6 @@ const ListingScreen = () => {
     );
     setFilteredData(filtered);
   };
-
-
 
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
@@ -1431,9 +1489,7 @@ const ListingScreen = () => {
             position: 'absolute',
             left: 6,
             top: 5,
-
             height: 50,
-
           }}
           onPress={() => {
             navigation.goBack();
@@ -1450,7 +1506,6 @@ const ListingScreen = () => {
           Pso Confirm/Cancel List
         </Text>
 
-
         <View
           style={{
             width: '30%',
@@ -1460,16 +1515,9 @@ const ListingScreen = () => {
             right: 18,
             top: 4,
             height: 50,
-
-
           }}>
-
           {ResetButtonVisible && (
             <TouchableOpacity onPress={async () => {
-
-
-
-
               const payload = {
                 finance_name_show: "",
                 from_date: "",
@@ -1483,22 +1531,24 @@ const ListingScreen = () => {
 
               // Reset filter states
               setSelectedType(null);
-              setFromDate('');
-              setToDate('');
-
+              setFromDate(new Date());
+              setToDate(new Date());
 
               await intimationList(payload);
               setResetButtonVisible(false);
+              setIsFilterActive(false);
             }}>
               <Image source={reset} style={{ width: 28, height: 28, tintColor: 'white' }} />
             </TouchableOpacity>
           )}
         </View>
 
-        {(
+
+
+        {visibleData.length > 0 && (
           userType === 'SuperAdmin' ||
           !permissions.pso_list ||
-          permissions.pso_list.psofilter
+          permissions.pso_list?.psofilter
         ) && (
             <View
               style={{
@@ -1509,86 +1559,97 @@ const ListingScreen = () => {
                 right: 6,
                 top: 5,
                 height: 50,
-
-
               }}>
 
+              <TouchableOpacity
+                style={{ justifyContent: 'center', alignItems: 'center' }}
+                onPress={() => {
+                  setModalVisible2(true);
+                  setErrorMessage('');
+                  setFromErrorMessage('');
+                  setToDateErrorMessage('');
+                }}>
 
-              <TouchableOpacity onPress={() => {
-                setModalVisible2(true);
-                setErrorMessage('');
-                setFromErrorMessage('');
-                setToDateErrorMessage('');
+                <FontAwesome5 name="filter" color="white" size={23} />
 
+                {/* 🔴 Filter Active Dot */}
+                {isFilterActive && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: -2,
+                      right: -2,
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: '#1daa61',
+                    }}
+                  />
+                )}
 
-              }}>
-                <FontAwesome5 name='filter' color='white' size={23} />
               </TouchableOpacity>
             </View>
           )}
       </View>
-      <View style={{ width: '100%', paddingHorizontal: 10 }}>
-        <View
-          style={{
-            width: '100%',
+      {(ListLoading || originalPsoList.length > 0) && (
 
-            borderWidth: 1,
-            borderColor: colors.Brown,
-            marginTop: 5,
-            marginBottom: 5,
-            borderRadius: 8,
-            height: 50,
-            backgroundColor: 'white',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            borderColor: colors.Brown,
-
-          }}>
-          <View style={{
-            width: 30,  // निश्चित width दी है
-            height: 50, // पूरी height ली है
-            justifyContent: 'center',
-            alignItems: 'center',
-
-          }}>
-            <MaterialIcons name='search' size={24} color='black' />
-          </View>
-          <TextInput
+        <View style={{ width: '100%', paddingHorizontal: 10 }}>
+          <View
             style={{
-              flex: 1,
-              fontSize: 16,
-              fontFamily: 'Inter-Regular',
-
-              color: 'black',
+              width: '100%',
+              borderWidth: 1,
+              borderColor: colors.Brown,
+              marginTop: 5,
+              marginBottom: 5,
+              borderRadius: 8,
               height: 50,
-            }}
-
-            placeholder="Search Name/Rc No"
-            placeholderTextColor="grey"
-            value={text}
-            onChangeText={handleTextChange}
-          />
-          {text ? (
-            <TouchableOpacity
-              onPress={() => {
-
-                setText(''); // Clear the search text
-                setList(originalPsoList);
-                setResultCount(originalPsoList.length);
-              }}
+              backgroundColor: 'white',
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              borderColor: colors.Brown,
+            }}>
+            <View style={{
+              width: 30,
+              height: 50,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}>
+              <MaterialIcons name='search' size={24} color='black' />
+            </View>
+            <TextInput
               style={{
-                marginRight: 7,
-                height: 40,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}>
-              <Entypo name="cross" size={20} color="black" />
-            </TouchableOpacity>
-          ) : null}
+                flex: 1,
+                fontSize: 16,
+                fontFamily: 'Inter-Regular',
+                color: 'black',
+                height: 50,
+              }}
+              placeholder="Search Name/Rc No"
+              placeholderTextColor="grey"
+              value={text}
+              onChangeText={handleTextChange}
+            />
+            {text ? (
+              <TouchableOpacity
+                onPress={() => {
+                  setText(''); // Clear the search text
+                  setList(originalPsoList);
+                  setResultCount(originalPsoList.length);
+                  resetPagination(originalPsoList);
+                }}
+                style={{
+                  marginRight: 7,
+                  height: 40,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}>
+                <Entypo name="cross" size={20} color="black" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
         </View>
-
-      </View>
+      )}
       <View style={{
         paddingVertical: 8,
         paddingHorizontal: 15,
@@ -1704,9 +1765,8 @@ const ListingScreen = () => {
             </View>
           </View>
         )}
-
-
       </View>
+
       {/* Area List */}
       <View style={{ flex: 1, backgroundColor: 'white' }}>
         {ListLoading ? (
@@ -1714,11 +1774,14 @@ const ListingScreen = () => {
         ) : (
           <FlatList
             keyboardShouldPersistTaps='handled'
-            data={List}
+            data={visibleData}
             renderItem={renderItem}
             refreshing={refreshing}
             onRefresh={onRefresh}
             keyExtractor={(item) => item.id.toString()}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.5}
+            contentContainerStyle={{ paddingBottom: keyboardHeight + 80 }}
             ListEmptyComponent={
               <View
                 style={{ height: 600, justifyContent: 'center', alignItems: 'center' }}>
@@ -1728,16 +1791,21 @@ const ListingScreen = () => {
                     fontFamily: 'Inter-Regular',
                     color: 'red',
                     marginTop: 20
-
                   }}>
                   No List Found
                 </Text>
               </View>
             }
+            ListFooterComponent={
+              loadingMore ? (
+                <View style={{ padding: 15 }}>
+                  <ActivityIndicator size="small" color={colors.Brown} />
+                </View>
+              ) : null
+            }
           />
         )}
       </View>
-
 
       <Modal visible={modalVisible} transparent={true} animationType="slide">
         <TouchableOpacity
@@ -1778,19 +1846,6 @@ const ListingScreen = () => {
             onTouchEnd={e => e.stopPropagation()}>
             {selectedHistory && (
               <>
-                {/* <TouchableOpacity
-                              style={{
-                                position: 'absolute',
-                                right: 5,
-                                top: 12,
-                                width: '20%',
-                                flexDirection: 'row',
-                                justifyContent: 'center',
-                              }}
-                              onPress={closeModal}>
-                              <Entypo name="cross" size={30} color="black" />
-                            </TouchableOpacity> */}
-
                 <View
                   style={{
                     width: '100%',
@@ -1803,14 +1858,12 @@ const ListingScreen = () => {
                     style={{
                       fontSize: 16,
                       fontFamily: 'Inter-Medium',
-
                       color: 'black',
                       textAlign: 'center',
                       textTransform: 'uppercase'
                     }}>
                     Pso List Information
                   </Text>
-
                 </View>
 
                 <ScrollView
@@ -1836,7 +1889,6 @@ const ListingScreen = () => {
                       <View
                         style={{
                           width: '40%',
-
                           borderLeftWidth: 1,
                           borderBottomWidth: 1,
                           borderColor: 'black',
@@ -1857,13 +1909,10 @@ const ListingScreen = () => {
                         </Text>
                       </View>
 
-
-
                       {/* Value */}
                       <View
                         style={{
                           width: '60%',
-
                           borderLeftWidth: 1,
                           borderBottomWidth: 1,
                           borderRightWidth: 1,
@@ -1893,7 +1942,6 @@ const ListingScreen = () => {
                     <View
                       style={{
                         width: '40%',
-
                         borderLeftWidth: 1,
                         borderBottomWidth: 1,
                         borderColor: 'black',
@@ -1913,8 +1961,6 @@ const ListingScreen = () => {
                         Confirm Status
                       </Text>
                     </View>
-
-
 
                     {/* Value - Touchable styled as badge */}
                     <View
@@ -1954,181 +2000,7 @@ const ListingScreen = () => {
                   </View>
                 </ScrollView>
 
-
-
-
-                {/* <View style={{ flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-                  {selectedHistory.confirm_status == 'Confirm' && (
-                    <TouchableOpacity
-                      onPress={PreDownloadPDF}
-                      style={{
-                        backgroundColor: 'white',
-                        paddingVertical: 12,
-                        paddingHorizontal: 20,
-                        borderColor: colors.Brown,
-                        borderWidth: 1,
-                        borderRadius: 8,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginTop: 20,
-                        width: '48%',
-                        marginRight: 10, // Space between buttons
-                        flexDirection: 'row', // Icon aur text ko side-by-side dikhane ke liye
-                        alignItems: 'center', // Vertically center karne ke liye
-                      }}
-                      disabled={PrePdfLoading}
-                    >
-                      {PrePdfLoading ? (
-                        <ActivityIndicator size="small" color={colors.Brown} />
-                      ) : (
-                        <>
-                          <AntDesign name='download' color='black' size={20} style={{ marginRight: 8 }} />
-                          <Text
-                            style={{
-                              color: 'black',
-                              fontSize: 12,
-                              fontWeight: 'bold',
-                              fontFamily: 'Inter-Bold',
-                              textTransform: 'uppercase',
-                            }}
-                          >
-                            Pre PDF
-                          </Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-
-                  )}
-
-                  {selectedHistory.confirm_status == 'Confirm' && (
-                    <TouchableOpacity
-                      onPress={PostDownloadPDF}
-                      style={{
-                        backgroundColor: 'white',
-                        paddingVertical: 12,
-                        paddingHorizontal: 20,
-                        borderColor: colors.Brown,
-                        borderWidth: 1,
-                        borderRadius: 8,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginTop: 20,
-                        width: '48%', // Adjust width so both buttons fit
-                        flexDirection: 'row',
-                        alignItems: 'center', // Center align for icon & text
-                      }}
-                      disabled={PostPdfLoading} // Disable button during loading
-                    >
-                      {PostPdfLoading ? (
-                        <ActivityIndicator size="small" color={colors.Brown} />
-                      ) : (
-                        <>
-                          <AntDesign name='download' color='black' size={20} style={{ marginRight: 8 }} />
-                          <Text
-                            style={{
-                              color: 'black',
-                              fontSize: 12,
-                              fontWeight: 'bold',
-                              fontFamily: 'Inter-Bold',
-                              textTransform: 'uppercase',
-                            }}
-                          >
-                            Post PDF
-                          </Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-
-                  )}
-
-                </View> */}
-
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-
-                  {/* {selectedHistory.confirm_status == 'Confirm' && (
-                    <TouchableOpacity
-                      onPress={() => {
-                        PrePostEmailSendApi('pre', selectedHistory.id);  // Send selectedHistory.id
-                      }}
-                      style={{
-                        backgroundColor: 'white',
-                        paddingVertical: 12,
-                        paddingHorizontal: 20,
-                        borderColor: colors.Brown,
-                        borderWidth: 1,
-                        borderRadius: 8,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginTop: 20,
-                        width: '48%', 
-                        marginRight: 10, 
-                        flexDirection: 'row',
-                        gap: 10
-                      }}
-                      disabled={preLoading}  
-                    >
-                      {preLoading ? (
-                        <ActivityIndicator size="small" color={colors.Brown} /> 
-                      ) : (
-                        <>
-                          <AntDesign name='mail' color='black' size={20} />
-                          <Text
-                            style={{
-                              color: 'black',
-                              fontSize: 12,
-                              fontWeight: 'bold',
-                              fontFamily: 'Inter-Bold',
-                              textTransform: 'uppercase'
-                            }}
-                          >
-                            Pre Pdf Mail
-                          </Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-                  )} */}
-
-                  {/* {selectedHistory.confirm_status == 'Confirm' && (
-                    <TouchableOpacity
-                      onPress={() => {
-                        PrePostEmailSendApi('post', selectedHistory.id);  // Send selectedHistory.id
-                      }}
-                      style={{
-                        backgroundColor: 'white',
-                        paddingVertical: 12,
-                        paddingHorizontal: 20,
-                        borderColor: colors.Brown,
-                        borderWidth: 1,
-                        borderRadius: 8,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginTop: 20,
-                        width: '48%', 
-                        flexDirection: 'row',
-                        gap: 10
-                      }}
-                      disabled={postLoading}  
-                    >
-                      {postLoading ? (
-                        <ActivityIndicator size="small" color={colors.Brown} />  
-                      ) : (
-                        <>
-                          <AntDesign name='mail' color='black' size={20} />
-                          <Text
-                            style={{
-                              color: 'black',
-                              fontSize: 12,
-                              fontWeight: 'bold',
-                              fontFamily: 'Inter-Bold',
-                              textTransform: 'uppercase'
-                            }}
-                          >
-                            Post Pdf Mail
-                          </Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-                  )} */}
                   {selectedHistory.confirm_status == 'Confirm' && (
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' }}>
                       {/* Pre Download PDF Button */}
@@ -2220,7 +2092,6 @@ const ListingScreen = () => {
                     </View>
                   )}
                 </View>
-
               </>
             )}
           </View>
@@ -2252,10 +2123,9 @@ const ListingScreen = () => {
             <TouchableOpacity
               onPress={() => {
                 setModalVisible2(false);
-
+                setIsDropdownVisible(false);
               }}
               style={{
-
                 backgroundColor: 'white',
                 borderRadius: 50,
               }}>
@@ -2272,14 +2142,12 @@ const ListingScreen = () => {
             onStartShouldSetResponder={() => true} // Prevent modal from closing on content click
             onTouchEnd={e => e.stopPropagation()}>
             <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-
               <Text style={{ fontSize: 16, fontFamily: 'Inter-Bold', marginBottom: 10, color: 'black' }}>Change Filter</Text>
-
             </View>
 
             {/* Dropdown Start */}
             <Text style={{ fontSize: 14, color: 'black', marginBottom: 5 }}>Finance List </Text>
-            <View style={{ marginBottom: 10 }}>
+            <View style={{ marginBottom: errorMessage ? 0 : 10 }}>
               <TouchableOpacity
                 style={{
                   backgroundColor: 'white',
@@ -2291,7 +2159,7 @@ const ListingScreen = () => {
                   borderColor: errorMessage ? 'red' : '#ddd',
                   borderWidth: 1,
                 }}
-                onPress={() => setIsDropdownVisible(!isDropdownVisible)}>
+                onPress={() => setIsDropdownVisible(prev => !prev)}>
                 <Text style={{
                   fontSize: 16,
                   fontFamily: 'Inter-Regular',
@@ -2312,53 +2180,58 @@ const ListingScreen = () => {
                   borderRadius: 8,
                   borderColor: '#ddd',
                   borderWidth: 1,
-                  zIndex: 1,
+                  zIndex: 999,   // increase
+                  elevation: 5,  // android fix
                   marginTop: 2,
-                  flex: 1,
                 }}>
-                  <View style={{
-                    position: 'relative',
-                    margin: 5,
-                  }}>
-                    <TextInput
-                      style={{
-                        height: 40,
-                        borderColor: '#aaa',
-                        borderWidth: 1,
-                        borderRadius: 5,
-                        paddingLeft: 10,
-                        paddingRight: 30, // space for the icon
-                        color: 'black'
-                      }}
-                      placeholder="Search Finance"
-                      placeholderTextColor="#ccc"
-                      value={searchQuery}
-                      onChangeText={handleSearch}
-                    />
-
-                    {searchQuery.length > 0 && (
-                      <TouchableOpacity
-                        onPress={() => {
-                          setSearchQuery('');
-                          setFilteredData(financeList); // optional: reset the list
-                        }}
+                  {(financeList.length > 0 || searchQuery.length > 0) && (
+                    <View style={{
+                      position: 'relative',
+                      margin: 5,
+                    }}>
+                      <TextInput
                         style={{
-                          position: 'absolute',
-                          right: 10,
-                          top: 10,
-                        }}>
-                        <FontAwesome name="times-circle" size={18} color="#999" />
-                      </TouchableOpacity>
-                    )}
-                  </View>
+                          height: 40,
+                          borderColor: '#aaa',
+                          borderWidth: 1,
+                          borderRadius: 5,
+                          paddingLeft: 10,
+                          paddingRight: 30, // space for the icon
+                          color: 'black'
+                        }}
+                        placeholder="Search Finance"
+                        placeholderTextColor="#ccc"
+                        value={searchQuery}
+                        onChangeText={handleSearch}
+                      />
+
+                      {searchQuery.length > 0 && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            setSearchQuery('');
+                            setFilteredData(financeList); // optional: reset the list
+                          }}
+                          style={{
+                            position: 'absolute',
+                            right: 10,
+                            top: 10,
+                          }}>
+                          <FontAwesome name="times-circle" size={18} color="#999" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
 
                   {filteredData.length > 0 ? (
                     <FlatList
-                      style={{ maxHeight: 150 }}
+                      style={{ maxHeight: 200 }}
                       data={filteredData}
                       keyExtractor={(item) => item.finance_id.toString()}
                       renderItem={renderItem2}
                       keyboardShouldPersistTaps="handled"
+                      initialNumToRender={10}
+                      maxToRenderPerBatch={10}
+                      windowSize={5}
                     />
                   ) : (
                     <View style={{ height: 150, justifyContent: 'center', alignItems: 'center' }}>
@@ -2378,16 +2251,15 @@ const ListingScreen = () => {
               </Text>
             ) : null}
 
-
             <Text style={{ fontSize: 14, marginBottom: 5, color: 'black', fontFamily: 'Inter-Regular' }}>From Date</Text>
             <TouchableOpacity
               onPress={() => setShowFromPicker(true)}
               style={{
                 borderWidth: 1,
-                borderColor: '#ccc',
+                borderColor: fromErrorMessage ? 'red' : '#ccc',
                 padding: 10,
                 borderRadius: 5,
-                marginBottom: 10,
+                marginBottom: fromErrorMessage ? 0 : 10,
                 flexDirection: 'row',
                 justifyContent: 'space-between',
                 paddingHorizontal: 5
@@ -2413,10 +2285,10 @@ const ListingScreen = () => {
               onPress={() => setShowToPicker(true)}
               style={{
                 borderWidth: 1,
-                borderColor: '#ccc',
+                borderColor: toDateErrorMessage ? 'red' : '#ccc',
                 padding: 10,
                 borderRadius: 5,
-                marginBottom: 10,
+                marginBottom: toDateErrorMessage ? 0 : 10,
                 flexDirection: 'row',
                 justifyContent: 'space-between',
                 paddingHorizontal: 5
@@ -2446,9 +2318,9 @@ const ListingScreen = () => {
                   setFromErrorMessage('');
                   setToDateErrorMessage('');
                   setSelectedType('');
-                  setFromDate('');
-                  setToDate('');
-
+                  setFromDate(new Date());
+                  setToDate(new Date());
+                  setIsFilterActive(false);
                 }}
                 style={{
                   padding: 10, width: '40%', backgroundColor: 'white',
@@ -2456,7 +2328,6 @@ const ListingScreen = () => {
                   padding: 15,
                   borderRadius: 8,
                   alignItems: 'center',
-
                   width: '40%'
                 }}
               >
@@ -2472,17 +2343,16 @@ const ListingScreen = () => {
                   width: '40%'
                 }}
                 onPress={async () => {
-
                   if (!selectedType || !fromDate || !toDate) {
                     // Set individual error messages
                     if (!selectedType) {
-                      setErrorMessage('Finance name is required');
+                      setErrorMessage('Finance name Is Required');
                     }
                     if (!fromDate) {
-                      setFromErrorMessage('From Date is required');
+                      setFromErrorMessage('From Date Is Required');
                     }
                     if (!toDate) {
-                      setToDateErrorMessage('To Date is required');
+                      setToDateErrorMessage('To Date Is Required');
                     }
                     return;
                   }
@@ -2493,7 +2363,6 @@ const ListingScreen = () => {
                   setModalVisible2(false);
                   setIsDropdownVisible(false);
 
-
                   const payload = {
                     finance_name: selectedType,
                     from_date: fromDate,
@@ -2501,10 +2370,9 @@ const ListingScreen = () => {
                   };
 
                   // Simple validation
-
-
                   await intimationList(payload);
-                  setResetButtonVisible(true)
+                  setResetButtonVisible(true);
+                  setIsFilterActive(true);
                 }}>
                 <Text
                   style={{
@@ -2515,8 +2383,6 @@ const ListingScreen = () => {
                   Apply
                 </Text>
               </TouchableOpacity>
-
-
             </View>
 
             {/* FROM DateTime Picker */}
@@ -2531,6 +2397,9 @@ const ListingScreen = () => {
                   if (event.type === 'set' && selectedDate) {
                     // Only set the date when user confirms (not when cancelled)
                     setFromDate(formatDate(selectedDate));
+
+                    // ✅ REMOVE ERROR
+                    setFromErrorMessage('');
                   }
                   // If event.type is 'dismissed' or 'cancel', do nothing
                 }}
@@ -2550,24 +2419,23 @@ const ListingScreen = () => {
                   if (selectedDate && event.type !== 'dismissed') {
                     // Only set date when user confirms, not when cancels
                     setToDate(formatDate(selectedDate));
+                    // ✅ REMOVE ERROR
+                    setToDateErrorMessage('');
                   }
                 }}
               />
             )}
-
           </View>
         </TouchableOpacity>
       </Modal>
 
-
-
       {/* Sticky Add New Button */}
-
-      {(
-        userType === 'SuperAdmin' ||
-        !permissions.pso_list ||
-        permissions.pso_list.insert
-      ) && (
+      {
+        (
+          userType === 'SuperAdmin' ||
+          !permissions.pso_list ||
+          permissions.pso_list.insert
+        ) && (
           <View
             style={{
               position: 'absolute',
@@ -2592,10 +2460,9 @@ const ListingScreen = () => {
               }}>
               <AntDesign name="plus" color="white" size={18} />
             </TouchableOpacity>
-
           </View>
-        )}
-
+        )
+      }
     </View>
   )
 }

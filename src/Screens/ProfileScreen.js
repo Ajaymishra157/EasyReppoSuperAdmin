@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
     View, Text, Image, TouchableOpacity, Modal,
-    ActivityIndicator
+    ActivityIndicator,
+    Platform,
+    PermissionsAndroid
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import colors from '../CommonFiles/Colors';
@@ -11,6 +13,8 @@ import { ENDPOINTS, IMAGE_BASE_URL } from '../CommonFiles/Constant';
 import RNFS from 'react-native-fs';
 import SQLite from 'react-native-sqlite-storage';
 SQLite.enablePromise(true);
+import ImagePicker from 'react-native-image-crop-picker';
+import FastImage from 'react-native-fast-image'
 
 
 const ProfileScreen = ({ navigation }) => {
@@ -29,6 +33,7 @@ const ProfileScreen = ({ navigation }) => {
     const [UserName, setUserName] = useState('');
     const [MobileNumber, setMobileNumber] = useState('');
     const [ProfileData, setProfileData] = useState([]);
+    const [imageOptionModal, setImageOptionModal] = useState(false);
 
 
     const handleImagePress = () => setModalVisible(true);
@@ -113,6 +118,110 @@ const ProfileScreen = ({ navigation }) => {
         }
     };
 
+    const requestCameraPermission = async () => {
+        if (Platform.OS === 'android') {
+            try {
+                const granted = await PermissionsAndroid.request(
+                    PermissionsAndroid.PERMISSIONS.CAMERA,
+                    {
+                        title: "Camera Permission",
+                        message: "App needs camera permission to take photo",
+                        buttonNeutral: "Ask Me Later",
+                        buttonNegative: "Cancel",
+                        buttonPositive: "OK"
+                    }
+                );
+
+                return granted === PermissionsAndroid.RESULTS.GRANTED;
+            } catch (err) {
+                console.warn(err);
+                return false;
+            }
+        }
+        return true;
+    };
+
+    const handleCameraPress = () => {
+        setImageOptionModal(true); // open modal with camera/gallery
+    };
+
+    // Function to pick image from camera or gallery
+    const handleImagePick = async (source) => {
+        try {
+
+            // 📷 Camera permission check
+            if (source === "camera") {
+                const hasPermission = await requestCameraPermission();
+
+                if (!hasPermission) {
+                    console.log("Camera permission denied");
+                    return;
+                }
+            }
+
+            let image;
+
+            if (source === "camera") {
+                image = await ImagePicker.openCamera({
+                    width: 300,
+                    height: 300,
+                    cropping: true,
+                    compressImageQuality: 0.8,
+                    includeBase64: true
+                });
+            } else {
+                image = await ImagePicker.openPicker({
+                    width: 300,
+                    height: 300,
+                    cropping: true,
+                    compressImageQuality: 0.8,
+                    includeBase64: true
+                });
+            }
+
+            // ⚠️ important: path store karo
+            setImageUri(image.path);
+
+            setImageOptionModal(false);
+
+            // upload
+            updateprofilepic(image);
+
+        } catch (error) {
+            console.log('Image pick cancelled or failed', error);
+        }
+    };
+
+    const updateprofilepic = async (pickedImage) => {
+        const StaffId = await AsyncStorage.getItem('staff_id');
+
+        if (!StaffId) {
+            return;
+        }
+
+        const photo = pickedImage
+            ? `data:${pickedImage.mime};base64,${pickedImage.data}`
+            : null;
+
+
+        const response = await fetch(ENDPOINTS.update_profile_img, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                staff_id: StaffId,
+                image: photo,
+            }),
+        });
+        const result = await response.json();
+        if (result.code == "200") {
+            ProfileDataApi();
+        } else {
+            console.log('error while adding Staff');
+        }
+    };
+
 
 
 
@@ -183,8 +292,15 @@ const ProfileScreen = ({ navigation }) => {
             <View style={{ flex: 1, paddingHorizontal: 20 }}>
                 <View style={{ alignItems: 'center', marginTop: 40 }}>
                     <TouchableOpacity onPress={handleImagePress}>
-                        <Image
-                            source={imageUri ? { uri: `${IMAGE_BASE_URL}${encodeURI(imageUri)}` } : account}
+                        <FastImage
+                            source={
+                                imageUri
+                                    ? {
+                                        uri: `${IMAGE_BASE_URL}${encodeURI(imageUri)}`,
+                                        priority: FastImage.priority.normal,
+                                    }
+                                    : account
+                            }
                             style={{
                                 width: 120,
                                 height: 120,
@@ -193,7 +309,23 @@ const ProfileScreen = ({ navigation }) => {
                                 borderColor: '#fff',
                                 backgroundColor: '#eee',
                             }}
+                            resizeMode={FastImage.resizeMode.cover}
                         />
+                    </TouchableOpacity>
+                    {/* Camera Icon Overlay */}
+                    <TouchableOpacity
+                        style={{
+                            position: "absolute",
+                            bottom: 30,
+                            right: 130,
+                            backgroundColor: "#fff",
+                            borderRadius: 20,
+                            padding: 5,
+                            elevation: 5,
+                        }}
+                        onPress={handleCameraPress}
+                    >
+                        <Ionicons name="camera" size={20} color="#000" />
                     </TouchableOpacity>
                     <Text style={{
                         marginTop: 15,
@@ -497,6 +629,86 @@ const ProfileScreen = ({ navigation }) => {
                         </Text>
                     </View>
                 </View>
+            </Modal>
+
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={imageOptionModal}
+                onRequestClose={() => setImageOptionModal(false)}
+            >
+                <TouchableOpacity
+                    style={{
+                        flex: 1,
+                        justifyContent: "flex-end",
+                        backgroundColor: "rgba(0,0,0,0.5)",
+                    }}
+                    activeOpacity={1}
+                    onPressOut={() => setImageOptionModal(false)} // ✅ close when tapping outside
+                >
+                    <TouchableOpacity
+                        activeOpacity={1}
+                        style={{
+                            backgroundColor: "white",
+                            borderTopLeftRadius: 15,
+                            borderTopRightRadius: 15,
+                            padding: 20,
+                        }}
+                        onPress={() => { }} // ✅ block touches inside
+                    >
+                        {/* Header Row */}
+                        <View
+                            style={{
+                                flexDirection: "row",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                marginBottom: 15,
+                            }}
+                        >
+                            <Text
+                                style={{
+                                    fontSize: 18,
+                                    fontFamily: "Inter-Bold",
+                                    color: "black",
+                                }}
+                            >
+                                Profile photo
+                            </Text>
+
+                            {/* Close Button */}
+                            <TouchableOpacity onPress={() => setImageOptionModal(false)}>
+                                <Ionicons name="close" size={24} color="black" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Options */}
+                        <View
+                            style={{
+                                flexDirection: "row",
+                                gap: 10,
+                                marginTop: 10,
+                            }}
+                        >
+                            {/* Camera */}
+                            <TouchableOpacity
+                                style={{ alignItems: "center", borderWidth: 0.5, borderRadius: 10, padding: 10 }}
+                                onPress={() => handleImagePick("camera")}
+                            >
+                                <Ionicons name="camera-outline" size={30} color="#000" />
+                                <Text style={{ marginTop: 5, color: "black" }}>Camera</Text>
+                            </TouchableOpacity>
+
+                            {/* Gallery */}
+                            <TouchableOpacity
+                                style={{ alignItems: "center", borderWidth: 0.5, borderRadius: 10, padding: 10 }}
+                                onPress={() => handleImagePick("gallery")}
+                            >
+                                <Ionicons name="image-outline" size={30} color="#000" />
+                                <Text style={{ marginTop: 5, color: "black" }}>Gallery</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </TouchableOpacity>
+                </TouchableOpacity>
             </Modal>
         </View>
     );

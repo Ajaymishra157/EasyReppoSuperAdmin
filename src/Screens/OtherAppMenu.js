@@ -4,6 +4,7 @@ import colors from '../CommonFiles/Colors'
 import FontAwesome from 'react-native-vector-icons/FontAwesome'; // Use FontAwesome for the icons
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons'
 import WelcomeShimmer from '../Component/WelcomeShimmer';
+import Ionicons from 'react-native-vector-icons/Ionicons'
 
 const OtherAppMenu = ({ navigation, route }) => {
     const { Id, Name } = route.params || {};
@@ -26,24 +27,110 @@ const OtherAppMenu = ({ navigation, route }) => {
             )}
 
             <ScrollView contentContainerStyle={{ flexGrow: 1, backgroundColor: '#f7f7f7', paddingBottom: 100 }}>
-                <View style={{ flexDirection: 'row', width: '100%', marginTop: 10, paddingHorizontal: 15, gap:20 }}>
+                <View style={{ flexDirection: 'row', width: '100%', marginTop: 10, paddingHorizontal: 15, gap: 40 }}>
 
-                    <TouchableOpacity style={{ alignItems: 'center', justifyContent: 'center', backgroundColor: 'white', borderRadius: 15, width: 100, height: 120, padding: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 8, }}
-                        onPress={() => { navigation.navigate('OtherAppfinancelist', { Id, Name }); }}>
-                        <View style={{ width: 50, height: 50, borderRadius: 30, backgroundColor: 'white', justifyContent: 'center', alignItems: 'center', marginBottom: 10, borderWidth: 1, borderColor: '#4169E1' }}>
-                            <Image source={Agency} style={{ width: 25, height: 25 }} />
+                    <TouchableOpacity
+                        style={{
+                            backgroundColor: 'white',
+                            borderRadius: 15,
+                            width: 100,
+                            height: 120,
+                            padding: 5,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.1,
+                            shadowRadius: 6,
+                            elevation: 8,
+                        }}
+                        onPress={() => {
+                            navigation.navigate('OtherAppfinancelist', { Id, Name });
+                        }}
+                    >
+                        {/* Top 70%: Icon */}
+                        <View style={{ flex: 7, justifyContent: 'center', alignItems: 'center' }}>
+                            <View
+                                style={{
+                                    width: 50,
+                                    height: 50,
+                                    borderRadius: 25,
+                                    backgroundColor: 'white',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    borderWidth: 1,
+                                    borderColor: '#2563EB',
+                                }}
+                            >
+                                <Ionicons name="business-outline" size={25} color="#2563EB" />
+                            </View>
                         </View>
-                        <Text style={{ color: 'black', fontSize: 12, textAlign: 'center', fontFamily: 'Inter-Medium', }}>Finance Management</Text>
+
+                        {/* Bottom 30%: Text */}
+                        <View style={{ flex: 3, alignItems: 'center', paddingHorizontal: 5 }}>
+                            <Text
+                                style={{
+                                    color: 'black',
+                                    fontSize: 12,
+                                    textAlign: 'center',
+                                    fontFamily: 'Inter-Medium',
+                                }}
+                                numberOfLines={2}
+                                ellipsizeMode="tail"
+                            >
+                                Finance Management
+                            </Text>
+                        </View>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={{ alignItems: 'center', justifyContent: 'center', backgroundColor: 'white', borderRadius: 15, width: 100, height: 120, padding: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 8, }}
+                    <TouchableOpacity
+                        style={{
+                            backgroundColor: 'white',
+                            borderRadius: 15,
+                            width: 100,
+                            height: 120,
+                            padding: 5,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.1,
+                            shadowRadius: 6,
+                            elevation: 8,
+                        }}
                         onPress={() => {
-                            navigation.navigate('OtherAppSearchHistory',{Id, Name});
-                        }}>
-                        <View style={{ width: 50, height: 50, borderRadius: 30, backgroundColor: 'white', justifyContent: 'center', alignItems: 'center', marginBottom: 10, borderWidth: 1, borderColor: '#87CEEB' }}>
-                            <FontAwesome name="search" size={25} color="#87CEEB" />
+                            navigation.navigate('OtherAppSearchHistory', { Id, Name });
+                        }}
+                    >
+                        {/* Top 70%: Icon */}
+                        <View style={{ flex: 7, justifyContent: 'center', alignItems: 'center' }}>
+                            <View
+                                style={{
+                                    width: 50,
+                                    height: 50,
+                                    borderRadius: 25,
+                                    backgroundColor: 'white',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    borderWidth: 1,
+                                    borderColor: '#87CEEB',
+                                }}
+                            >
+                                <Ionicons name="time-outline" size={25} color="#87CEEB" />
+                            </View>
                         </View>
-                        <Text style={{ color: 'black', fontSize: 12, textAlign: 'center', fontFamily: 'Inter-Medium', }}>Search History</Text>
+
+                        {/* Bottom 30%: Text */}
+                        <View style={{ flex: 3, alignItems: 'center', paddingHorizontal: 5 }}>
+                            <Text
+                                style={{
+                                    color: 'black',
+                                    fontSize: 12,
+                                    textAlign: 'center',
+                                    fontFamily: 'Inter-Medium',
+                                }}
+                                numberOfLines={2}
+                                ellipsizeMode="tail"
+                            >
+                                Search History
+                            </Text>
+                        </View>
                     </TouchableOpacity>
                 </View>
             </ScrollView>

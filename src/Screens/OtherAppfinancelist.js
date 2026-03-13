@@ -1,4 +1,4 @@
-import { Text, TouchableOpacity, View, FlatList, ToastAndroid, ActivityIndicator, Image } from 'react-native';
+import { Text, TouchableOpacity, View, FlatList, ActivityIndicator, Image, TextInput } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import CheckBox from '@react-native-community/checkbox';
 import colors from '../CommonFiles/Colors';
@@ -6,6 +6,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ENDPOINTS } from '../CommonFiles/Constant';
+import Toast from 'react-native-toast-message';
 
 const OtherAppfinancelist = () => {
   const Finance = require('../assets/images/budget.png');
@@ -18,14 +19,23 @@ const OtherAppfinancelist = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saveloading, setSaveloading] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [selectAll, setSelectAll] = useState(false);
+
+  const [filteredList, setFilteredList] = useState([]);
 
   const AgencyStaffLogout = async (navigation, confirmLogout) => {
     try {
       const staffId = await AsyncStorage.getItem('staff_id');
 
       if (!staffId) {
-        ToastAndroid.show('No staff ID found', ToastAndroid.SHORT);
-        return;
+        Toast.show({
+          type: 'error',
+          text1: 'No staff ID found',
+          position: 'bottom',
+          bottomOffset: 60,
+          visibilityTime: 2000,
+        }); return;
       }
 
       const response = await fetch(ENDPOINTS.Staff_Agency_Logout, {
@@ -48,11 +58,16 @@ const OtherAppfinancelist = () => {
 
         }
       } else {
-        ToastAndroid.show(result.message || 'Failed to logout staff', ToastAndroid.SHORT);
+        // Toast.show({
+        //   type: 'error',
+        //   text1: result?.message || 'Failed to logout staff',
+        //   position: 'bottom',
+        //   bottomOffset: 60,
+        //   visibilityTime: 2000,
+        // });
       }
     } catch (error) {
       console.log('Logout error:', error.message);
-      ToastAndroid.show('Error logging out staff', ToastAndroid.SHORT);
     }
   };
   useFocusEffect(
@@ -87,6 +102,7 @@ const OtherAppfinancelist = () => {
 
       if (result.code == 200) {
         setFinanceList(result.payload);
+        setFilteredList(result.payload);
       } else {
         // Show empty list or default dummy list
         setFinanceList([]); // or your static demo list
@@ -124,6 +140,7 @@ const OtherAppfinancelist = () => {
           staff_checkbox: statusArr[index].toLowerCase() == "active"
         }));
         setFinanceList(finalList);
+        setFilteredList(finalList);
       } else {
         setFinanceList([]);
       }
@@ -134,10 +151,59 @@ const OtherAppfinancelist = () => {
     }
   };
 
-  const toggleCheckbox = (index) => {
-    const updatedList = [...financeList];
-    updatedList[index].staff_checkbox = !updatedList[index].staff_checkbox;
+  const handleSearch = (text) => {
+    setSearchText(text);
+
+    if (text.trim() === '') {
+      setFilteredList(financeList);
+    } else {
+      const filtered = financeList.filter(item =>
+        item.finance_name?.toLowerCase().includes(text.toLowerCase())
+      );
+      setFilteredList(filtered);
+    }
+  };
+
+  useEffect(() => {
+    if (!isEditMode) return;
+
+    const allChecked =
+      financeList.length > 0 &&
+      financeList.every(item => item.staff_checkbox === true);
+
+    setSelectAll(allChecked);
+  }, [financeList, isEditMode]);
+
+  const toggleSelectAll = () => {
+    const newValue = !selectAll;
+    setSelectAll(newValue);
+
+    const updatedList = financeList.map(item => ({
+      ...item,
+      staff_checkbox: newValue
+    }));
+
     setFinanceList(updatedList);
+    setFilteredList(updatedList);
+  };
+
+  const toggleCheckbox = (item) => {
+    const updatedList = financeList.map(finance =>
+      finance.finance_name === item.finance_name
+        ? { ...finance, staff_checkbox: !finance.staff_checkbox }
+        : finance
+    );
+
+    setFinanceList(updatedList);
+
+    // Also update filtered list
+    const updatedFiltered = filteredList.map(finance =>
+      finance.finance_name === item.finance_name
+        ? { ...finance, staff_checkbox: !finance.staff_checkbox }
+        : finance
+    );
+
+    setFilteredList(updatedFiltered);
   };
 
   const handleSave = async () => {
@@ -167,10 +233,21 @@ const OtherAppfinancelist = () => {
       const result = await response.json();
 
       if (result.code == 200) {
-        ToastAndroid.show("List updated successfully", ToastAndroid.SHORT);
+        Toast.show({
+          type: 'success',
+          text1: 'List updated successfully',
+          position: 'bottom',
+          visibilityTime: 2000,
+        });
         setIsEditMode(false);
       } else {
-        ToastAndroid.show("Failed to update list", ToastAndroid.SHORT);
+        Toast.show({
+          type: 'error',
+          text1: 'Failed to update list',
+          position: 'bottom',
+          bottomOffset: 60,
+          visibilityTime: 2000,
+        });
       }
     } catch (error) {
       console.log("Error updating list:", error.message);
@@ -183,13 +260,14 @@ const OtherAppfinancelist = () => {
     // console.log(`Item ${index} - staff_checkbox:`, item.staff_checkbox);
     return (
       <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#f9f9f9', borderRadius: 8, padding: 4, marginBottom: 8, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4, elevation: 2, borderWidth: 0.5 }}
-        onPress={() => isEditMode && toggleCheckbox(index)}
+        onPress={() => isEditMode && toggleCheckbox(item)}
         activeOpacity={isEditMode ? 0.6 : 1}
       >
         <CheckBox
           disabled={!isEditMode}
           value={item.staff_checkbox === true}
-          onValueChange={() => toggleCheckbox(index)}
+          onValueChange={() => toggleCheckbox(item)}
+          tintColors={{ true: colors.Brown, false: '#999' }}
         />
         <Text style={{ fontSize: 12, color: '#333', marginLeft: 10, fontFamily: 'Inter-Regular' }}>{item.finance_name}</Text>
         {item.staff_checkbox && (
@@ -227,6 +305,66 @@ const OtherAppfinancelist = () => {
         ) : null}
       </View>
 
+      {/* Search Bar */}
+      {financeList.length !== 0 && (
+        <View style={{
+          backgroundColor: '#fff',
+          margin: 10,
+          borderRadius: 8,
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: 10,
+          borderWidth: 1,
+          borderColor: '#ddd'
+        }}>
+          <Ionicons name="search" size={18} color="#999" />
+          <TextInput
+            placeholder="Search finance..."
+            placeholderTextColor="#999"
+            value={searchText}
+            onChangeText={handleSearch}
+            style={{
+              flex: 1,
+              padding: 8,
+              color: '#000',
+              fontFamily: 'Inter-Regular'
+            }}
+          />
+          {searchText !== '' && (
+            <TouchableOpacity onPress={() => handleSearch('')}>
+              <Ionicons name="close-circle" size={18} color="#999" />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+
+      {isEditMode && (
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: 10,
+          paddingVertical: 4,
+          backgroundColor: '#fff',
+          borderBottomWidth: 1,
+          marginHorizontal: 10,
+          borderColor: '#eee', borderRadius: 10
+        }}>
+          <CheckBox
+            value={selectAll}
+            onValueChange={toggleSelectAll}
+            tintColors={{ true: colors.Brown, false: '#999' }}
+          />
+          <Text style={{
+            marginLeft: 8,
+            fontFamily: 'Inter-Regular',
+            color: 'black'
+          }}>
+            Select All
+          </Text>
+        </View>
+      )}
+
       {/* List */}
       {
         loading ? (
@@ -244,7 +382,7 @@ const OtherAppfinancelist = () => {
         ) : (
           <FlatList
             keyboardShouldPersistTaps='handled'
-            data={financeList}
+            data={filteredList}
             keyExtractor={(item, index) => index.toString()}
             renderItem={renderItem}
             contentContainerStyle={{ padding: 10 }}
@@ -254,15 +392,33 @@ const OtherAppfinancelist = () => {
 
       {/* Save Button */}
       {isEditMode && (
-        saveloading ? (
-          <ActivityIndicator size="large" color={colors.Brown} />
-        ) : (
-          <TouchableOpacity style={{ backgroundColor: colors.Brown, margin: 20, paddingVertical: 12, borderRadius: 8, alignItems: 'center', }} onPress={handleSave} >
-            <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold', fontFamily: 'Inter-Regular', }} >
+        <TouchableOpacity
+          style={{
+            backgroundColor: colors.Brown,
+            margin: 20,
+            paddingVertical: 12,
+            borderRadius: 8,
+            alignItems: 'center',
+            opacity: saveloading ? 0.7 : 1
+          }}
+          onPress={handleSave}
+          disabled={saveloading}
+        >
+          {saveloading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text
+              style={{
+                color: 'white',
+                fontSize: 16,
+                fontWeight: 'bold',
+                fontFamily: 'Inter-Regular',
+              }}
+            >
               Update
             </Text>
-          </TouchableOpacity>
-        )
+          )}
+        </TouchableOpacity>
       )}
 
     </View>

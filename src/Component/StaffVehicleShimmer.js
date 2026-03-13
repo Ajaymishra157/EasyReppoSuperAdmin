@@ -4,13 +4,14 @@ import ShimmerPlaceholder from 'react-native-shimmer-placeholder';
 import LinearGradient from 'react-native-linear-gradient';
 import colors from '../CommonFiles/Colors';
 
-const BlackListShimmer = () => {
+const StaffVehicleShimmer = () => {
     return (
-        <>
+        <View style={{ paddingTop: 5 }}>
+
             {/* 🔎 Search Bar Shimmer */}
 
 
-            {/* 👤 Cards Shimmer */}
+            {/* 👤 Card Shimmers */}
             {[...Array(6)].map((_, index) => (
                 <View
                     key={index}
@@ -38,18 +39,18 @@ const BlackListShimmer = () => {
                         }}
                     />
 
-                    {/* NAME */}
+                    {/* Staff Name */}
                     <ShimmerPlaceholder
                         LinearGradient={LinearGradient}
                         style={{
                             width: '70%',
                             height: 14,
                             borderRadius: 4,
-                            marginTop: 4
+                            marginTop: 6
                         }}
                     />
 
-                    {/* MOBILE */}
+                    {/* Registration No */}
                     <ShimmerPlaceholder
                         LinearGradient={LinearGradient}
                         style={{
@@ -60,18 +61,7 @@ const BlackListShimmer = () => {
                         }}
                     />
 
-                    {/* REMARK */}
-                    <ShimmerPlaceholder
-                        LinearGradient={LinearGradient}
-                        style={{
-                            width: '90%',
-                            height: 12,
-                            borderRadius: 4,
-                            marginTop: 8
-                        }}
-                    />
-
-                    {/* ENTRY DATE */}
+                    {/* Vehicle Name */}
                     <ShimmerPlaceholder
                         LinearGradient={LinearGradient}
                         style={{
@@ -82,23 +72,34 @@ const BlackListShimmer = () => {
                         }}
                     />
 
-                    {/* MENU DOT */}
+                    {/* Entry Date */}
+                    <ShimmerPlaceholder
+                        LinearGradient={LinearGradient}
+                        style={{
+                            width: '55%',
+                            height: 12,
+                            borderRadius: 4,
+                            marginTop: 8
+                        }}
+                    />
+
+                    {/* Info Icon */}
                     <ShimmerPlaceholder
                         LinearGradient={LinearGradient}
                         style={{
                             position: 'absolute',
                             right: 10,
                             top: 10,
-                            width: 18,
-                            height: 18,
-                            borderRadius: 9,
+                            width: 30,
+                            height: 30,
+                            borderRadius: 15,
                         }}
                     />
 
                 </View>
             ))}
-        </>
+        </View>
     );
 };
 
-export default BlackListShimmer;
+export default StaffVehicleShimmer;

@@ -6,7 +6,6 @@ import {
     Image,
     ActivityIndicator,
     TouchableOpacity,
-    ToastAndroid,
     Modal,
     TextInput,
     Keyboard,
@@ -24,6 +23,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import StaffShimmer from '../Component/StaffShimmer';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Toast from 'react-native-toast-message';
 
 const AgencyStaff = () => {
     const phone = require('../assets/images/phone.png');
@@ -33,6 +33,7 @@ const AgencyStaff = () => {
     const navigation = useNavigation();
     const { agencyId, agencyName, agencyDetail } = route.params || {};
     console.log("agency id", agencyId);
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
 
 
     const [StaffList, setStaffList] = useState([]);
@@ -50,7 +51,7 @@ const AgencyStaff = () => {
     const [agencyIdSend, setAgencyIdSend] = useState('');
 
     const [originalStaffData, setOriginalStaffData] = useState([]);
-
+    const hasStaff = originalStaffData.length > 0;
     const [isModalVisible, setIsModalVisible] = useState(false);
     const flatListRef = useRef(null);
 
@@ -165,6 +166,22 @@ const AgencyStaff = () => {
         };
     }, []);
 
+    useEffect(() => {
+        const showSub = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+            (e) => setKeyboardHeight(e.endCoordinates.height)
+        );
+        const hideSub = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+            () => setKeyboardHeight(0)
+        );
+
+        return () => {
+            showSub.remove();
+            hideSub.remove();
+        };
+    }, []);
+
     const loadMoreItems = () => {
         if (isLoadingMore || data.length >= StaffList.length) return;
 
@@ -204,6 +221,10 @@ const AgencyStaff = () => {
         // fetchStaff(tabKey); // Send tab key to API
     }
 
+
+    useEffect(() => {
+        setData(StaffList.slice(0, 20)); // Set the initial data (first 20 items)
+    }, [StaffList]);
 
     const fetchPermissions = async () => {
 
@@ -287,18 +308,33 @@ const AgencyStaff = () => {
 
             const result = await response.json();
             if (result.code === 200) {
-                ToastAndroid.show('Agency deleted successfully', ToastAndroid.SHORT);
-                // // Remove from list
-                // const updated = agencies.filter(agency => agency.agency_id !== agencyId);
-                // setAgencies(updated);
-                // setOriginalStaffData(updated);
-                navigation.goBack();
+                Toast.show({
+                    type: 'success',
+                    text1: 'Agency deleted successfully',
+                    position: 'bottom',
+                    visibilityTime: 2000,
+                });
+
+                setTimeout(() => {
+                    // Remove from list agar zarurat ho to
+                    // const updated = agencies.filter(agency => agency.agency_id !== agencyId);
+                    // setAgencies(updated);
+                    // setOriginalStaffData(updated);
+                    navigation.goBack();
+                }, 500); // 500ms delay before navigation
             } else {
-                ToastAndroid.show(result.message || 'Failed to delete agency', ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'error',
+                    text1: result.message || 'Failed to delete agency',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
+
+
             }
         } catch (error) {
             console.error('Delete error:', error);
-            ToastAndroid.show('Error deleting agency', ToastAndroid.SHORT);
         }
     };
 
@@ -342,7 +378,12 @@ const AgencyStaff = () => {
             });
             const result = await response.json();
             if (result.code === 200 && Array.isArray(result.payload)) {
-                setStaffList(result.payload);
+                setStaffList(prev => {
+                    if (JSON.stringify(prev) === JSON.stringify(result.payload)) {
+                        return prev;
+                    }
+                    return result.payload;
+                });
                 setAdminCount(result.count_admin || 0);
                 setFieldCount(result.count_field || 0);
                 setAllCount(result.count_all || 0);
@@ -450,15 +491,35 @@ const AgencyStaff = () => {
             const result = await response.json();
 
             if (result.code === 200) {
-                ToastAndroid.show('Staff deleted successfully', ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'success',
+                    text1: 'Staff deleted successfully',
+                    position: 'bottom',
+                    visibilityTime: 2000,
+                });
+
+
                 closeActionModal();
                 fetchStaff(); // Refresh the list
+
             } else {
-                ToastAndroid.show('Failed to delete staff', ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'error',
+                    text1: result.message || 'Failed to delete staff',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
             }
         } catch (error) {
             console.log('Delete error:', error.message);
-            ToastAndroid.show('Error deleting staff', ToastAndroid.SHORT);
+            Toast.show({
+                type: 'error',
+                text1: 'Error deleting staff',
+                position: 'bottom',
+                bottomOffset: 60,
+                visibilityTime: 2000,
+            });
         }
     };
     const OpenResetAllModal = (item) => {
@@ -513,7 +574,12 @@ const AgencyStaff = () => {
 
             if (response.ok) {
                 if (result.code === 200) {
-                    ToastAndroid.show("Reset Device Id successfully", ToastAndroid.SHORT);
+                    Toast.show({
+                        type: 'success',
+                        text1: 'Reset Device Id successfully',
+                        position: 'bottom',
+                        visibilityTime: 2000,
+                    });
                     setResetModal(false);
                     fetchStaff();
                 } else {
@@ -537,8 +603,12 @@ const AgencyStaff = () => {
 
             if (response.ok) {
                 if (result.code === 200) {
-                    ToastAndroid.show("All Device Ids reset successfully", ToastAndroid.SHORT);
-                    setResetModalAll(false);
+                    Toast.show({
+                        type: 'success',
+                        text1: 'All Device Ids reset successfully',
+                        position: 'bottom',
+                        visibilityTime: 2000,
+                    }); setResetModalAll(false);
                     fetchStaff(); // Refresh staff list
                 } else {
                     console.log('Error:', result.message || 'Failed to reset devices');
@@ -774,7 +844,7 @@ const AgencyStaff = () => {
                 >
                     Staff List
                 </Text>
-                {(
+                {/* {(
                     userType === 'SuperAdmin' ||
                     !permissions?.rent_agency ||
                     permissions?.rent_agency?.update ||
@@ -798,70 +868,71 @@ const AgencyStaff = () => {
                                 <Entypo name="dots-three-vertical" size={18} color="white" />
                             </TouchableOpacity>
                         </View>
-                    )}
+                    )} */}
             </View>
-
-            <View style={{ width: '100%', paddingHorizontal: 10 }}>
-                <View
-                    style={{
-                        width: '100%',
-
-                        borderWidth: 1,
-                        borderColor: colors.Brown,
-                        marginTop: 5,
-                        marginBottom: 5,
-                        borderRadius: 8,
-                        height: 50,
-                        backgroundColor: 'white',
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        borderColor: colors.Brown,
-
-                    }}>
-                    <View style={{
-                        width: 30,  // निश्चित width दी है
-                        height: 50, // पूरी height ली है
-                        justifyContent: 'center',
-                        alignItems: 'center',
-
-                    }}>
-                        <MaterialIcons name='search' size={24} color='black' />
-                    </View>
-                    <TextInput
+            {(StaffLoading || originalStaffData.length > 0) && (
+                <View style={{ width: '100%', paddingHorizontal: 10 }}>
+                    <View
                         style={{
-                            flex: 1,
-                            fontSize: 16,
-                            fontFamily: 'Inter-Regular',
+                            width: '100%',
 
-                            color: 'black',
+                            borderWidth: 1,
+                            borderColor: colors.Brown,
+                            marginTop: 5,
+                            marginBottom: 5,
+                            borderRadius: 8,
                             height: 50,
-                        }}
+                            backgroundColor: 'white',
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            borderColor: colors.Brown,
 
-                        placeholder="Search Staff Name/Mobile No"
-                        placeholderTextColor="grey"
-                        value={text}
-                        onChangeText={handleTextChange}
-                    />
-                    {text ? (
-                        <TouchableOpacity
-                            onPress={() => {
+                        }}>
+                        <View style={{
+                            width: 30,  // निश्चित width दी है
+                            height: 50, // पूरी height ली है
+                            justifyContent: 'center',
+                            alignItems: 'center',
 
-                                setText(''); // Clear the search text
-                                setStaffList(originalStaffData);
-
-                            }}
+                        }}>
+                            <MaterialIcons name='search' size={24} color='black' />
+                        </View>
+                        <TextInput
                             style={{
-                                marginRight: 7,
-                                height: 40,
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                            }}>
-                            <Entypo name="cross" size={20} color="black" />
-                        </TouchableOpacity>
-                    ) : null}
+                                flex: 1,
+                                fontSize: 16,
+                                fontFamily: 'Inter-Regular',
+
+                                color: 'black',
+                                height: 50,
+                            }}
+
+                            placeholder="Search Staff Name/Mobile No"
+                            placeholderTextColor="grey"
+                            value={text}
+                            onChangeText={handleTextChange}
+                        />
+                        {text ? (
+                            <TouchableOpacity
+                                onPress={() => {
+
+                                    setText(''); // Clear the search text
+                                    setStaffList(originalStaffData);
+
+                                }}
+                                style={{
+                                    marginRight: 7,
+                                    height: 40,
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                }}>
+                                <Entypo name="cross" size={20} color="black" />
+                            </TouchableOpacity>
+                        ) : null}
+                    </View>
                 </View>
-            </View>
+            )}
             {/* {StaffList.length > 0 && (
                 <View
                     style={{
@@ -886,58 +957,59 @@ const AgencyStaff = () => {
                     </Text>
                 </View>
             )} */}
+            {(StaffLoading || originalStaffData.length > 0) && (
+                <View>
+                    <ScrollView
+                        horizontal
+                        keyboardShouldPersistTaps='handled'
+                        showsHorizontalScrollIndicator={false}
+                        style={{
+                            // FIXED HEIGHT
+                            paddingVertical: 5,
+                        }}
+                        contentContainerStyle={{
+                            paddingHorizontal: 10,
+                            height: 60,
+                            backgroundColor: 'white'
+                        }}
+                    >
+                        {tabs.map((tab) => {
+                            const isSelected = selectedTab === tab.key;
 
-            <View>
-                <ScrollView
-                    horizontal
-                    keyboardShouldPersistTaps='handled'
-                    showsHorizontalScrollIndicator={false}
-                    style={{
-                        // FIXED HEIGHT
-                        paddingVertical: 5,
-                    }}
-                    contentContainerStyle={{
-                        paddingHorizontal: 10,
-                        height: 60,
-                        backgroundColor: 'white'
-                    }}
-                >
-                    {tabs.map((tab) => {
-                        const isSelected = selectedTab === tab.key;
-
-                        return (
-                            <TouchableOpacity
-                                key={tab.key}
-                                onPress={() => handleTabPress(tab.key)}
-                                style={{
-                                    backgroundColor: isSelected ? tab.bgColor : `${tab.bgColor}33`, // selected: full color, unselected: transparent version
-                                    paddingVertical: 8,
-                                    paddingHorizontal: 15,
-                                    borderRadius: 8,
-                                    marginRight: 10,
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                }}
-                            >
-                                <Text style={{
-                                    color: isSelected ? 'white' : 'black',
-                                    fontFamily: 'Inter-Bold',
-                                    fontSize: 12,
-                                }}>
-                                    {tab.label}
-                                </Text>
-                                <Text style={{
-                                    color: isSelected ? 'white' : 'black',
-                                    fontFamily: 'Inter-Regular',
-                                    fontSize: 12,
-                                }}>
-                                    {tab.count || 0}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </ScrollView>
-            </View>
+                            return (
+                                <TouchableOpacity
+                                    key={tab.key}
+                                    onPress={() => handleTabPress(tab.key)}
+                                    style={{
+                                        backgroundColor: isSelected ? tab.bgColor : `${tab.bgColor}33`, // selected: full color, unselected: transparent version
+                                        paddingVertical: 8,
+                                        paddingHorizontal: 15,
+                                        borderRadius: 8,
+                                        marginRight: 10,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}
+                                >
+                                    <Text style={{
+                                        color: isSelected ? 'white' : 'black',
+                                        fontFamily: 'Inter-Bold',
+                                        fontSize: 12,
+                                    }}>
+                                        {tab.label}
+                                    </Text>
+                                    <Text style={{
+                                        color: isSelected ? 'white' : 'black',
+                                        fontFamily: 'Inter-Regular',
+                                        fontSize: 12,
+                                    }}>
+                                        {tab.count || 0}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+                </View>
+            )}
 
             {/* Body */}
 
@@ -945,7 +1017,7 @@ const AgencyStaff = () => {
                 // ref={flatListRef}
                 keyboardShouldPersistTaps='handled'
                 // data={StaffList.slice(0, currentPage * 20)}
-                data={StaffList}
+                data={data}
                 renderItem={renderItem}
                 onEndReached={loadMoreItems} // Trigger when scrolled to the bottom
                 onEndReachedThreshold={0.5} // This determines when to trigger loadMoreItems (0.5 means half the list height)
@@ -998,15 +1070,12 @@ const AgencyStaff = () => {
                 }
                 contentContainerStyle={{
                     flexGrow: 1,
-                    paddingBottom: 80,
+                    paddingBottom: keyboardHeight + 80,
                     backgroundColor: 'white'
 
                 }}
             />
 
-
-            {/* Sticky Add New Button */}
-            {/* Sticky Add New Button */}
 
             <View
                 style={{
@@ -1020,47 +1089,79 @@ const AgencyStaff = () => {
                     zIndex: 1,
                 }}
             >
+
                 {/* Reset All Staff */}
-                <TouchableOpacity
-                    style={{
-                        flex: 1,
-                        marginRight: 10,
-                        backgroundColor: colors.Brown,
-                        borderWidth: 1,
-                        borderColor: colors.Brown,
-                        borderRadius: 10,
-                        paddingVertical: 12,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        flexDirection: 'row',
-                        gap: 8,
-                    }}
-                    onPress={() => OpenResetAllModal(selectedStaff)}
-                >
-                    <Image source={phone} style={{ width: 20, height: 20, tintColor: 'white' }} />
-                    <Text style={{ color: 'white', fontSize: 14, fontFamily: 'Inter-Medium' }}>Reset All Staff</Text>
-                </TouchableOpacity>
+                {(
+                    (userType === 'SuperAdmin' && hasStaff) ||
+                    (userType !== 'SuperAdmin' && permissions?.staff?.allstaffreset)
+                ) && (
+                        <TouchableOpacity
+                            style={{
+                                flex: 1,
+                                marginRight: 10,
+                                backgroundColor: colors.Brown,
+                                borderWidth: 1,
+                                borderColor: colors.Brown,
+                                borderRadius: 10,
+                                paddingVertical: 12,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                flexDirection: 'row',
+                                gap: 8,
+                            }}
+                            onPress={() => OpenResetAllModal(selectedStaff)}
+                        >
+                            <Image
+                                source={phone}
+                                style={{ width: 20, height: 20, tintColor: 'white' }}
+                            />
+                            <Text
+                                style={{
+                                    color: 'white',
+                                    fontSize: 14,
+                                    fontFamily: 'Inter-Medium',
+                                }}
+                            >
+                                Reset All Staff
+                            </Text>
+                        </TouchableOpacity>
+                    )}
 
                 {/* Add Staff */}
-                <TouchableOpacity
-                    style={{
-                        flex: 1,
-                        marginLeft: 10,
-                        backgroundColor: colors.Brown,
-                        borderRadius: 10,
-                        paddingVertical: 12,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        flexDirection: 'row',
-                        gap: 8,
-                    }}
-                    onPress={() => {
-                        navigation.navigate('AddAgencyStaff', { agencyId });
-                    }}
-                >
-                    <AntDesign name="plus" color="white" size={18} />
-                    <Text style={{ color: 'white', fontSize: 14, fontFamily: 'Inter-Medium' }}>Add Staff</Text>
-                </TouchableOpacity>
+                {(userType === 'SuperAdmin' ||
+                    permissions?.staff?.insert) && (
+                        <TouchableOpacity
+                            style={{
+                                flex: 1,
+                                marginLeft:
+                                    (userType === 'SuperAdmin' || permissions?.staff?.allstaffreset)
+                                        ? 10
+                                        : 0,
+                                backgroundColor: colors.Brown,
+                                borderRadius: 10,
+                                paddingVertical: 12,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                flexDirection: 'row',
+                                gap: 8,
+                            }}
+                            onPress={() => {
+                                navigation.navigate('AddAgencyStaff', { agencyId });
+                            }}
+                        >
+                            <AntDesign name="plus" color="white" size={18} />
+                            <Text
+                                style={{
+                                    color: 'white',
+                                    fontSize: 14,
+                                    fontFamily: 'Inter-Medium',
+                                }}
+                            >
+                                Add Staff
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+
             </View>
 
 

@@ -1,4 +1,4 @@
-import { ActivityIndicator, Alert, BackHandler, FlatList, Image, Keyboard, Modal, PermissionsAndroid, Platform, RefreshControl, StyleSheet, Text, TextInput, ToastAndroid, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, Alert, Animated, BackHandler, FlatList, Image, Keyboard, Modal, PermissionsAndroid, Platform, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import colors from '../CommonFiles/Colors';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -22,6 +22,7 @@ import KeepAwake from 'react-native-keep-awake';
 import * as Progress from 'react-native-progress';
 import FastImage from 'react-native-fast-image';
 import { openDB } from '../utils/db';
+import Toast from 'react-native-toast-message';
 // import Geolocation from 'react-native-geolocation-service';
 
 const FirstScreen = () => {
@@ -43,8 +44,11 @@ const FirstScreen = () => {
 
     const [selectedOption, setSelectedOption] = useState('List'); // for modal selection
     const [keyboardVisible, setKeyboardVisible] = useState(false);
-
-
+    const [downloadModal, setDownloadModal] = useState(false);
+    const [modalMessage, setModalMessage] = useState('');
+    const [showBottomTab, setShowBottomTab] = useState(true);
+    const scrollTimeoutRef = useRef(null);
+    const lastOffsetY = useRef(0);
 
     const [SelectedDropdownItem, setSelectedDropdownItem] = useState('List');
     const [selectedType, setSelectedType] = useState('All');
@@ -97,6 +101,40 @@ const FirstScreen = () => {
         setWasInputFocused(false); // It's now focused, so reset the "was focused before"
     };
 
+    const bottomTabAnim = useRef(new Animated.Value(0)).current; // 0=visible, 1=hidden
+
+    useEffect(() => {
+        Animated.timing(bottomTabAnim, {
+            toValue: showBottomTab ? 0 : 1,
+            duration: 30,
+            useNativeDriver: true,
+        }).start();
+    }, [showBottomTab]);
+
+    const SCROLL_THRESHOLD = 20; // 15–25 best value
+
+    const handleScroll = (event) => {
+        const currentOffset = event.nativeEvent.contentOffset.y;
+        const diff = currentOffset - lastOffsetY.current;
+
+        if (Math.abs(diff) < SCROLL_THRESHOLD) {
+            return; // Ignore small scrolls
+        }
+
+        if (diff > 0) {
+            // Scrolling DOWN → hide
+            if (showBottomTab) {
+                setShowBottomTab(false);
+            }
+        } else {
+            // Scrolling UP → show
+            if (!showBottomTab) {
+                setShowBottomTab(true);
+            }
+        }
+
+        lastOffsetY.current = currentOffset;
+    };
 
     React.useEffect(() => {
         const loadRentAgencyId = async () => {
@@ -449,7 +487,13 @@ const FirstScreen = () => {
             const staffId = await AsyncStorage.getItem('staff_id');
 
             if (!staffId) {
-                ToastAndroid.show('No staff ID found', ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'error',
+                    text1: 'No staff ID found',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });;
                 return;
             }
 
@@ -478,11 +522,17 @@ const FirstScreen = () => {
 
                 }
             } else {
-                // ToastAndroid.show(result.message || 'Failed to logout staff', ToastAndroid.SHORT);
+                // Toast.show({
+                //     type: 'error',
+                //     text1: result.message || 'Failed to logout staff',
+                //     position: 'bottom',
+                //     bottomOffset: 60,
+                //     visibilityTime: 2000, // 2 sec
+                // });
             }
         } catch (error) {
             console.log('Logout error:', error.message);
-            ToastAndroid.show('Error logging out staff', ToastAndroid.SHORT);
+
         }
     };
 
@@ -508,11 +558,16 @@ const FirstScreen = () => {
                 // setTotalCount(result.total_records_count);
                 setRemainingday(result.days_left);
             } else {
-                ToastAndroid.show(result.message || 'Failed to logout staff', ToastAndroid.SHORT);
+                // Toast.show({
+                //     type: 'error',
+                //     text1: result.message || 'Failed to logout staff',
+                //     position: 'bottom',
+                //     bottomOffset: 60,
+                //     visibilityTime: 2000,
+                // });
             }
         } catch (error) {
             console.log('Logout error:', error.message);
-            ToastAndroid.show('Error logging 2 out staff', ToastAndroid.SHORT);
         }
     };
 
@@ -535,7 +590,7 @@ const FirstScreen = () => {
             });
 
             const result = await response.json();
-            console.log("userwise ka result ye hai okay", result);
+
             if (result.code == 200 && result.payload) {
                 const syncStatus = result.payload.sync_status;
                 const name = result.payload.name;
@@ -1118,6 +1173,11 @@ const FirstScreen = () => {
 
         } catch (err) {
             console.log("❌ handleSearch error:", err);
+            setModalMessage(
+                "Please download vehicle data by clicking the Download button. Only then the app will be able to search."
+            );
+
+            setDownloadModal(true)
         } finally {
             console.log("⏹️ Search finished");
             setSearchLoading(false);
@@ -2016,6 +2076,8 @@ const FirstScreen = () => {
                                     numColumns={listType === 'Grid' ? 2 : 1}
                                     key={listType === 'Grid' ? 'g' : 'l'} // Force re-render on layout change
                                     keyboardShouldPersistTaps="handled"
+                                    onScroll={handleScroll}
+                                    scrollEventThrottle={16} // smooth scroll events
                                     contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: keyboardVisible ? 340 : 80 }}
                                     columnWrapperStyle={listType === 'Grid' ? { justifyContent: 'space-between' } : null}
                                 />
@@ -2029,14 +2091,22 @@ const FirstScreen = () => {
 
 
 
-            <View style={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0
-            }}>
+            <Animated.View
+                style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    transform: [{
+                        translateY: bottomTabAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0, 80] // adjust height of bottom tab
+                        })
+                    }]
+                }}
+            >
                 <Bottomtab />
-            </View>
+            </Animated.View>
 
             <Modal
                 animationType="fade"
@@ -2270,6 +2340,115 @@ const FirstScreen = () => {
             )}
 
 
+
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={downloadModal}
+                onRequestClose={() => setDownloadModal(false)}
+            >
+                <TouchableOpacity
+                    style={{
+                        flex: 1,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    }}
+                    onPress={() => setDownloadModal(false)}
+                    activeOpacity={1}
+                >
+                    <View
+                        style={{
+                            backgroundColor: 'white',
+                            padding: 20,
+                            borderRadius: 8,
+                            width: '80%',
+                            alignItems: 'center',
+                        }}
+                        onStartShouldSetResponder={() => true}
+                        onTouchEnd={e => e.stopPropagation()}
+                    >
+                        <Text
+                            style={{
+                                fontSize: 18,
+                                fontWeight: 'bold',
+                                marginBottom: 10,
+                                color: 'black',
+                                fontFamily: 'Inter-Medium',
+                            }}
+                        >
+                            Data Not Available
+                        </Text>
+
+                        <Text
+                            style={{
+                                fontSize: 14,
+                                marginBottom: 20,
+                                textAlign: 'center',
+                                color: 'black',
+                                fontFamily: 'Inter-Medium',
+                            }}
+                        >
+                            {modalMessage}
+                        </Text>
+
+                        <View
+                            style={{
+                                flexDirection: 'row',
+                                justifyContent: 'space-between',
+                                width: '100%',
+                            }}
+                        >
+                            <TouchableOpacity
+                                style={{
+                                    backgroundColor: '#ddd',
+                                    padding: 10,
+                                    borderRadius: 5,
+                                    width: '45%',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                }}
+                                onPress={() => setDownloadModal(false)}
+                            >
+                                <Text
+                                    style={{
+                                        color: 'black',
+                                        fontWeight: 'bold',
+                                        fontFamily: 'Inter-Regular',
+                                    }}
+                                >
+                                    Cancel
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={{
+                                    backgroundColor: colors.Brown,
+                                    padding: 10,
+                                    borderRadius: 5,
+                                    width: '45%',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                }}
+                                onPress={() => {
+                                    setDownloadModal(false);
+
+                                }}
+                            >
+                                <Text
+                                    style={{
+                                        color: 'white',
+                                        fontWeight: 'bold',
+                                        fontFamily: 'Inter-Regular',
+                                    }}
+                                >
+                                    Ok
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
 
 
 

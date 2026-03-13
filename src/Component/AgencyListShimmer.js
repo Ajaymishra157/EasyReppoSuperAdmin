@@ -5,26 +5,63 @@ import LinearGradient from 'react-native-linear-gradient';
 
 const AgencyListShimmer = () => {
     return (
-        <View style={styles.container}>
+        <View style={{ paddingHorizontal: 8, paddingTop: 10 }}>
             {[...Array(5)].map((_, index) => (
                 <View key={index} style={styles.card}>
-                    {/* Agency Name */}
-                    <View style={styles.row}>
+
+                    {/* Header Row */}
+                    <View style={styles.headerRow}>
+
+                        {/* Left Section */}
+                        <View style={{ flexDirection: 'row', flex: 1 }}>
+                            <ShimmerPlaceHolder
+                                LinearGradient={LinearGradient}
+                                style={styles.businessIcon}
+                            />
+
+                            <View style={{ flex: 1 }}>
+                                <ShimmerPlaceHolder
+                                    LinearGradient={LinearGradient}
+                                    style={styles.title}
+                                />
+                                <ShimmerPlaceHolder
+                                    LinearGradient={LinearGradient}
+                                    style={styles.date}
+                                />
+                            </View>
+                        </View>
+
+                        {/* Toggle Placeholder */}
                         <ShimmerPlaceHolder
                             LinearGradient={LinearGradient}
-                            style={styles.icon}
-                        />
-                        <ShimmerPlaceHolder
-                            LinearGradient={LinearGradient}
-                            style={styles.lineLarge}
+                            style={styles.toggle}
                         />
                     </View>
 
-                    {/* Mobile */}
-                    <View style={styles.row}>
+                    {/* Divider */}
+                    <View style={styles.divider} />
+
+                    {/* Mobile Row */}
+                    <View style={styles.detailRow}>
                         <ShimmerPlaceHolder
                             LinearGradient={LinearGradient}
-                            style={styles.icon}
+                            style={styles.smallIcon}
+                        />
+                        <ShimmerPlaceHolder
+                            LinearGradient={LinearGradient}
+                            style={styles.lineMedium}
+                        />
+                        <ShimmerPlaceHolder
+                            LinearGradient={LinearGradient}
+                            style={styles.arrowBtn}
+                        />
+                    </View>
+
+                    {/* Username Row */}
+                    <View style={styles.detailRow}>
+                        <ShimmerPlaceHolder
+                            LinearGradient={LinearGradient}
+                            style={styles.smallIcon}
                         />
                         <ShimmerPlaceHolder
                             LinearGradient={LinearGradient}
@@ -32,29 +69,18 @@ const AgencyListShimmer = () => {
                         />
                     </View>
 
-                    {/* Username */}
-                    <View style={styles.row}>
+                    {/* Password Row */}
+                    <View style={styles.detailRow}>
                         <ShimmerPlaceHolder
                             LinearGradient={LinearGradient}
-                            style={styles.icon}
-                        />
-                        <ShimmerPlaceHolder
-                            LinearGradient={LinearGradient}
-                            style={styles.lineMedium}
-                        />
-                    </View>
-
-                    {/* Password */}
-                    <View style={styles.row}>
-                        <ShimmerPlaceHolder
-                            LinearGradient={LinearGradient}
-                            style={styles.icon}
+                            style={styles.smallIcon}
                         />
                         <ShimmerPlaceHolder
                             LinearGradient={LinearGradient}
                             style={styles.lineSmall}
                         />
                     </View>
+
                 </View>
             ))}
         </View>
@@ -64,41 +90,86 @@ const AgencyListShimmer = () => {
 export default AgencyListShimmer;
 
 const styles = StyleSheet.create({
-    container: {
-        padding: 20,
-    },
+
     card: {
-        backgroundColor: 'white',
-        padding: 12,
-        marginBottom: 16,
-        borderRadius: 8,
+        backgroundColor: '#fff',
+        marginVertical: 8,
+        borderRadius: 14,
         borderWidth: 1,
-        borderColor: 'black',
+        borderColor: '#ddd',
+        padding: 12,
+        elevation: 4,
     },
-    row: {
+
+    headerRow: {
         flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 10,
+        alignItems: 'flex-start',
     },
-    icon: {
-        height: 18,
-        width: 18,
-        borderRadius: 9,
+
+    businessIcon: {
+        height: 45,
+        width: 45,
+        borderRadius: 10,
         marginRight: 10,
     },
-    lineLarge: {
+
+    title: {
         height: 16,
-        width: '70%',
+        width: '80%',
         borderRadius: 4,
+        marginBottom: 6,
     },
-    lineMedium: {
-        height: 16,
+
+    date: {
+        height: 12,
         width: '50%',
         borderRadius: 4,
     },
-    lineSmall: {
+
+    toggle: {
+        height: 24,
+        width: 45,
+        borderRadius: 12,
+        marginLeft: 10,
+    },
+
+    divider: {
+        height: 1,
+        backgroundColor: '#eee',
+        marginVertical: 12,
+    },
+
+    detailRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+        justifyContent: 'space-between',
+    },
+
+    smallIcon: {
         height: 16,
-        width: '35%',
+        width: 16,
+        borderRadius: 8,
+        marginRight: 10,
+    },
+
+    lineMedium: {
+        flex: 1,
+        height: 14,
+        borderRadius: 4,
+        marginRight: 10,
+    },
+
+    lineSmall: {
+        flex: 1,
+        height: 14,
         borderRadius: 4,
     },
+
+    arrowBtn: {
+        height: 28,
+        width: 28,
+        borderRadius: 14,
+    },
+
 });

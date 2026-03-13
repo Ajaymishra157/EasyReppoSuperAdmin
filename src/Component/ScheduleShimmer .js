@@ -6,7 +6,7 @@ import LinearGradient from 'react-native-linear-gradient';
 const ScheduleShimmer = () => {
     return (
         <>
-            {[...Array(11)].map((_, index) => (
+            {[...Array(10)].map((_, index) => (
                 <View
                     key={index}
                     style={{
@@ -20,51 +20,72 @@ const ScheduleShimmer = () => {
                         alignItems: 'center',
                     }}
                 >
-                    {/* Index Column */}
-                    <View style={{ width: '8%', alignItems: 'center' }}>
+                    {/* Image Column */}
+                    <View style={{ width: '23%', alignItems: 'flex-start' }}>
                         <ShimmerPlaceholder
                             LinearGradient={LinearGradient}
-                            style={{ width: 20, height: 12, borderRadius: 4 }}
+                            style={{
+                                width: 60,
+                                height: 60,
+                                borderRadius: 30,
+                            }}
                         />
                     </View>
 
-                    {/* Name Column */}
-                    <View style={{ width: '32%', alignItems: 'center' }}>
+                    {/* Name + Mobile Column */}
+                    <View style={{ width: '32%' }}>
                         <ShimmerPlaceholder
                             LinearGradient={LinearGradient}
-                            style={{ width: '90%', height: 12, borderRadius: 4, marginBottom: 6 }}
+                            style={{
+                                width: '90%',
+                                height: 12,
+                                borderRadius: 4,
+                                marginBottom: 6,
+                            }}
                         />
-                        <ShimmerPlaceholder
-                            LinearGradient={LinearGradient}
-                            style={{ width: '70%', height: 12, borderRadius: 4 }}
-                        />
-                    </View>
 
-                    {/* Date Column */}
-                    <View style={{ width: '35%', alignItems: 'center' }}>
                         <ShimmerPlaceholder
                             LinearGradient={LinearGradient}
-                            style={{ width: '80%', height: 12, borderRadius: 4, marginBottom: 6 }}
-                        />
-                        <ShimmerPlaceholder
-                            LinearGradient={LinearGradient}
-                            style={{ width: '80%', height: 12, borderRadius: 4 }}
+                            style={{
+                                width: '70%',
+                                height: 12,
+                                borderRadius: 4,
+                            }}
                         />
                     </View>
 
                     {/* Total Days Column */}
-                    <View style={{ width: '12.5%', alignItems: 'center' }}>
+                    <View
+                        style={{
+                            width: '35.5%',
+                            alignItems: 'flex-end',
+                            paddingRight: 12,
+                        }}
+                    >
                         <ShimmerPlaceholder
                             LinearGradient={LinearGradient}
-                            style={{ width: 20, height: 12, borderRadius: 4 }}
+                            style={{
+                                width: 40,
+                                height: 12,
+                                borderRadius: 4,
+                            }}
                         />
                     </View>
 
-                    {/* Actions Column */}
-                    <View style={{ width: '12.5%', alignItems: 'center' }}>
+                    {/* Action Column */}
+                    <View
+                        style={{
+                            width: '13.5%',
+                            alignItems: 'center',
+                        }}
+                    >
                         <ShimmerPlaceholder
                             LinearGradient={LinearGradient}
-                            style={{ width: 16, height: 16, borderRadius: 8 }}
+                            style={{
+                                width: 18,
+                                height: 18,
+                                borderRadius: 9,
+                            }}
                         />
                     </View>
                 </View>

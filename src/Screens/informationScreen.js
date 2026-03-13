@@ -1,4 +1,4 @@
-import { Image, StyleSheet, Text, TouchableOpacity, View, TextInput, Switch, Modal, ActivityIndicator, ToastAndroid, Alert, PermissionsAndroid, Platform, Linking, ScrollView, BackHandler, FlatList, TouchableWithoutFeedback, Animated } from 'react-native'
+import { Image, StyleSheet, Text, TouchableOpacity, View, TextInput, Switch, Modal, ActivityIndicator, Alert, PermissionsAndroid, Platform, Linking, ScrollView, BackHandler, FlatList, TouchableWithoutFeedback, Animated } from 'react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native'
 import colors from '../CommonFiles/Colors';
@@ -15,6 +15,8 @@ import RNFetchBlob from 'react-native-blob-util';
 import RNHTMLtoPDF from 'react-native-html-to-pdf';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 import MapView, { Marker } from 'react-native-maps';
+import InformationScreenShimmer from '../Component/InformationScreenShimmer';
+import Toast from 'react-native-toast-message';
 
 
 const informationScreen = () => {
@@ -71,7 +73,13 @@ const informationScreen = () => {
                 android: `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`
             });
         } else {
-            ToastAndroid.show("Location not available", ToastAndroid.SHORT);
+            Toast.show({
+                type: 'error',
+                text1: 'Location not available',
+                position: 'bottom',
+                bottomOffset: 60,
+                visibilityTime: 2000,
+            });
             return;
         }
 
@@ -80,7 +88,13 @@ const informationScreen = () => {
                 if (supported) {
                     Linking.openURL(url);
                 } else {
-                    ToastAndroid.show("Cannot open map", ToastAndroid.SHORT);
+                    Toast.show({
+                        type: 'error',
+                        text1: 'Cannot open map',
+                        position: 'bottom',
+                        bottomOffset: 60,
+                        visibilityTime: 2000,
+                    });
                 }
             })
             .catch((err) => console.error("Error opening map:", err));
@@ -119,7 +133,7 @@ const informationScreen = () => {
 
     const toggleSwitch = () => setIsEnabled(previousState => !previousState);
     const User = require('../assets/images/user.png');
-    const [name, setName] = useState(staffdetail.staff_image || '');
+    const [name, setName] = useState(staffdetail.staff_image_profile || '');
 
     const [mobile, setMobile] = useState(staffdetail.staff_mobile || '');
     const [email, setEmail] = useState(staffdetail.staff_email || '');
@@ -254,6 +268,44 @@ const informationScreen = () => {
         const year = d.getFullYear();
         return `${day}-${month}-${year}`;
     };
+    const formatDateTime = (dateStr) => {
+        if (!dateStr) return '----';
+
+        // Remove extra spaces around colon
+        const cleanStr = dateStr.replace(/\s*:\s*/g, ':').trim();
+
+        const [datePart, timePart] = cleanStr.split(' ');
+        if (!datePart || !timePart) return dateStr;
+
+        let day, month, year;
+
+        // Check format type
+        if (datePart.includes('-')) {
+            const parts = datePart.split('-');
+
+            if (parts[0].length === 4) {
+                // Format: YYYY-MM-DD
+                [year, month, day] = parts;
+            } else {
+                // Format: DD-MM-YYYY
+                [day, month, year] = parts;
+            }
+        } else {
+            return dateStr;
+        }
+
+        let [hours, minutes] = timePart.split(':');
+
+        hours = parseInt(hours, 10);
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+
+        hours = hours % 12;
+        hours = hours === 0 ? 12 : hours;
+
+        return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year} ${hours
+            .toString()
+            .padStart(2, '0')}:${minutes.padStart(2, '0')} ${ampm}`;
+    };
 
     const handleAddSchedule = async (staffId, startDate, endDate) => {
         console.log("staffid start date and end date", staffId, startDate, endDate);
@@ -282,7 +334,13 @@ const informationScreen = () => {
             console.log('Response:', data);
 
             if (data.code === 200) {
-                ToastAndroid.show('Schedule Added Successfully', ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'success',
+                    text1: 'Schedule Added Successfully',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
                 SingleStaffDetailApi();
             } else {
                 console.log('Add failed:', data.message);
@@ -309,8 +367,17 @@ const informationScreen = () => {
 
             if (response.ok) {
                 if (result.code == 200) {
-                    ToastAndroid.show('Staff Deleted Successfully', ToastAndroid.SHORT);
-                    navigation.goBack();
+                    Toast.show({
+                        type: 'success',
+                        text1: 'Staff Deleted Successfully',
+                        position: 'bottom',
+                        bottomOffset: 60,
+                        visibilityTime: 2000,
+                    });
+
+                    setTimeout(() => {
+                        navigation.goBack();
+                    }, 500); // 500ms delay before navigation
                 } else {
                     console.log('Error:', 'Failed to load staff data');
                 }
@@ -327,7 +394,14 @@ const informationScreen = () => {
         const defaultUrl = "https://ayzalenterprises.in/images/user_image/user.jpg";
 
         if (!selectedDoc?.url || selectedDoc.url === defaultUrl) {
-            Alert.alert("Oops!", "Image not available for download.");
+            Toast.show({
+                type: 'error',
+                text1: 'Oops!',
+                text2: 'Image not available for download.',
+                position: 'bottom',
+                bottomOffset: 60,
+                visibilityTime: 2000,
+            });
             return;
         }
 
@@ -357,7 +431,13 @@ const informationScreen = () => {
             download.promise
                 .then(result => {
                     if (result.statusCode === 200) {
-                        ToastAndroid.show("Image Downloaded Successfully!", ToastAndroid.SHORT);
+                        Toast.show({
+                            type: 'success',
+                            text1: 'Image Downloaded Successfully!',
+                            position: 'bottom',
+                            bottomOffset: 60,
+                            visibilityTime: 2000,
+                        });
                         setDocModalVisible(false);
                     } else {
                         throw new Error(`Download failed with status: ${result.statusCode}`);
@@ -365,13 +445,19 @@ const informationScreen = () => {
                 })
                 .catch(error => {
                     console.log("Download error:", error);
-                    ToastAndroid.show("Download failed!", ToastAndroid.SHORT);
+                    Toast.show({
+                        type: 'error',
+                        text1: 'Download failed!',
+                        position: 'bottom',
+                        bottomOffset: 60,
+                        visibilityTime: 2000,
+                    });
                     setDocModalVisible(false);
                 });
 
         } catch (error) {
             console.log("Error:", error);
-            ToastAndroid.show("Something went wrong!", ToastAndroid.SHORT);
+
             setDocModalVisible(false);
         }
     };
@@ -380,7 +466,7 @@ const informationScreen = () => {
         try {
             const hasPermission = await requestPermissions();
             if (!hasPermission) {
-                ToastAndroid.show('Storage permission denied!', ToastAndroid.SHORT);
+
                 return;
             }
 
@@ -400,11 +486,23 @@ const informationScreen = () => {
             }
 
             console.log("File saved to:", res.path());
-            ToastAndroid.show(`Saved to Downloads: ${fileName}`, ToastAndroid.LONG);
+            Toast.show({
+                type: 'success',
+                text1: `Saved to Downloads: ${fileName}`,
+                position: 'bottom',
+                bottomOffset: 60,
+                visibilityTime: 2000, // ya agar aapko LONG effect chahiye to 3500ms
+            });
 
         } catch (error) {
             console.error('Download error:', error);
-            ToastAndroid.show('Download failed!', ToastAndroid.SHORT);
+            Toast.show({
+                type: 'error',
+                text1: 'Download failed!',
+                position: 'bottom',
+                bottomOffset: 60,
+                visibilityTime: 2000,
+            });
         }
     };
 
@@ -504,16 +602,36 @@ const informationScreen = () => {
             const result = await response.json();
 
             if (result.code === 200) {
-                ToastAndroid.show("Staff Account Status Successfully", ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'success',
+                    text1: 'Staff Account Status Changed Successfully',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
             } else {
-                ToastAndroid.show("Failed Staff Account Status", ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'error',
+                    text1: 'Failed Staff Account Status',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
+
+                // Revert toggle if failed
                 setIsAccountEnabled(prev => ({
                     ...prev,
                     [staff_id]: !prev[staff_id],
                 }));
             }
         } catch (error) {
-            ToastAndroid.show("Error updating Account Status", ToastAndroid.SHORT);
+            Toast.show({
+                type: 'error',
+                text1: 'Error updating Account Status',
+                position: 'bottom',
+                bottomOffset: 60,
+                visibilityTime: 2000,
+            });
         } finally {
             setAccountToggles(prev => ({
                 ...prev,
@@ -538,20 +656,44 @@ const informationScreen = () => {
 
             if (response.ok) {
                 if (result.code === 200) {
-                    ToastAndroid.show("Reset Device Id successfully", ToastAndroid.SHORT);
+                    Toast.show({
+                        type: 'success',
+                        text1: 'Reset Device Id successfully',
+                        position: 'bottom',
+                        bottomOffset: 60,
+                        visibilityTime: 2000,
+                    });
                     setResetModal(false);
                     SingleStaffDetailApi();
                 } else {
                     console.log('Error:', 'Failed to reset device');
-                    ToastAndroid.show(result.message || 'Failed to reset', ToastAndroid.SHORT);
+                    Toast.show({
+                        type: 'error',
+                        text1: result.message || 'Failed to reset',
+                        position: 'bottom',
+                        bottomOffset: 60,
+                        visibilityTime: 2000,
+                    });
                 }
             } else {
                 console.log('HTTP Error:', result.message || 'Something went wrong');
-                ToastAndroid.show('Network error', ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'error',
+                    text1: 'Network error',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
             }
         } catch (error) {
             console.log('Error fetching data:', error.message);
-            ToastAndroid.show('Something went wrong', ToastAndroid.SHORT);
+            Toast.show({
+                type: 'error',
+                text1: 'Something went wrong',
+                position: 'bottom',
+                bottomOffset: 60,
+                visibilityTime: 2000,
+            });
         }
     };
 
@@ -564,18 +706,35 @@ const informationScreen = () => {
             });
 
             const result = await response.json();
-
             if (response.ok && result.code === 200) {
-                ToastAndroid.show("Location Access changed successfully", ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'success',
+                    text1: 'Location Access changed successfully',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
             } else {
-                ToastAndroid.show("Failed to update Location Access", ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'error',
+                    text1: 'Failed to update Location Access',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
                 setIsLocationEnabled(prev => ({
                     ...prev,
                     [staff_id]: !prev[staff_id],
                 }));
             }
         } catch (error) {
-            ToastAndroid.show("Error updating Location Access", ToastAndroid.SHORT);
+            Toast.show({
+                type: 'error',
+                text1: 'Error updating Location Access',
+                position: 'bottom',
+                bottomOffset: 60,
+                visibilityTime: 2000,
+            });
             setIsLocationEnabled(prev => ({
                 ...prev,
                 [staff_id]: !prev[staff_id],
@@ -593,7 +752,13 @@ const informationScreen = () => {
             const staffId = await AsyncStorage.getItem('staff_id');
 
             if (!staffId) {
-                ToastAndroid.show('No staff ID found', ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'error',
+                    text1: 'No staff ID found',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });;
                 return;
             }
 
@@ -867,1196 +1032,1140 @@ const informationScreen = () => {
                 </Text>
             </View>
 
-            <View
-                style={{
-                    width: '100%',
-                    marginTop: 15,
-                    paddingHorizontal: 10,
-                }}
-            >
-                <View
-                    style={{
-                        flexDirection: 'row',
-                        backgroundColor: '#ffffff',
-                        borderRadius: 15,
-                        padding: 10,
-                        alignItems: 'center',
-                        elevation: 5,
-                        shadowColor: '#000',
-                        shadowOpacity: 0.1,
-                        shadowRadius: 6,
-                    }}
-                >
-                    <TouchableOpacity onPress={handleImagePress}>
-                        {staffdetail.staff_image_profile ? (
-                            <Image
-                                source={{ uri: encodeURI(staffdetail.staff_image_profile) }}
-                                style={{
-                                    width: 60,
-                                    height: 60,
-                                    borderRadius: 60,
-                                    borderWidth: 3,
-                                    borderColor: '#fff',
-                                }}
-                            />
-                        ) : (
-                            <View
-                                style={{
-                                    width: 60,
-                                    height: 60,
-                                    borderRadius: 60,
-                                    backgroundColor: '#c9c9c9',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                    borderWidth: 3,
-                                    borderColor: '#fff',
-                                }}
-                            >
-                                <Text style={{
-                                    color: '#fff',
-                                    fontSize: 24,
-                                    fontWeight: '700',
-                                    letterSpacing: 1,
-                                }}>
-                                    {getInitials(staffdetail.staff_name)}
-                                </Text>
-                            </View>
-                        )}
-                    </TouchableOpacity>
-
+            {isLoading || !staffdetail ? (
+                <InformationScreenShimmer />
+            ) : (
+                <>
                     <View
                         style={{
-                            flex: 1,
-                            marginLeft: 12,
-                            justifyContent: 'center',
+                            width: '100%',
+                            marginTop: 15,
+                            paddingHorizontal: 10,
                         }}
                     >
-                        <Text
-                            numberOfLines={1}
-                            style={{
-                                fontSize: 14,
-                                color: '#000',
-                                fontFamily: 'Inter-Bold',
-                                textTransform: 'uppercase',
-                            }}
-                        >
-                            {staffdetail.staff_name}
-                        </Text>
                         <View
                             style={{
                                 flexDirection: 'row',
-                                justifyContent: 'flex-start',
-                                paddingVertical: 8,
-                                borderRadius: 8,
+                                backgroundColor: '#ffffff',
+                                borderRadius: 15,
+                                padding: 10,
+                                alignItems: 'center',
+                                elevation: 5,
+                                shadowColor: '#000',
+                                shadowOpacity: 0.1,
+                                shadowRadius: 6,
                             }}
                         >
-                            <Text
+                            <TouchableOpacity onPress={handleImagePress}>
+                                {staffdetail.staff_image_profile ? (
+                                    <Image
+                                        source={{ uri: encodeURI(staffdetail.staff_image_profile) }}
+                                        style={{
+                                            width: 60,
+                                            height: 60,
+                                            borderRadius: 60,
+                                            borderWidth: 3,
+                                            borderColor: '#fff',
+                                        }}
+                                    />
+                                ) : (
+                                    <View
+                                        style={{
+                                            width: 60,
+                                            height: 60,
+                                            borderRadius: 60,
+                                            backgroundColor: '#c9c9c9',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            borderWidth: 3,
+                                            borderColor: '#fff',
+                                        }}
+                                    >
+                                        <Text style={{
+                                            color: '#fff',
+                                            fontSize: 24,
+                                            fontWeight: '700',
+                                            letterSpacing: 1,
+                                        }}>
+                                            {getInitials(staffdetail.staff_name)}
+                                        </Text>
+                                    </View>
+                                )}
+                            </TouchableOpacity>
+
+                            <View
                                 style={{
-                                    fontSize: 13,
-                                    color: '#374151',
-                                    fontFamily: 'Inter-Regular',
+                                    flex: 1,
+                                    marginLeft: 12,
+                                    justifyContent: 'center',
                                 }}
                             >
-                                {staffdetail.staff_mobile}
-                            </Text>
+                                <Text
+                                    numberOfLines={1}
+                                    style={{
+                                        fontSize: 14,
+                                        color: '#000',
+                                        fontFamily: 'Inter-Bold',
+                                        textTransform: 'uppercase',
+                                    }}
+                                >
+                                    {staffdetail.staff_name}
+                                </Text>
+                                <View
+                                    style={{
+                                        flexDirection: 'row',
+                                        justifyContent: 'flex-start',
+                                        paddingVertical: 8,
+                                        borderRadius: 8,
+                                    }}
+                                >
+                                    <Text
+                                        style={{
+                                            fontSize: 13,
+                                            color: '#374151',
+                                            fontFamily: 'Inter-Regular',
+                                        }}
+                                    >
+                                        {staffdetail.staff_mobile}
+                                    </Text>
 
+                                    <View
+                                        style={{
+                                            flexDirection: 'row',
+                                            justifyContent: 'center',
+                                            marginLeft: 'auto',
+                                            alignItems: 'center',
+                                            gap: 18,
+                                            flex: 1
+                                        }}
+                                    >
+                                        <TouchableOpacity
+                                            onPress={() => Linking.openURL(`tel:${staffdetail.staff_mobile}`)}
+                                        >
+                                            <Image source={call} style={{ width: 17, height: 17 }} />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            onPress={() =>
+                                                Linking.openURL(
+                                                    `https://wa.me/${staffdetail.staff_mobile}`
+                                                )
+                                            }
+                                        >
+                                            <Image source={whatsapp} style={{ width: 20, height: 20 }} />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            </View>
+
+                            <View
+                                style={{
+                                    width: 100,
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    flexDirection: 'row',
+                                }}
+                            >
+                                {AccountToggles[staffdetail.staff_id] ? (
+                                    <ActivityIndicator size="small" color="#8b5e3c" />
+                                ) : (
+                                    <Switch
+                                        trackColor={{ false: "#f54949", true: "#1cd181" }}
+                                        thumbColor="#fff"
+                                        disabled={!!AccountToggles[staffdetail.staff_id] || !hasAccountStatusPermission}
+                                        onValueChange={(value) => {
+                                            const staffId = staffdetail.staff_id;
+
+                                            setAccountToggles(prev => ({
+                                                ...prev,
+                                                [staffId]: true,
+                                            }));
+
+                                            setIsAccountEnabled(prev => ({
+                                                ...prev,
+                                                [staffId]: value,
+                                            }));
+
+                                            StaffAccountStatus(staffId, value ? 'On' : 'Off');
+                                        }}
+                                        value={
+                                            isAccountEnabled[staffdetail.staff_id] !== undefined
+                                                ? isAccountEnabled[staffdetail.staff_id]
+                                                : staffdetail.staff_status === 'Active'
+                                        }
+                                    />
+                                )}
+
+                                <TouchableOpacity
+                                    onPress={(e) => {
+                                        const { pageX, pageY } = e.nativeEvent;
+                                        OpenModal(pageX, pageY);
+                                    }}
+                                    style={{
+                                        padding: 6,
+                                        borderRadius: 10,
+                                        backgroundColor: '#f2f2f2',
+                                    }}
+                                >
+                                    <Entypo name="dots-three-vertical" size={18} color="#000" />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+
+                    <ScrollView
+                        contentContainerStyle={{ flexGrow: 1 }}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        <View style={{
+                            backgroundColor: '#ffffff', width: '100%', paddingHorizontal: 10, marginTop: 15,
+                        }}>
+                            <View
+                                style={{
+                                    backgroundColor: '#fff',
+                                    borderRadius: 15,
+                                    padding: 15,
+                                    marginTop: 15,
+                                    shadowColor: '#000',
+                                    shadowOpacity: 0.05,
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowRadius: 4,
+                                    elevation: 2,
+                                }}
+                            >
+                                <View
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        paddingVertical: 12,
+                                        borderBottomWidth: 1,
+                                        borderColor: '#eee',
+                                    }}
+                                >
+                                    <View style={{ width: 30, alignItems: 'center' }}>
+                                        <Ionicons name="mail-outline" size={26} color="#4A7DFE" />
+                                    </View>
+                                    <View
+                                        style={{
+                                            flex: 1,
+                                            marginLeft: 10,
+                                        }}
+                                    >
+                                        <Text style={{
+                                            fontFamily: 'Inter-SemiBold',
+                                            fontSize: 16,
+                                            color: '#374151',
+                                            letterSpacing: 0.2,
+                                            marginBottom: 2,
+                                        }}>Email</Text>
+                                        <Text style={{
+                                            fontFamily: 'Inter-Regular',
+                                            fontSize: 15,
+                                            color: '#4B5563',
+                                            lineHeight: 22
+                                        }}>
+                                            {staffdetail.staff_email || '----'}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                <View
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        paddingVertical: 12,
+                                        borderBottomWidth: 1,
+                                        borderColor: '#eee',
+                                    }}
+                                >
+                                    <View style={{ width: 30, alignItems: 'center' }}>
+                                        <Ionicons name="person-circle-outline" size={26} color="#2EC4B6" />
+                                    </View>
+                                    <View
+                                        style={{
+                                            flex: 1,
+                                            marginLeft: 10,
+                                        }}
+                                    >
+                                        <Text style={{
+                                            fontFamily: 'Inter-SemiBold',
+                                            fontSize: 16,
+                                            color: '#374151',
+                                            letterSpacing: 0.2,
+                                            marginBottom: 2,
+                                        }}>Reference Name</Text>
+                                        <Text style={{
+                                            fontFamily: 'Inter-Regular',
+                                            fontSize: 15,
+                                            color: '#4B5563',
+                                            lineHeight: 22
+                                        }}>
+                                            {staffdetail.staff_reference?.toUpperCase() || '----'}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                <View
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        paddingVertical: 12,
+                                        borderBottomWidth: 1,
+                                        borderColor: '#eee',
+                                    }}
+                                >
+                                    <View style={{ width: 30, alignItems: 'center' }}>
+                                        <Ionicons name="location-outline" size={26} color="#A259FF" />
+                                    </View>
+                                    <View
+                                        style={{
+                                            flex: 1,
+                                            marginLeft: 10,
+                                        }}
+                                    >
+                                        <Text style={{
+                                            fontFamily: 'Inter-SemiBold',
+                                            fontSize: 16,
+                                            color: '#374151',
+                                            letterSpacing: 0.2,
+                                            marginBottom: 2,
+                                        }}>Address</Text>
+                                        <Text style={{
+                                            fontFamily: 'Inter-Regular',
+                                            fontSize: 15,
+                                            color: '#4B5563',
+                                            lineHeight: 22
+                                        }}>
+                                            {staffdetail.staff_address || '----'}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                <View
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        paddingVertical: 12,
+                                        borderBottomWidth: 1,
+                                        borderColor: '#eee',
+                                    }}
+                                >
+                                    <View style={{ width: 30, alignItems: 'center' }}>
+                                        <Ionicons name="calendar-outline" size={26} color="#F4B400" />
+                                    </View>
+                                    <View
+                                        style={{
+                                            flex: 1,
+                                            marginLeft: 10,
+                                        }}
+                                    >
+                                        <Text style={{
+                                            fontFamily: 'Inter-SemiBold',
+                                            fontSize: 16,
+                                            color: '#374151',
+                                            letterSpacing: 0.2,
+                                            marginBottom: 2,
+                                        }}>Entry Date</Text>
+                                        <Text style={{
+                                            fontFamily: 'Inter-Regular',
+                                            fontSize: 15,
+                                            color: '#4B5563',
+                                            lineHeight: 22
+                                        }}>
+                                            {staffdetail.staff_entry_date ? formatDateTime(staffdetail.staff_entry_date) : '----'}
+
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                <View
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        paddingVertical: 12,
+                                        borderBottomWidth: 1,
+                                        borderColor: '#eee',
+                                    }}
+                                >
+                                    <View style={{ width: 30, alignItems: 'center' }}>
+                                        {staffdetail.account_status === "Expired" ? (
+                                            <Ionicons name="alert-circle-outline" size={26} color="#DC2626" />
+                                        ) : (
+                                            <Ionicons name="checkmark-circle-outline" size={26} color="#10B981" />
+                                        )}
+                                    </View>
+
+                                    <View style={{ flex: 1, marginLeft: 10 }}>
+                                        <Text
+                                            style={{
+                                                fontFamily: 'Inter-SemiBold',
+                                                fontSize: 16,
+                                                color: '#374151',
+                                                letterSpacing: 0.2,
+                                                marginBottom: 2,
+                                            }}
+                                        >
+                                            Account Status
+                                        </Text>
+
+                                        <Text
+                                            style={{
+                                                fontFamily: 'Inter-Regular',
+                                                fontSize: 15,
+                                                color: staffdetail.account_status === "Expired" ? "#DC2626" : "#10B981",
+                                                lineHeight: 22,
+                                                textTransform: 'capitalize'
+                                            }}
+                                        >
+                                            {staffdetail.account_status || '----'}
+                                        </Text>
+                                    </View>
+
+                                    {staffdetail.account_status === "Expired" && (
+                                        <TouchableOpacity
+                                            style={{
+                                                backgroundColor: '#4A7DFE',
+                                                paddingHorizontal: 16,
+                                                paddingVertical: 8,
+                                                borderRadius: 20,
+                                            }}
+                                            onPress={() => {
+                                                setStatusModal(true)
+                                            }}
+                                        >
+                                            <Text
+                                                style={{
+                                                    color: '#fff',
+                                                    fontSize: 14,
+                                                    fontFamily: 'Inter-SemiBold',
+                                                }}
+                                            >
+                                                Extend
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+                            </View>
+                        </View>
+
+                        <View style={{ width: '100%', paddingHorizontal: 12, marginTop: 20 }}>
+                            <View style={{
+                                backgroundColor: '#fff',
+                                borderRadius: 18,
+                                paddingVertical: 20,
+                                paddingHorizontal: 10,
+                                shadowColor: '#000',
+                                shadowOpacity: 0.08,
+                                shadowOffset: { width: 0, height: 4 },
+                                shadowRadius: 8,
+                                elevation: 4,
+                            }}>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                    <TabButton label="Search History" tabKey="Search" icon="search-outline" />
+                                    <TabButton label="Schedule History" tabKey="Schedule" icon="time-outline" />
+                                </ScrollView>
+
+                                <View style={{
+                                    height: 1,
+                                    backgroundColor: "#E5E7EB",
+                                    marginVertical: 15,
+                                    marginHorizontal: 10
+                                }} />
+
+                                <View style={{
+                                    backgroundColor: '#F9FAFB',
+                                    paddingVertical: 20,
+                                    paddingHorizontal: 10,
+                                    borderRadius: 16,
+                                    marginHorizontal: 10,
+                                    borderWidth: 1,
+                                    borderColor: '#E5E7EB',
+                                    minHeight: 180,
+                                }}>
+                                    {activeTab === "Search" && (
+                                        <View style={{ flex: 1 }}>
+                                            {searchHistoryLoading ? (
+                                                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 }}>
+                                                    <ActivityIndicator size="large" color={colors.Brown} />
+                                                    <Text style={{ marginTop: 10, fontFamily: 'Inter-Regular', color: '#6B7280' }}>
+                                                        Loading search history...
+                                                    </Text>
+                                                </View>
+                                            ) : searchHistory.length > 0 ? (
+                                                <FlatList
+                                                    data={displayedSearchHistory}
+                                                    keyExtractor={(item, index) => index.toString()}
+                                                    showsVerticalScrollIndicator={false}
+                                                    onEndReached={loadMoreSearchHistory}
+                                                    onEndReachedThreshold={0.5}
+                                                    ListFooterComponent={
+                                                        loadingMore ? (
+                                                            <View style={{ padding: 20 }}>
+                                                                <ActivityIndicator size="small" color={colors.Brown} />
+                                                            </View>
+                                                        ) : null
+                                                    }
+                                                    renderItem={({ item, index }) => (
+                                                        <View
+                                                            style={{
+                                                                marginTop: 8,
+                                                                backgroundColor: "#fff",
+                                                                padding: 12,
+                                                                marginBottom: 12,
+                                                                borderRadius: 14,
+                                                                borderWidth: 1,
+                                                                borderColor: "#E5E7EB",
+                                                                shadowColor: "#000",
+                                                                shadowOpacity: 0.06,
+                                                                shadowRadius: 3,
+                                                                elevation: 1,
+                                                            }}
+                                                        >
+                                                            <View style={{
+                                                                flexDirection: 'row',
+                                                                justifyContent: 'space-between',
+                                                                alignItems: 'center',
+                                                                marginBottom: 5
+                                                            }}>
+                                                                <Text style={{
+                                                                    fontSize: 14,
+                                                                    fontFamily: 'Inter-SemiBold',
+                                                                    color: '#1F2937'
+                                                                }}>
+                                                                    #{index + 1}
+                                                                </Text>
+                                                                <View style={{ flexDirection: 'row', gap: 5 }}>
+                                                                    <Ionicons name="car-outline" size={18} color="#374151" />
+                                                                    <Text style={{
+                                                                        fontFamily: 'Inter-Regular',
+                                                                        fontSize: 14,
+                                                                        color: '#374151'
+                                                                    }}>
+                                                                        {item.vehicle_registration_no || 'N/A'}
+                                                                    </Text>
+                                                                </View>
+
+                                                                <TouchableOpacity
+                                                                    onPress={() => openHistoryDetailModal(item)}
+                                                                    style={{
+                                                                        padding: 6,
+                                                                        borderRadius: 50,
+                                                                        backgroundColor: '#F3F4F6'
+                                                                    }}
+                                                                >
+                                                                    <AntDesign name="infocirlceo" size={20} color="black" />
+                                                                </TouchableOpacity>
+                                                            </View>
+
+                                                            {item.vehicle_chassis_no ? (
+                                                                <View style={{ flexDirection: 'row', marginBottom: 6 }}>
+                                                                    <Ionicons name="barcode-outline" size={18} color="#6B7280" />
+                                                                    <Text style={{
+                                                                        fontFamily: 'Inter-Regular',
+                                                                        fontSize: 13,
+                                                                        marginLeft: 6,
+                                                                        color: '#6B7280'
+                                                                    }}>
+                                                                        {item.vehicle_chassis_no}
+                                                                    </Text>
+                                                                </View>
+                                                            ) : null}
+
+                                                            <View style={{ flexDirection: 'row', marginBottom: 6 }}>
+                                                                <Ionicons name="time-outline" size={18} color="#6B7280" />
+                                                                <Text
+                                                                    style={{
+                                                                        fontFamily: 'Inter-Regular',
+                                                                        fontSize: 13,
+                                                                        marginLeft: 6,
+                                                                        color: '#6B7280',
+                                                                    }}
+                                                                >
+                                                                    {formatDateTime(item.entry_date) || '---'}
+                                                                </Text>
+                                                            </View>
+
+                                                            <TouchableOpacity
+                                                                onPress={() => openMap(item.vehicle_location, item.latitude, item.longitude)}
+                                                                style={{ flexDirection: 'row', marginBottom: 10, alignItems: 'center' }}
+                                                            >
+                                                                <Ionicons name="location-outline" size={18} color="#6B7280" />
+                                                                <Text style={{
+                                                                    fontFamily: 'Inter-Regular',
+                                                                    fontSize: 13,
+                                                                    marginLeft: 6,
+                                                                    flex: 1,
+                                                                    color: (item.vehicle_location || (item.latitude && item.longitude)) ? '#2563EB' : '#6B7280',
+                                                                    textDecorationLine: (item.vehicle_location || (item.latitude && item.longitude)) ? 'underline' : 'none',
+                                                                }}>
+                                                                    {item.vehicle_location || 'Unknown Location'}
+                                                                </Text>
+                                                            </TouchableOpacity>
+                                                        </View>
+                                                    )}
+                                                />
+                                            ) : (
+                                                <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: 40 }}>
+                                                    <Ionicons name="search-outline" size={50} color="#D1D5DB" />
+                                                    <Text style={{
+                                                        marginTop: 15,
+                                                        fontSize: 16,
+                                                        fontFamily: "Inter-Medium",
+                                                        color: "#6B7280",
+                                                        textAlign: "center",
+                                                    }}>
+                                                        No search history found
+                                                    </Text>
+                                                </View>
+                                            )}
+                                        </View>
+                                    )}
+
+                                    {activeTab === "Schedule" && (
+                                        <View style={{ flex: 1 }}>
+                                            {scheduleHistoryLoading ? (
+                                                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 }}>
+                                                    <ActivityIndicator size="large" color={colors.Brown} />
+                                                    <Text style={{ marginTop: 10, fontFamily: 'Inter-Regular', color: '#6B7280' }}>
+                                                        Loading schedule history...
+                                                    </Text>
+                                                </View>
+                                            ) : scheduleHistory.length > 0 ? (
+                                                <FlatList
+                                                    data={displayedScheduleHistory}
+                                                    keyExtractor={(item, index) => index.toString()}
+                                                    showsVerticalScrollIndicator={false}
+                                                    onEndReached={loadMoreScheduleHistory}
+                                                    onEndReachedThreshold={0.5}
+                                                    renderItem={({ item, index }) => {
+                                                        const formatDMY = (dateStr) => {
+                                                            if (!dateStr) return 'N/A';
+                                                            const d = new Date(dateStr);
+                                                            if (isNaN(d)) return 'N/A';
+                                                            return `${d.getDate().toString().padStart(2, '0')}-${(d.getMonth() + 1)
+                                                                .toString().padStart(2, '0')}-${d.getFullYear()}`;
+                                                        };
+
+                                                        let daysBgColor = '#f0f0f0';
+                                                        const today = new Date();
+                                                        const endDate = item.schedule_staff_end_date ? new Date(item.schedule_staff_end_date) : null;
+                                                        if (endDate && today > endDate) {
+                                                            daysBgColor = '#f0f0f0';
+                                                        }
+
+                                                        return (
+                                                            <View
+                                                                style={{
+                                                                    backgroundColor: 'white',
+                                                                    padding: 16,
+                                                                    marginBottom: 12,
+                                                                    borderRadius: 12,
+                                                                    borderWidth: 1,
+                                                                    borderColor: '#E5E7EB',
+                                                                }}
+                                                            >
+                                                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                    <View style={{ flex: 1 }}>
+                                                                        <Text
+                                                                            style={{
+                                                                                fontFamily: 'Inter-Medium',
+                                                                                fontSize: 13,
+                                                                                color: '#374151',
+                                                                            }}
+                                                                        >
+                                                                            {formatDMY(item.schedule_staff_start_date)} — {formatDMY(item.schedule_staff_end_date)}
+                                                                        </Text>
+                                                                    </View>
+
+                                                                    <View
+                                                                        style={{
+                                                                            backgroundColor: daysBgColor,
+                                                                            paddingVertical: 4,
+                                                                            paddingHorizontal: 10,
+                                                                            borderRadius: 8,
+                                                                        }}
+                                                                    >
+                                                                        <Text style={{ color: 'black', fontWeight: 'bold', fontSize: 13, fontFamily: 'Inter-Regular' }}>
+                                                                            {item.schedule_staff_total_day || '0'}
+                                                                        </Text>
+                                                                    </View>
+                                                                </View>
+
+                                                                <View
+                                                                    style={{
+                                                                        height: 1,
+                                                                        backgroundColor: '#E5E7EB',
+                                                                        marginVertical: 10,
+                                                                    }}
+                                                                />
+
+                                                                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                                                    <Text style={{ fontFamily: 'Inter-Medium', fontSize: 13, color: '#374151' }}>
+                                                                        Payment:{' '}
+                                                                        <Text
+                                                                            style={{
+                                                                                fontFamily: 'Inter-Medium',
+                                                                                fontSize: 13,
+                                                                                color: item.schedule_staff_payment_status === 'Paid' ? '#059669' : '#DC2626',
+                                                                            }}
+                                                                        >
+                                                                            {item.schedule_staff_payment_status || 'N/A'}
+                                                                        </Text>
+                                                                    </Text>
+
+                                                                    <Text
+                                                                        style={{
+                                                                            fontFamily: 'Inter-Medium',
+                                                                            fontSize: 13,
+                                                                            color: '#6B7280',
+                                                                        }}
+                                                                    >
+                                                                        Entry On: {formatDMY(item.schedule_staff_entry_date)}
+                                                                    </Text>
+                                                                </View>
+                                                            </View>
+                                                        );
+                                                    }}
+                                                />
+                                            ) : (
+                                                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 }}>
+                                                    <Ionicons name="time-outline" size={50} color="#D1D5DB" />
+                                                    <Text style={{
+                                                        marginTop: 15,
+                                                        fontSize: 16,
+                                                        fontFamily: 'Inter-Medium',
+                                                        color: '#6B7280',
+                                                        textAlign: 'center',
+                                                    }}>
+                                                        No schedule history found
+                                                    </Text>
+                                                </View>
+                                            )}
+                                        </View>
+                                    )}
+                                </View>
+                            </View>
+                        </View>
+                    </ScrollView>
+
+                    <Modal
+                        transparent={true}
+                        visible={modalVisible}
+                        animationType="fade"
+                        onRequestClose={handleCloseModal}
+                    >
+                        <TouchableOpacity
+                            style={{
+                                flex: 1,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                            }}
+                            onPress={handleCloseModal}
+                            activeOpacity={1}
+                        >
+                            <View
+                                style={{
+                                    width: '80%',
+                                    height: '40%',
+                                    backgroundColor: 'white',
+                                    borderRadius: 150,
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                }}
+                                onStartShouldSetResponder={() => true}
+                                onTouchEnd={e => e.stopPropagation()}
+                            >
+                                {staffdetail.staff_image_profile ? (
+                                    <Image
+                                        source={{ uri: encodeURI(staffdetail.staff_image_profile) }}
+                                        style={{ width: '100%', height: '100%', borderRadius: 150, resizeMode: 'cover' }}
+                                    />
+                                ) : (
+                                    <View
+                                        style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            borderRadius: 150,
+                                            backgroundColor: '#ccc',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                        }}
+                                    >
+                                        <Text style={{
+                                            color: '#fff',
+                                            fontSize: 60,
+                                            fontWeight: 'bold',
+                                        }}>
+                                            {getInitials(staffdetail.staff_name)}
+                                        </Text>
+                                    </View>
+                                )}
+                            </View>
+                        </TouchableOpacity>
+                    </Modal>
+
+                    <Modal
+                        visible={historyDetailModalVisible}
+                        transparent={true}
+                        animationType="slide"
+                    >
+                        <TouchableOpacity
+                            style={{
+                                flex: 1,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                            }}
+                            activeOpacity={1}
+                            onPress={closeHistoryDetailModal}>
                             <View
                                 style={{
                                     flexDirection: 'row',
-                                    justifyContent: 'center',
-                                    marginLeft: 'auto',
-                                    alignItems: 'center',
-                                    gap: 18,
-                                    flex: 1
-                                }}
-                            >
+                                    justifyContent: 'flex-end',
+                                    width: '85%',
+                                    paddingVertical: 5,
+                                }}>
                                 <TouchableOpacity
-                                    onPress={() => Linking.openURL(`tel:${staffdetail.staff_mobile}`)}
-                                >
-                                    <Image source={call} style={{ width: 17, height: 17 }} />
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    onPress={() =>
-                                        Linking.openURL(
-                                            `https://wa.me/${staffdetail.staff_mobile}`
-                                        )
-                                    }
-                                >
-                                    <Image source={whatsapp} style={{ width: 20, height: 20 }} />
+                                    onPress={closeHistoryDetailModal}
+                                    style={{
+                                        marginRight: 5,
+                                        backgroundColor: 'white',
+                                        borderRadius: 50,
+                                    }}>
+                                    <Entypo name="cross" size={25} color="black" />
                                 </TouchableOpacity>
                             </View>
-                        </View>
-                    </View>
-
-                    <View
-                        style={{
-                            width: 100,
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            flexDirection: 'row',
-                        }}
-                    >
-                        {AccountToggles[staffdetail.staff_id] ? (
-                            <ActivityIndicator size="small" color="#8b5e3c" />
-                        ) : (
-                            <Switch
-                                trackColor={{ false: "#f54949", true: "#1cd181" }}
-                                thumbColor="#fff"
-                                disabled={!!AccountToggles[staffdetail.staff_id] || !hasAccountStatusPermission}
-                                onValueChange={(value) => {
-                                    const staffId = staffdetail.staff_id;
-
-                                    setAccountToggles(prev => ({
-                                        ...prev,
-                                        [staffId]: true,
-                                    }));
-
-                                    setIsAccountEnabled(prev => ({
-                                        ...prev,
-                                        [staffId]: value,
-                                    }));
-
-                                    StaffAccountStatus(staffId, value ? 'On' : 'Off');
-                                }}
-                                value={
-                                    isAccountEnabled[staffdetail.staff_id] !== undefined
-                                        ? isAccountEnabled[staffdetail.staff_id]
-                                        : staffdetail.staff_status === 'Active'
-                                }
-                            />
-                        )}
-
-                        <TouchableOpacity
-                            onPress={(e) => {
-                                const { pageX, pageY } = e.nativeEvent;
-                                OpenModal(pageX, pageY);
-                            }}
-                            style={{
-                                padding: 6,
-                                borderRadius: 10,
-                                backgroundColor: '#f2f2f2',
-                            }}
-                        >
-                            <Entypo name="dots-three-vertical" size={18} color="#000" />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </View>
-
-            <ScrollView
-                contentContainerStyle={{ flexGrow: 1 }}
-                showsVerticalScrollIndicator={false}
-            >
-                <View style={{
-                    backgroundColor: '#ffffff', width: '100%', paddingHorizontal: 10, marginTop: 15,
-                }}>
-                    <View
-                        style={{
-                            backgroundColor: '#fff',
-                            borderRadius: 15,
-                            padding: 15,
-                            marginTop: 15,
-                            shadowColor: '#000',
-                            shadowOpacity: 0.05,
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowRadius: 4,
-                            elevation: 2,
-                        }}
-                    >
-                        <View
-                            style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                paddingVertical: 12,
-                                borderBottomWidth: 1,
-                                borderColor: '#eee',
-                            }}
-                        >
-                            <View style={{ width: 30, alignItems: 'center' }}>
-                                <Ionicons name="mail-outline" size={26} color="#4A7DFE" />
-                            </View>
                             <View
                                 style={{
-                                    flex: 1,
-                                    marginLeft: 10,
+                                    backgroundColor: 'white',
+                                    padding: 20,
+                                    borderRadius: 15,
+                                    width: '85%',
+                                    maxHeight: '100%',
                                 }}
-                            >
-                                <Text style={{
-                                    fontFamily: 'Inter-SemiBold',
-                                    fontSize: 16,
-                                    color: '#374151',
-                                    letterSpacing: 0.2,
-                                    marginBottom: 2,
-                                }}>Email</Text>
-                                <Text style={{
-                                    fontFamily: 'Inter-Regular',
-                                    fontSize: 15,
-                                    color: '#4B5563',
-                                    lineHeight: 22
-                                }}>
-                                    {staffdetail.staff_email || '----'}
-                                </Text>
-                            </View>
-                        </View>
-
-                        <View
-                            style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                paddingVertical: 12,
-                                borderBottomWidth: 1,
-                                borderColor: '#eee',
-                            }}
-                        >
-                            <View style={{ width: 30, alignItems: 'center' }}>
-                                <Ionicons name="person-circle-outline" size={26} color="#2EC4B6" />
-                            </View>
-                            <View
-                                style={{
-                                    flex: 1,
-                                    marginLeft: 10,
-                                }}
-                            >
-                                <Text style={{
-                                    fontFamily: 'Inter-SemiBold',
-                                    fontSize: 16,
-                                    color: '#374151',
-                                    letterSpacing: 0.2,
-                                    marginBottom: 2,
-                                }}>Reference Name</Text>
-                                <Text style={{
-                                    fontFamily: 'Inter-Regular',
-                                    fontSize: 15,
-                                    color: '#4B5563',
-                                    lineHeight: 22
-                                }}>
-                                    {staffdetail.staff_reference?.toUpperCase() || '----'}
-                                </Text>
-                            </View>
-                        </View>
-
-                        <View
-                            style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                paddingVertical: 12,
-                                borderBottomWidth: 1,
-                                borderColor: '#eee',
-                            }}
-                        >
-                            <View style={{ width: 30, alignItems: 'center' }}>
-                                <Ionicons name="location-outline" size={26} color="#A259FF" />
-                            </View>
-                            <View
-                                style={{
-                                    flex: 1,
-                                    marginLeft: 10,
-                                }}
-                            >
-                                <Text style={{
-                                    fontFamily: 'Inter-SemiBold',
-                                    fontSize: 16,
-                                    color: '#374151',
-                                    letterSpacing: 0.2,
-                                    marginBottom: 2,
-                                }}>Address</Text>
-                                <Text style={{
-                                    fontFamily: 'Inter-Regular',
-                                    fontSize: 15,
-                                    color: '#4B5563',
-                                    lineHeight: 22
-                                }}>
-                                    {staffdetail.staff_address || '----'}
-                                </Text>
-                            </View>
-                        </View>
-
-                        <View
-                            style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                paddingVertical: 12,
-                                borderBottomWidth: 1,
-                                borderColor: '#eee',
-                            }}
-                        >
-                            <View style={{ width: 30, alignItems: 'center' }}>
-                                <Ionicons name="calendar-outline" size={26} color="#F4B400" />
-                            </View>
-                            <View
-                                style={{
-                                    flex: 1,
-                                    marginLeft: 10,
-                                }}
-                            >
-                                <Text style={{
-                                    fontFamily: 'Inter-SemiBold',
-                                    fontSize: 16,
-                                    color: '#374151',
-                                    letterSpacing: 0.2,
-                                    marginBottom: 2,
-                                }}>Entry Date</Text>
-                                <Text style={{
-                                    fontFamily: 'Inter-Regular',
-                                    fontSize: 15,
-                                    color: '#4B5563',
-                                    lineHeight: 22
-                                }}>
-                                    {staffdetail.staff_entry_date ? (() => {
-                                        const date = new Date(staffdetail.staff_entry_date);
-                                        if (isNaN(date)) return staffdetail.staff_entry_date;
-
-                                        const d = String(date.getDate()).padStart(2, '0');
-                                        const m = String(date.getMonth() + 1).padStart(2, '0');
-                                        const y = date.getFullYear();
-                                        const h = String(date.getHours()).padStart(2, '0');
-                                        const min = String(date.getMinutes()).padStart(2, '0');
-                                        const s = String(date.getSeconds()).padStart(2, '0');
-
-                                        return `${d}-${m}-${y} ${h}:${min}:${s}`;
-                                    })() : '----'}
-                                </Text>
-                            </View>
-                        </View>
-
-                        <View
-                            style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                paddingVertical: 12,
-                                borderBottomWidth: 1,
-                                borderColor: '#eee',
-                            }}
-                        >
-                            <View style={{ width: 30, alignItems: 'center' }}>
-                                {staffdetail.account_status === "Expired" ? (
-                                    <Ionicons name="alert-circle-outline" size={26} color="#DC2626" />
-                                ) : (
-                                    <Ionicons name="checkmark-circle-outline" size={26} color="#10B981" />
-                                )}
-                            </View>
-
-                            <View style={{ flex: 1, marginLeft: 10 }}>
-                                <Text
-                                    style={{
-                                        fontFamily: 'Inter-SemiBold',
-                                        fontSize: 16,
-                                        color: '#374151',
-                                        letterSpacing: 0.2,
-                                        marginBottom: 2,
-                                    }}
-                                >
-                                    Account Status
-                                </Text>
-
-                                <Text
-                                    style={{
-                                        fontFamily: 'Inter-Regular',
-                                        fontSize: 15,
-                                        color: staffdetail.account_status === "Expired" ? "#DC2626" : "#10B981",
-                                        lineHeight: 22,
-                                        textTransform: 'capitalize'
-                                    }}
-                                >
-                                    {staffdetail.account_status || '----'}
-                                </Text>
-                            </View>
-
-                            {staffdetail.account_status === "Expired" && (
-                                <TouchableOpacity
-                                    style={{
-                                        backgroundColor: '#4A7DFE',
-                                        paddingHorizontal: 16,
-                                        paddingVertical: 8,
-                                        borderRadius: 20,
-                                    }}
-                                    onPress={() => {
-                                        setStatusModal(true)
-                                    }}
-                                >
-                                    <Text
-                                        style={{
-                                            color: '#fff',
-                                            fontSize: 14,
-                                            fontFamily: 'Inter-SemiBold',
-                                        }}
-                                    >
-                                        Extend
-                                    </Text>
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                    </View>
-                </View>
-
-                <View style={{ width: '100%', paddingHorizontal: 12, marginTop: 20 }}>
-                    <View style={{
-                        backgroundColor: '#fff',
-                        borderRadius: 18,
-                        paddingVertical: 20,
-                        paddingHorizontal: 10,
-                        shadowColor: '#000',
-                        shadowOpacity: 0.08,
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowRadius: 8,
-                        elevation: 4,
-                    }}>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                            <TabButton label="Search History" tabKey="Search" icon="search-outline" />
-                            <TabButton label="Schedule History" tabKey="Schedule" icon="time-outline" />
-                        </ScrollView>
-
-                        <View style={{
-                            height: 1,
-                            backgroundColor: "#E5E7EB",
-                            marginVertical: 15,
-                            marginHorizontal: 10
-                        }} />
-
-                        <View style={{
-                            backgroundColor: '#F9FAFB',
-                            paddingVertical: 20,
-                            paddingHorizontal: 10,
-                            borderRadius: 16,
-                            marginHorizontal: 10,
-                            borderWidth: 1,
-                            borderColor: '#E5E7EB',
-                            minHeight: 180,
-                        }}>
-                            {activeTab === "Search" && (
-                                <View style={{ flex: 1 }}>
-                                    {searchHistoryLoading ? (
-                                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 }}>
-                                            <ActivityIndicator size="large" color={colors.Brown} />
-                                            <Text style={{ marginTop: 10, fontFamily: 'Inter-Regular', color: '#6B7280' }}>
-                                                Loading search history...
+                                onStartShouldSetResponder={() => true}
+                                onTouchEnd={e => e.stopPropagation()}>
+                                {selectedHistoryDetail ? (
+                                    <>
+                                        <View
+                                            style={{
+                                                width: '100%',
+                                                justifyContent: 'center',
+                                                alignItems: 'center',
+                                                backgroundColor: '#e4dedeff',
+                                                borderWidth: 1, borderColor: 'black'
+                                            }}>
+                                            <Text
+                                                style={{
+                                                    fontSize: 16,
+                                                    fontFamily: 'Inter-Medium',
+                                                    color: 'black',
+                                                    textAlign: 'center',
+                                                    textTransform: 'uppercase'
+                                                }}>
+                                                Search History Details
                                             </Text>
                                         </View>
-                                    ) : searchHistory.length > 0 ? (
-                                        <FlatList
-                                            data={displayedSearchHistory}
-                                            keyExtractor={(item, index) => index.toString()}
+                                        <ScrollView
                                             showsVerticalScrollIndicator={false}
-                                            onEndReached={loadMoreSearchHistory}
-                                            onEndReachedThreshold={0.5}
-                                            ListFooterComponent={
-                                                loadingMore ? (
-                                                    <View style={{ padding: 20 }}>
-                                                        <ActivityIndicator size="small" color={colors.Brown} />
-                                                    </View>
-                                                ) : null
-                                            }
-                                            renderItem={({ item, index }) => (
+                                            keyboardShouldPersistTaps="handled"
+                                            contentContainerStyle={{ marginBottom: 20 }}
+                                        >
+                                            {[
+                                                { label: 'Staff Name', value: selectedHistoryDetail.history_staff_name || '-----' },
+                                                { label: 'Staff Mobile', value: selectedHistoryDetail.history_staff_mobile || '-----' },
+                                                { label: 'Vehicle Agreement No', value: selectedHistoryDetail.vehicle_agreement_no || '-----' },
+                                                { label: 'Vehicle Registration No', value: selectedHistoryDetail.vehicle_registration_no || '-----' },
+                                                { label: 'Vehicle Chassis No', value: selectedHistoryDetail.vehicle_chassis_no || '-----' },
+                                                { label: 'Vehicle Engine No', value: selectedHistoryDetail.vehicle_engine_no || '-----' },
+                                                {
+                                                    label: 'Entry Date',
+                                                    value: selectedHistoryDetail.entry_date
+                                                        ? formatDateDMY(selectedHistoryDetail.entry_date)
+                                                        : '-----',
+                                                },
+                                            ].map((item, index) => (
                                                 <View
-                                                    style={{
-                                                        marginTop: 8,
-                                                        backgroundColor: "#fff",
-                                                        padding: 12,
-                                                        marginBottom: 12,
-                                                        borderRadius: 14,
-                                                        borderWidth: 1,
-                                                        borderColor: "#E5E7EB",
-                                                        shadowColor: "#000",
-                                                        shadowOpacity: 0.06,
-                                                        shadowRadius: 3,
-                                                        elevation: 1,
-                                                    }}
+                                                    key={index}
+                                                    style={{ width: '100%', flexDirection: 'row', flexWrap: 'wrap' }}
                                                 >
                                                     <View style={{
-                                                        flexDirection: 'row',
-                                                        justifyContent: 'space-between',
-                                                        alignItems: 'center',
-                                                        marginBottom: 5
+                                                        width: '40%',
+                                                        borderLeftWidth: 1,
+                                                        borderBottomWidth: 1,
+                                                        borderColor: 'black',
+                                                        padding: 5,
                                                     }}>
-                                                        <Text style={{
-                                                            fontSize: 14,
-                                                            fontFamily: 'Inter-SemiBold',
-                                                            color: '#1F2937'
-                                                        }}>
-                                                            #{index + 1}
-                                                        </Text>
-                                                        <View style={{ flexDirection: 'row', gap: 5 }}>
-                                                            <Ionicons name="car-outline" size={18} color="#374151" />
-                                                            <Text style={{
-                                                                fontFamily: 'Inter-Regular',
-                                                                fontSize: 14,
-                                                                color: '#374151'
-                                                            }}>
-                                                                {item.vehicle_registration_no || 'N/A'}
-                                                            </Text>
-                                                        </View>
-
-                                                        <TouchableOpacity
-                                                            onPress={() => openHistoryDetailModal(item)}
-                                                            style={{
-                                                                padding: 6,
-                                                                borderRadius: 50,
-                                                                backgroundColor: '#F3F4F6'
-                                                            }}
-                                                        >
-                                                            <AntDesign name="infocirlceo" size={20} color="black" />
-                                                        </TouchableOpacity>
-                                                    </View>
-
-                                                    {item.vehicle_chassis_no ? (
-                                                        <View style={{ flexDirection: 'row', marginBottom: 6 }}>
-                                                            <Ionicons name="barcode-outline" size={18} color="#6B7280" />
-                                                            <Text style={{
-                                                                fontFamily: 'Inter-Regular',
-                                                                fontSize: 13,
-                                                                marginLeft: 6,
-                                                                color: '#6B7280'
-                                                            }}>
-                                                                {item.vehicle_chassis_no}
-                                                            </Text>
-                                                        </View>
-                                                    ) : null}
-
-                                                    <View style={{ flexDirection: 'row', marginBottom: 6 }}>
-                                                        <Ionicons name="time-outline" size={18} color="#6B7280" />
                                                         <Text
                                                             style={{
+                                                                fontSize: 12,
                                                                 fontFamily: 'Inter-Regular',
-                                                                fontSize: 13,
-                                                                marginLeft: 6,
-                                                                color: '#6B7280',
-                                                            }}
-                                                        >
-                                                            {(() => {
-                                                                if (!item.entry_date) return '----';
-
-                                                                const dateObj = new Date(item.entry_date);
-                                                                if (isNaN(dateObj)) return item.entry_date;
-
-                                                                const d = String(dateObj.getDate()).padStart(2, '0');
-                                                                const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-                                                                const y = dateObj.getFullYear();
-
-                                                                const hh = String(dateObj.getHours()).padStart(2, '0');
-                                                                const mm = String(dateObj.getMinutes()).padStart(2, '0');
-                                                                const ss = String(dateObj.getSeconds()).padStart(2, '0');
-
-                                                                return `${d}-${m}-${y}   ${hh}:${mm}:${ss}`;
-                                                            })()}
+                                                                color: 'black',
+                                                                textAlign: 'left',
+                                                                flexWrap: 'wrap',
+                                                                textTransform: 'uppercase'
+                                                            }}>
+                                                            {item.label}
                                                         </Text>
                                                     </View>
 
-                                                    <TouchableOpacity
-                                                        onPress={() => openMap(item.vehicle_location, item.latitude, item.longitude)}
-                                                        style={{ flexDirection: 'row', marginBottom: 10, alignItems: 'center' }}
-                                                    >
-                                                        <Ionicons name="location-outline" size={18} color="#6B7280" />
-                                                        <Text style={{
-                                                            fontFamily: 'Inter-Regular',
-                                                            fontSize: 13,
-                                                            marginLeft: 6,
-                                                            flex: 1,
-                                                            color: (item.vehicle_location || (item.latitude && item.longitude)) ? '#2563EB' : '#6B7280',
-                                                            textDecorationLine: (item.vehicle_location || (item.latitude && item.longitude)) ? 'underline' : 'none',
-                                                        }}>
-                                                            {item.vehicle_location || 'Unknown Location'}
-                                                        </Text>
-                                                    </TouchableOpacity>
-                                                </View>
-                                            )}
-                                        />
-                                    ) : (
-                                        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: 40 }}>
-                                            <Ionicons name="search-outline" size={50} color="#D1D5DB" />
-                                            <Text style={{
-                                                marginTop: 15,
-                                                fontSize: 16,
-                                                fontFamily: "Inter-Medium",
-                                                color: "#6B7280",
-                                                textAlign: "center",
-                                            }}>
-                                                No search history found
-                                            </Text>
-                                        </View>
-                                    )}
-                                </View>
-                            )}
-
-                            {activeTab === "Schedule" && (
-                                <View style={{ flex: 1 }}>
-                                    {scheduleHistoryLoading ? (
-                                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 }}>
-                                            <ActivityIndicator size="large" color={colors.Brown} />
-                                            <Text style={{ marginTop: 10, fontFamily: 'Inter-Regular', color: '#6B7280' }}>
-                                                Loading schedule history...
-                                            </Text>
-                                        </View>
-                                    ) : scheduleHistory.length > 0 ? (
-                                        <FlatList
-                                            data={displayedScheduleHistory}
-                                            keyExtractor={(item, index) => index.toString()}
-                                            showsVerticalScrollIndicator={false}
-                                            onEndReached={loadMoreScheduleHistory}
-                                            onEndReachedThreshold={0.5}
-                                            renderItem={({ item, index }) => {
-                                                const formatDMY = (dateStr) => {
-                                                    if (!dateStr) return 'N/A';
-                                                    const d = new Date(dateStr);
-                                                    if (isNaN(d)) return 'N/A';
-                                                    return `${d.getDate().toString().padStart(2, '0')}-${(d.getMonth() + 1)
-                                                        .toString().padStart(2, '0')}-${d.getFullYear()}`;
-                                                };
-
-                                                let daysBgColor = '#f0f0f0';
-                                                const today = new Date();
-                                                const endDate = item.schedule_staff_end_date ? new Date(item.schedule_staff_end_date) : null;
-                                                if (endDate && today > endDate) {
-                                                    daysBgColor = '#f0f0f0';
-                                                }
-
-                                                return (
-                                                    <View
-                                                        style={{
-                                                            backgroundColor: 'white',
-                                                            padding: 16,
-                                                            marginBottom: 12,
-                                                            borderRadius: 12,
-                                                            borderWidth: 1,
-                                                            borderColor: '#E5E7EB',
-                                                        }}
-                                                    >
-                                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                            <View style={{ flex: 1 }}>
-                                                                <Text
-                                                                    style={{
-                                                                        fontFamily: 'Inter-Medium',
-                                                                        fontSize: 13,
-                                                                        color: '#374151',
-                                                                    }}
-                                                                >
-                                                                    {formatDMY(item.schedule_staff_start_date)} — {formatDMY(item.schedule_staff_end_date)}
-                                                                </Text>
-                                                            </View>
-
-                                                            <View
-                                                                style={{
-                                                                    backgroundColor: daysBgColor,
-                                                                    paddingVertical: 4,
-                                                                    paddingHorizontal: 10,
-                                                                    borderRadius: 8,
-                                                                }}
-                                                            >
-                                                                <Text style={{ color: 'black', fontWeight: 'bold', fontSize: 13, fontFamily: 'Inter-Regular' }}>
-                                                                    {item.schedule_staff_total_day || '0'}
-                                                                </Text>
-                                                            </View>
-                                                        </View>
-
-                                                        <View
+                                                    <View style={{
+                                                        width: '60%',
+                                                        borderLeftWidth: 1,
+                                                        borderBottomWidth: 1,
+                                                        borderRightWidth: 1,
+                                                        borderColor: 'black',
+                                                        padding: 5,
+                                                    }}>
+                                                        <Text
                                                             style={{
-                                                                height: 1,
-                                                                backgroundColor: '#E5E7EB',
-                                                                marginVertical: 10,
-                                                            }}
-                                                        />
-
-                                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                                                            <Text style={{ fontFamily: 'Inter-Medium', fontSize: 13, color: '#374151' }}>
-                                                                Payment:{' '}
-                                                                <Text
-                                                                    style={{
-                                                                        fontFamily: 'Inter-Medium',
-                                                                        fontSize: 13,
-                                                                        color: item.schedule_staff_payment_status === 'Paid' ? '#059669' : '#DC2626',
-                                                                    }}
-                                                                >
-                                                                    {item.schedule_staff_payment_status || 'N/A'}
-                                                                </Text>
-                                                            </Text>
-
-                                                            <Text
-                                                                style={{
-                                                                    fontFamily: 'Inter-Medium',
-                                                                    fontSize: 13,
-                                                                    color: '#6B7280',
-                                                                }}
-                                                            >
-                                                                Entry On: {formatDMY(item.schedule_staff_entry_date)}
-                                                            </Text>
-                                                        </View>
+                                                                fontSize: 12,
+                                                                color: 'black',
+                                                                fontFamily: 'Inter-Bold',
+                                                                textAlign: 'left',
+                                                                flexWrap: 'wrap',
+                                                            }}>
+                                                            {item.value}
+                                                        </Text>
                                                     </View>
-                                                );
-                                            }}
-                                        />
-                                    ) : (
-                                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 }}>
-                                            <Ionicons name="time-outline" size={50} color="#D1D5DB" />
-                                            <Text style={{
-                                                marginTop: 15,
-                                                fontSize: 16,
-                                                fontFamily: 'Inter-Medium',
-                                                color: '#6B7280',
-                                                textAlign: 'center',
-                                            }}>
-                                                No schedule history found
-                                            </Text>
-                                        </View>
-                                    )}
-                                </View>
-                            )}
-                        </View>
-                    </View>
-                </View>
-            </ScrollView>
+                                                </View>
+                                            ))}
+                                        </ScrollView>
 
-            <Modal
-                transparent={true}
-                visible={modalVisible}
-                animationType="fade"
-                onRequestClose={handleCloseModal}
-            >
-                <TouchableOpacity
-                    style={{
-                        flex: 1,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                    }}
-                    onPress={handleCloseModal}
-                    activeOpacity={1}
-                >
-                    <View
-                        style={{
-                            width: '80%',
-                            height: '40%',
-                            backgroundColor: 'white',
-                            borderRadius: 150,
+                                        {selectedHistoryDetail.vehicle_location &&
+                                            selectedHistoryDetail.vehicle_location.toLowerCase() !== 'unknown address' &&
+                                            selectedHistoryDetail.latitude &&
+                                            selectedHistoryDetail.longitude ? (
+                                            <MapView
+                                                style={{ width: '100%', height: 200, marginTop: 10 }}
+                                                region={{
+                                                    latitude: parseFloat(selectedHistoryDetail.latitude),
+                                                    longitude: parseFloat(selectedHistoryDetail.longitude),
+                                                    latitudeDelta: 0.005,
+                                                    longitudeDelta: 0.005,
+                                                }}
+                                            >
+                                                <Marker
+                                                    coordinate={{
+                                                        latitude: parseFloat(selectedHistoryDetail.latitude),
+                                                        longitude: parseFloat(selectedHistoryDetail.longitude),
+                                                    }}
+                                                    title={selectedHistoryDetail.vehicle_location}
+                                                />
+                                            </MapView>
+                                        ) : (
+                                            <Text style={{ fontSize: 14, color: 'red', textAlign: 'center', marginTop: 10 }}>
+                                                No Location Found
+                                            </Text>
+                                        )}
+                                    </>
+                                ) : null}
+                            </View>
+                        </TouchableOpacity>
+                    </Modal>
+
+                    <Modal visible={webViewVisible} transparent>
+                        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.7)" }}>
+                            <TouchableOpacity
+                                style={{ padding: 10, alignSelf: "flex-end" }}
+                                onPress={() => setWebViewVisible(false)}
+                            >
+                                <Ionicons name="close" size={24} color="white" />
+                            </TouchableOpacity>
+
+                            <WebView
+                                source={{ uri: pdfUrl }}
+                                style={{ flex: 1 }}
+                                javaScriptEnabled
+                                domStorageEnabled
+                            />
+                        </View>
+                    </Modal>
+
+                    <Modal
+                        visible={statusModal}
+                        transparent
+                        animationType="fade"
+                        onRequestClose={() => setStatusModal(false)}
+                    >
+                        <TouchableOpacity style={{
+                            flex: 1,
+                            backgroundColor: 'rgba(0,0,0,0.5)',
                             justifyContent: 'center',
                             alignItems: 'center',
+                            padding: 20
                         }}
-                        onStartShouldSetResponder={() => true}
-                        onTouchEnd={e => e.stopPropagation()}
-                    >
-                        {staffdetail.staff_image_profile ? (
-                            <Image
-                                source={{ uri: encodeURI(staffdetail.staff_image_profile) }}
-                                style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    borderRadius: 150,
-                                    resizeMode: 'cover',
-                                }}
-                            />
-                        ) : (
-                            <View
-                                style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    borderRadius: 100,
-                                    backgroundColor: '#ccc',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                }}
-                            >
-                                <Text style={{
-                                    color: '#fff',
-                                    fontSize: 60,
-                                    fontWeight: 'bold',
-                                }}>
-                                    {getInitials(staffdetail.staff_name)}
+                            activeOpacity={1}
+                            onPress={() => setStatusModal(false)}>
+                            <View style={{
+                                width: '100%',
+                                backgroundColor: '#fff',
+                                borderRadius: 12,
+                                padding: 20
+                            }}
+                                onStartShouldSetResponder={() => true}
+                                onTouchEnd={e => e.stopPropagation()}>
+                                <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 15, color: 'black', fontFamily: 'Inter-Bold' }}>
+                                    Select Account Duration
                                 </Text>
-                            </View>
-                        )}
-                    </View>
-                </TouchableOpacity>
-            </Modal>
 
-            <Modal
-                visible={historyDetailModalVisible}
-                transparent={true}
-                animationType="slide"
-            >
-                <TouchableOpacity
-                    style={{
-                        flex: 1,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    }}
-                    activeOpacity={1}
-                    onPress={closeHistoryDetailModal}>
-                    <View
-                        style={{
-                            flexDirection: 'row',
-                            justifyContent: 'flex-end',
-                            width: '85%',
-                            paddingVertical: 5,
-                        }}>
-                        <TouchableOpacity
-                            onPress={closeHistoryDetailModal}
-                            style={{
-                                marginRight: 5,
-                                backgroundColor: 'white',
-                                borderRadius: 50,
-                            }}>
-                            <Entypo name="cross" size={25} color="black" />
-                        </TouchableOpacity>
-                    </View>
-                    <View
-                        style={{
-                            backgroundColor: 'white',
-                            padding: 20,
-                            borderRadius: 15,
-                            width: '85%',
-                            maxHeight: '100%',
-                        }}
-                        onStartShouldSetResponder={() => true}
-                        onTouchEnd={e => e.stopPropagation()}>
-                        {selectedHistoryDetail ? (
-                            <>
-                                <View
-                                    style={{
-                                        width: '100%',
+                                <TouchableOpacity
+                                    style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
+                                    onPress={() => setSelectedOption('1day')}
+                                >
+                                    <View style={{
+                                        height: 20,
+                                        width: 20,
+                                        borderRadius: 10,
+                                        borderWidth: 2,
+                                        borderColor: '#333',
                                         justifyContent: 'center',
                                         alignItems: 'center',
-                                        backgroundColor: '#e4dedeff',
-                                        borderWidth: 1, borderColor: 'black'
+                                        marginRight: 10
                                     }}>
-                                    <Text
-                                        style={{
-                                            fontSize: 16,
-                                            fontFamily: 'Inter-Medium',
-                                            color: 'black',
-                                            textAlign: 'center',
-                                            textTransform: 'uppercase'
-                                        }}>
-                                        Search History Details
-                                    </Text>
-                                </View>
-                                <ScrollView
-                                    showsVerticalScrollIndicator={false}
-                                    keyboardShouldPersistTaps="handled"
-                                    contentContainerStyle={{ marginBottom: 20 }}
+                                        {selectedOption === '1day' && (
+                                            <View style={{
+                                                height: 10,
+                                                width: 10,
+                                                borderRadius: 5,
+                                                backgroundColor: '#333'
+                                            }} />
+                                        )}
+                                    </View>
+
+                                    <Text style={{ fontSize: 15, color: 'black', fontFamily: 'Inter-Regular' }}>1 Day (Today → Tomorrow)</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
+                                    onPress={() => setSelectedOption('1month')}
                                 >
-                                    {[
-                                        { label: 'Staff Name', value: selectedHistoryDetail.history_staff_name || '-----' },
-                                        { label: 'Staff Mobile', value: selectedHistoryDetail.history_staff_mobile || '-----' },
-                                        { label: 'Vehicle Agreement No', value: selectedHistoryDetail.vehicle_agreement_no || '-----' },
-                                        { label: 'Vehicle Registration No', value: selectedHistoryDetail.vehicle_registration_no || '-----' },
-                                        { label: 'Vehicle Chassis No', value: selectedHistoryDetail.vehicle_chassis_no || '-----' },
-                                        { label: 'Vehicle Engine No', value: selectedHistoryDetail.vehicle_engine_no || '-----' },
-                                        {
-                                            label: 'Entry Date',
-                                            value: selectedHistoryDetail.entry_date
-                                                ? formatDateDMY(selectedHistoryDetail.entry_date)
-                                                : '-----',
-                                        },
-                                    ].map((item, index) => (
-                                        <View
-                                            key={index}
-                                            style={{ width: '100%', flexDirection: 'row', flexWrap: 'wrap' }}
-                                        >
+                                    <View style={{
+                                        height: 20,
+                                        width: 20,
+                                        borderRadius: 10,
+                                        borderWidth: 2,
+                                        borderColor: '#333',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        marginRight: 10
+                                    }}>
+                                        {selectedOption === '1month' && (
                                             <View style={{
-                                                width: '40%',
-                                                borderLeftWidth: 1,
-                                                borderBottomWidth: 1,
-                                                borderColor: 'black',
-                                                padding: 5,
-                                            }}>
-                                                <Text
-                                                    style={{
-                                                        fontSize: 12,
-                                                        fontFamily: 'Inter-Regular',
-                                                        color: 'black',
-                                                        textAlign: 'left',
-                                                        flexWrap: 'wrap',
-                                                        textTransform: 'uppercase'
-                                                    }}>
-                                                    {item.label}
-                                                </Text>
-                                            </View>
+                                                height: 10,
+                                                width: 10,
+                                                borderRadius: 5,
+                                                backgroundColor: '#333'
+                                            }} />
+                                        )}
+                                    </View>
 
-                                            <View style={{
-                                                width: '60%',
-                                                borderLeftWidth: 1,
-                                                borderBottomWidth: 1,
-                                                borderRightWidth: 1,
-                                                borderColor: 'black',
-                                                padding: 5,
-                                            }}>
-                                                <Text
-                                                    style={{
-                                                        fontSize: 12,
-                                                        color: 'black',
-                                                        fontFamily: 'Inter-Bold',
-                                                        textAlign: 'left',
-                                                        flexWrap: 'wrap',
-                                                    }}>
-                                                    {item.value}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                    ))}
-                                </ScrollView>
+                                    <Text style={{ fontSize: 15, color: 'black', fontFamily: 'Inter-Regular' }}>1 Month (Full Month)</Text>
+                                </TouchableOpacity>
 
-                                {selectedHistoryDetail.vehicle_location &&
-                                    selectedHistoryDetail.vehicle_location.toLowerCase() !== 'unknown address' &&
-                                    selectedHistoryDetail.latitude &&
-                                    selectedHistoryDetail.longitude ? (
-                                    <MapView
-                                        style={{ width: '100%', height: 200, marginTop: 10 }}
-                                        region={{
-                                            latitude: parseFloat(selectedHistoryDetail.latitude),
-                                            longitude: parseFloat(selectedHistoryDetail.longitude),
-                                            latitudeDelta: 0.005,
-                                            longitudeDelta: 0.005,
+                                <View style={{ flexDirection: 'row', marginTop: 10, gap: 10 }}>
+                                    <TouchableOpacity
+                                        onPress={() => setStatusModal(false)}
+                                        style={{
+                                            flex: 1,
+                                            backgroundColor: '#f2f2f2',
+                                            padding: 12,
+                                            borderRadius: 10,
+                                            marginLeft: 5
                                         }}
                                     >
-                                        <Marker
-                                            coordinate={{
-                                                latitude: parseFloat(selectedHistoryDetail.latitude),
-                                                longitude: parseFloat(selectedHistoryDetail.longitude),
-                                            }}
-                                            title={selectedHistoryDetail.vehicle_location}
-                                        />
-                                    </MapView>
-                                ) : (
-                                    <Text style={{ fontSize: 14, color: 'red', textAlign: 'center', marginTop: 10 }}>
-                                        No Location Found
-                                    </Text>
-                                )}
-                            </>
-                        ) : null}
-                    </View>
-                </TouchableOpacity>
-            </Modal>
+                                        <Text style={{ textAlign: 'center', color: 'red', fontWeight: '600', fontFamily: 'Inter-Regular' }}>Cancel</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            const today = new Date();
+                                            let startDate = '';
+                                            let endDate = '';
 
-            <Modal visible={webViewVisible} transparent>
-                <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.7)" }}>
-                    <TouchableOpacity
-                        style={{ padding: 10, alignSelf: "flex-end" }}
-                        onPress={() => setWebViewVisible(false)}
-                    >
-                        <Ionicons name="close" size={24} color="white" />
-                    </TouchableOpacity>
+                                            if (selectedOption === '1day') {
+                                                let tomorrow = new Date();
+                                                tomorrow.setDate(today.getDate() + 1);
 
-                    <WebView
-                        source={{ uri: pdfUrl }}
-                        style={{ flex: 1 }}
-                        javaScriptEnabled
-                        domStorageEnabled
-                    />
-                </View>
-            </Modal>
+                                                startDate = today.toISOString().split('T')[0];
+                                                endDate = tomorrow.toISOString().split('T')[0];
+                                            }
 
-            <Modal
-                visible={statusModal}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setStatusModal(false)}
-            >
-                <TouchableOpacity style={{
-                    flex: 1,
-                    backgroundColor: 'rgba(0,0,0,0.5)',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    padding: 20
-                }}
-                    activeOpacity={1}
-                    onPress={() => setStatusModal(false)}>
-                    <View style={{
-                        width: '100%',
-                        backgroundColor: '#fff',
-                        borderRadius: 12,
-                        padding: 20
-                    }}
-                        onStartShouldSetResponder={() => true}
-                        onTouchEnd={e => e.stopPropagation()}>
-                        <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 15, color: 'black', fontFamily: 'Inter-Bold' }}>
-                            Select Account Duration
-                        </Text>
+                                            if (selectedOption === '1month') {
+                                                const y = today.getFullYear();
+                                                const m = today.getMonth();
+                                                const d = today.getDate();
 
-                        <TouchableOpacity
-                            style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
-                            onPress={() => setSelectedOption('1day')}
-                        >
-                            <View style={{
-                                height: 20,
-                                width: 20,
-                                borderRadius: 10,
-                                borderWidth: 2,
-                                borderColor: '#333',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                marginRight: 10
-                            }}>
-                                {selectedOption === '1day' && (
-                                    <View style={{
-                                        height: 10,
-                                        width: 10,
-                                        borderRadius: 5,
-                                        backgroundColor: '#333'
-                                    }} />
-                                )}
+                                                startDate = today.toISOString().split('T')[0];
+
+                                                let nextMonth = new Date(y, m + 1, d);
+
+                                                if (nextMonth.getDate() !== d) {
+                                                    nextMonth = new Date(y, m + 2, 0);
+                                                }
+
+                                                endDate = nextMonth.toISOString().split('T')[0];
+                                            }
+
+                                            handleAddSchedule(staffdetail.staff_id, startDate, endDate);
+                                            setStatusModal(false);
+                                        }}
+                                        style={{
+                                            flex: 1,
+                                            backgroundColor: colors.Brown,
+                                            padding: 12,
+                                            borderRadius: 10,
+                                            marginRight: 5
+                                        }}
+                                    >
+                                        <Text style={{ textAlign: 'center', color: '#fff', fontWeight: '600', fontFamily: 'Inter-Regular' }}>Save</Text>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
-
-                            <Text style={{ fontSize: 15, color: 'black', fontFamily: 'Inter-Regular' }}>1 Day (Today → Tomorrow)</Text>
                         </TouchableOpacity>
+                    </Modal>
 
-                        <TouchableOpacity
-                            style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
-                            onPress={() => setSelectedOption('1month')}
-                        >
-                            <View style={{
-                                height: 20,
-                                width: 20,
-                                borderRadius: 10,
-                                borderWidth: 2,
-                                borderColor: '#333',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                marginRight: 10
-                            }}>
-                                {selectedOption === '1month' && (
-                                    <View style={{
-                                        height: 10,
-                                        width: 10,
-                                        borderRadius: 5,
-                                        backgroundColor: '#333'
-                                    }} />
-                                )}
-                            </View>
-
-                            <Text style={{ fontSize: 15, color: 'black', fontFamily: 'Inter-Regular' }}>1 Month (Full Month)</Text>
-                        </TouchableOpacity>
-
-                        <View style={{ flexDirection: 'row', marginTop: 10, gap: 10 }}>
-                            <TouchableOpacity
-                                onPress={() => setStatusModal(false)}
-                                style={{
-                                    flex: 1,
-                                    backgroundColor: '#f2f2f2',
-                                    padding: 12,
-                                    borderRadius: 10,
-                                    marginLeft: 5
-                                }}
-                            >
-                                <Text style={{ textAlign: 'center', color: 'red', fontWeight: '600', fontFamily: 'Inter-Regular' }}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={() => {
-                                    const today = new Date();
-                                    let startDate = '';
-                                    let endDate = '';
-
-                                    if (selectedOption === '1day') {
-                                        let tomorrow = new Date();
-                                        tomorrow.setDate(today.getDate() + 1);
-
-                                        startDate = today.toISOString().split('T')[0];
-                                        endDate = tomorrow.toISOString().split('T')[0];
-                                    }
-
-                                    if (selectedOption === '1month') {
-                                        const y = today.getFullYear();
-                                        const m = today.getMonth();
-                                        const d = today.getDate();
-
-                                        startDate = today.toISOString().split('T')[0];
-
-                                        let nextMonth = new Date(y, m + 1, d);
-
-                                        if (nextMonth.getDate() !== d) {
-                                            nextMonth = new Date(y, m + 2, 0);
-                                        }
-
-                                        endDate = nextMonth.toISOString().split('T')[0];
-                                    }
-
-                                    handleAddSchedule(staffdetail.staff_id, startDate, endDate);
-                                    setStatusModal(false);
-                                }}
-                                style={{
-                                    flex: 1,
-                                    backgroundColor: colors.Brown,
-                                    padding: 12,
-                                    borderRadius: 10,
-                                    marginRight: 5
-                                }}
-                            >
-                                <Text style={{ textAlign: 'center', color: '#fff', fontWeight: '600', fontFamily: 'Inter-Regular' }}>Save</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </TouchableOpacity>
-            </Modal>
-
-            <Modal
-                visible={isModalVisible}
-                animationType="fade"
-                transparent={true}
-                onRequestClose={handleCloseModalthree}
-            >
-                <TouchableOpacity
-                    style={{
-                        flex: 1,
-                        backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                    }}
-                    activeOpacity={1}
-                    onPress={handleCloseModalthree}
-                >
-                    <View
-                        style={{
-                            position: 'absolute',
-                            top: modalPosition.top,
-                            left: modalPosition.left,
-                            backgroundColor: 'white',
-                            padding: 15,
-                            borderRadius: 12,
-                            width: 220,
-                            elevation: 8,
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 3 },
-                            shadowOpacity: 0.25,
-                            shadowRadius: 5,
-                        }}
+                    <Modal
+                        visible={isModalVisible}
+                        animationType="fade"
+                        transparent={true}
+                        onRequestClose={handleCloseModalthree}
                     >
-                        <Text
-                            style={{
-                                fontSize: 17,
-                                fontFamily: 'Inter-SemiBold',
-                                marginBottom: 12,
-                                color: 'black',
-                            }}
-                        >
-                            Select Action
-                        </Text>
-
-                        {/* View I-Card - now opens modal */}
                         <TouchableOpacity
                             style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                paddingVertical: 10,
-                                borderBottomWidth: 1,
-                                borderColor: '#eee',
-                                gap: 12,
+                                flex: 1,
+                                backgroundColor: 'rgba(0, 0, 0, 0.3)',
                             }}
-                            onPress={() => {
-                                setIcardTypeModalVisible(true);
-                                handleCloseModalthree();
-                            }}
+                            activeOpacity={1}
+                            onPress={handleCloseModalthree}
                         >
-                            <Ionicons name="eye-outline" size={20} color={colors.Brown} />
-                            <Text style={{
-                                fontSize: 15,
-                                fontFamily: 'Inter-Regular',
-                                color: colors.Brown,
-                            }}>
-                                View I-Card
-                            </Text>
-                        </TouchableOpacity>
+                            <View
+                                style={{
+                                    position: 'absolute',
+                                    top: modalPosition.top,
+                                    left: modalPosition.left,
+                                    backgroundColor: 'white',
+                                    padding: 15,
+                                    borderRadius: 12,
+                                    width: 220,
+                                    elevation: 8,
+                                    shadowColor: '#000',
+                                    shadowOffset: { width: 0, height: 3 },
+                                    shadowOpacity: 0.25,
+                                    shadowRadius: 5,
+                                }}
+                            >
+                                <Text
+                                    style={{
+                                        fontSize: 17,
+                                        fontFamily: 'Inter-SemiBold',
+                                        marginBottom: 12,
+                                        color: 'black',
+                                    }}
+                                >
+                                    Select Action
+                                </Text>
 
-                        {/* Manage Finance - conditional as before */}
-                        {(userType === 'SuperAdmin' ||
-                            (userType === 'SubAdmin' && permissions?.staff?.financelist) ||
-                            (userType === 'main' && permissions?.staff?.financelist)
-                        ) && (
+                                {/* View I-Card - now opens modal */}
                                 <TouchableOpacity
                                     style={{
                                         flexDirection: 'row',
@@ -2067,532 +2176,563 @@ const informationScreen = () => {
                                         gap: 12,
                                     }}
                                     onPress={() => {
-                                        navigation.navigate('FinanceList', {
-                                            staff_id: userData.staff_id,
-                                            staff_name: userData.staff_name,
-                                        });
+                                        setIcardTypeModalVisible(true);
                                         handleCloseModalthree();
                                     }}
                                 >
-                                    <Feather name="settings" size={20} color="#ffb347" />
+                                    <Ionicons name="eye-outline" size={20} color={colors.Brown} />
+                                    <Text style={{
+                                        fontSize: 15,
+                                        fontFamily: 'Inter-Regular',
+                                        color: colors.Brown,
+                                    }}>
+                                        View I-Card
+                                    </Text>
+                                </TouchableOpacity>
+
+                                {/* Manage Finance - conditional as before */}
+                                {(userType === 'SuperAdmin' ||
+                                    (userType === 'SubAdmin' && permissions?.staff?.financelist) ||
+                                    (userType === 'main' && permissions?.staff?.financelist)
+                                ) && (
+                                        <TouchableOpacity
+                                            style={{
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                paddingVertical: 10,
+                                                borderBottomWidth: 1,
+                                                borderColor: '#eee',
+                                                gap: 12,
+                                            }}
+                                            onPress={() => {
+                                                navigation.navigate('FinanceList', {
+                                                    staff_id: userData.staff_id,
+                                                    staff_name: userData.staff_name,
+                                                });
+                                                handleCloseModalthree();
+                                            }}
+                                        >
+                                            <Feather name="settings" size={20} color="#ffb347" />
+                                            <Text
+                                                style={{
+                                                    fontSize: 15,
+                                                    fontFamily: 'Inter-Regular',
+                                                    color: 'black',
+                                                }}
+                                            >
+                                                Manage Finance
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )}
+
+                                {/* NEW: Manage Permission - only for admin */}
+                                {(userType !== 'SubAdmin' && userType !== 'main' && userData.staff_type !== 'normal') && (
+                                    <TouchableOpacity
+                                        style={{
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            paddingVertical: 10,
+                                            borderBottomWidth: 1,
+                                            borderColor: '#eee',
+                                            gap: 12,
+                                        }}
+                                        onPress={() => {
+                                            navigation.navigate('PermissionScreen', { staff_id: userData.staff_id, staff_name: userData.staff_name });
+                                            handleCloseModalthree();
+                                        }}
+                                    >
+                                        <MaterialIcons name="security" size={20} color="#FFA500" />
+                                        <Text style={{
+                                            fontSize: 15,
+                                            fontFamily: 'Inter-Regular',
+                                            color: '#FFA500',
+                                        }}>
+                                            Manage Permission
+                                        </Text>
+                                    </TouchableOpacity>
+                                )}
+
+                                {/* Update Staff */}
+                                <TouchableOpacity
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        paddingVertical: 10,
+                                        borderBottomWidth: 1,
+                                        borderColor: '#eee',
+                                        gap: 12,
+                                    }}
+                                    onPress={handleEdit}
+                                >
+                                    <Feather name="edit-3" size={20} color="#3B82F6" />
                                     <Text
                                         style={{
                                             fontSize: 15,
                                             fontFamily: 'Inter-Regular',
-                                            color: 'black',
+                                            color: '#3B82F6',
                                         }}
                                     >
-                                        Manage Finance
+                                        Update Staff
                                     </Text>
                                 </TouchableOpacity>
-                            )}
 
-                        {/* NEW: Manage Permission - only for admin */}
-                        {(userType !== 'SubAdmin' && userType !== 'main' && userData.staff_type !== 'normal') && (
-                            <TouchableOpacity
-                                style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    paddingVertical: 10,
-                                    borderBottomWidth: 1,
-                                    borderColor: '#eee',
-                                    gap: 12,
-                                }}
-                                onPress={() => {
-                                    navigation.navigate('PermissionScreen', { staff_id: userData.staff_id, staff_name: userData.staff_name });
-                                    handleCloseModalthree();
-                                }}
-                            >
-                                <MaterialIcons name="security" size={20} color="#FFA500" />
-                                <Text style={{
-                                    fontSize: 15,
-                                    fontFamily: 'Inter-Regular',
-                                    color: '#FFA500',
-                                }}>
-                                    Manage Permission
-                                </Text>
-                            </TouchableOpacity>
-                        )}
+                                {/* Delete Staff */}
+                                <TouchableOpacity
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        paddingVertical: 10,
+                                        borderBottomWidth: 1,
+                                        borderColor: '#eee',
+                                        gap: 12,
+                                    }}
+                                    onPress={() => {
+                                        handleDelete(userData.staff_id);
+                                        handleCloseModalthree();
+                                    }}
+                                >
+                                    <Ionicons name="trash-outline" size={20} color="#DC2626" />
+                                    <Text
+                                        style={{
+                                            fontSize: 15,
+                                            fontFamily: 'Inter-Regular',
+                                            color: '#DC2626',
+                                        }}
+                                    >
+                                        Delete Staff
+                                    </Text>
+                                </TouchableOpacity>
 
-                        {/* Update Staff */}
-                        <TouchableOpacity
-                            style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                paddingVertical: 10,
-                                borderBottomWidth: 1,
-                                borderColor: '#eee',
-                                gap: 12,
-                            }}
-                            onPress={handleEdit}
-                        >
-                            <Feather name="edit-3" size={20} color="#3B82F6" />
-                            <Text
-                                style={{
-                                    fontSize: 15,
-                                    fontFamily: 'Inter-Regular',
-                                    color: '#3B82F6',
-                                }}
-                            >
-                                Update Staff
-                            </Text>
+                                {/* Reset Device */}
+                                <TouchableOpacity
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        paddingVertical: 10,
+
+                                        gap: 12,
+                                    }}
+                                    onPress={() => {
+                                        setSelectedStaffId(userData.staff_id);
+                                        setSelectedStaffName(userData.staff_name);
+                                        setDeviceId(staffdetail.native_device_id || '---');
+                                        setResetModal(true);
+                                        handleCloseModalthree();
+                                    }}
+                                >
+                                    <Ionicons name="phone-portrait-outline" size={20} color={colors.Brown} />
+                                    <Text style={{
+                                        fontSize: 15,
+                                        fontFamily: 'Inter-Regular',
+                                        color: colors.Brown,
+                                    }}>
+                                        Reset Device
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
                         </TouchableOpacity>
+                    </Modal>
 
-                        {/* Delete Staff */}
-                        <TouchableOpacity
-                            style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                paddingVertical: 10,
-                                borderBottomWidth: 1,
-                                borderColor: '#eee',
-                                gap: 12,
-                            }}
-                            onPress={() => {
-                                handleDelete(userData.staff_id);
-                                handleCloseModalthree();
-                            }}
-                        >
-                            <Ionicons name="trash-outline" size={20} color="#DC2626" />
-                            <Text
-                                style={{
-                                    fontSize: 15,
-                                    fontFamily: 'Inter-Regular',
-                                    color: '#DC2626',
-                                }}
-                            >
-                                Delete Staff
-                            </Text>
-                        </TouchableOpacity>
-
-                        {/* Reset Device */}
-                        <TouchableOpacity
-                            style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                paddingVertical: 10,
-                                borderBottomWidth: 1,
-                                borderColor: '#eee',
-                                gap: 12,
-                            }}
-                            onPress={() => {
-                                setSelectedStaffId(userData.staff_id);
-                                setSelectedStaffName(userData.staff_name);
-                                setDeviceId(staffdetail.native_device_id || '---');
-                                setResetModal(true);
-                                handleCloseModalthree();
-                            }}
-                        >
-                            <Ionicons name="phone-portrait-outline" size={20} color={colors.Brown} />
-                            <Text style={{
-                                fontSize: 15,
-                                fontFamily: 'Inter-Regular',
-                                color: colors.Brown,
-                            }}>
-                                Reset Device
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                </TouchableOpacity>
-            </Modal>
-
-            <Modal
-                animationType="fade"
-                transparent={true}
-                visible={ConfrimationModal}
-                onRequestClose={closeconfirmodal}
-            >
-                <TouchableOpacity
-                    style={{
-                        flex: 1,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    }}
-                    onPress={closeconfirmodal}
-                    activeOpacity={1}
-                >
-                    <View
-                        style={{
-                            backgroundColor: 'white',
-                            padding: 20,
-                            borderRadius: 8,
-                            width: '80%',
-                            alignItems: 'center',
-                        }}
-                        onStartShouldSetResponder={() => true}
-                        onTouchEnd={e => e.stopPropagation()}
+                    <Modal
+                        animationType="fade"
+                        transparent={true}
+                        visible={ConfrimationModal}
+                        onRequestClose={closeconfirmodal}
                     >
-                        <Text style={{
-                            fontSize: 18, fontWeight: 'bold', marginBottom: 10, color: 'black', fontFamily: 'Inter-Medium'
-                        }}>
-                            Confirm Delete
-                        </Text>
-                        <Text style={{ fontSize: 14, marginBottom: 20, textAlign: 'center', color: 'black', fontFamily: 'Inter-Medium' }}>
-                            Are you sure you want to delete the staff ?
-                        </Text>
-
-                        <View
+                        <TouchableOpacity
                             style={{
-                                flexDirection: 'row',
-                                justifyContent: 'space-between',
-                                width: '100%',
+                                flex: 1,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                backgroundColor: 'rgba(0, 0, 0, 0.5)',
                             }}
-                        >
-                            <TouchableOpacity
-                                style={{
-                                    backgroundColor: '#ddd',
-                                    padding: 10,
-                                    borderRadius: 5,
-                                    width: '45%',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                }}
-                                onPress={closeconfirmodal}
-                            >
-                                <Text
-                                    style={{
-                                        color: 'black',
-                                        fontWeight: 'bold',
-                                        fontFamily: 'Inter-Regular',
-                                    }}>
-                                    No
-                                </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={{
-                                    backgroundColor: colors.Brown,
-                                    padding: 10,
-                                    borderRadius: 5,
-                                    width: '45%',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                }}
-                                onPress={() => {
-                                    DeleteStaffApi(userData.staff_id);
-                                    closeconfirmodal();
-                                }}
-                            >
-                                <Text
-                                    style={{
-                                        color: 'white',
-                                        fontWeight: 'bold',
-                                        fontFamily: 'Inter-Regular',
-                                    }}>
-                                    Yes
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </TouchableOpacity>
-            </Modal>
-
-            <Modal
-                visible={docModalVisible}
-                transparent={true}
-                animationType="fade"
-                onRequestClose={() => setDocModalVisible(false)}
-            >
-                <TouchableOpacity
-                    style={{
-                        flex: 1,
-                        backgroundColor: "rgba(0,0,0,0.7)",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        padding: 20,
-                    }}
-                    activeOpacity={1}
-                    onPress={() => setDocModalVisible(false)}
-                >
-                    <TouchableWithoutFeedback onPress={() => { }}>
-                        <View
-                            style={{
-                                width: "100%",
-                                alignItems: "center",
-                                position: "relative",
-                            }}
+                            onPress={closeconfirmodal}
+                            activeOpacity={1}
                         >
                             <View
                                 style={{
-                                    flexDirection: "row",
-                                    justifyContent: "flex-end",
-                                    width: "105%",
-                                    paddingVertical: 5,
+                                    backgroundColor: 'white',
+                                    padding: 20,
+                                    borderRadius: 8,
+                                    width: '80%',
+                                    alignItems: 'center',
                                 }}
+                                onStartShouldSetResponder={() => true}
+                                onTouchEnd={e => e.stopPropagation()}
                             >
-                                <TouchableOpacity
-                                    onPress={() => setDocModalVisible(false)}
+                                <Text style={{
+                                    fontSize: 18, fontWeight: 'bold', marginBottom: 10, color: 'black', fontFamily: 'Inter-Medium'
+                                }}>
+                                    Confirm Delete
+                                </Text>
+                                <Text style={{ fontSize: 14, marginBottom: 20, textAlign: 'center', color: 'black', fontFamily: 'Inter-Medium' }}>
+                                    Are you sure you want to delete the staff ?
+                                </Text>
+
+                                <View
                                     style={{
-                                        marginRight: 5,
-                                        backgroundColor: "white",
-                                        borderRadius: 50,
-                                        padding: 4,
+                                        flexDirection: 'row',
+                                        justifyContent: 'space-between',
+                                        width: '100%',
                                     }}
                                 >
-                                    <Entypo name="cross" size={25} color="black" />
-                                </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={{
+                                            backgroundColor: '#ddd',
+                                            padding: 10,
+                                            borderRadius: 5,
+                                            width: '45%',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                        }}
+                                        onPress={closeconfirmodal}
+                                    >
+                                        <Text
+                                            style={{
+                                                color: 'black',
+                                                fontWeight: 'bold',
+                                                fontFamily: 'Inter-Regular',
+                                            }}>
+                                            No
+                                        </Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={{
+                                            backgroundColor: colors.Brown,
+                                            padding: 10,
+                                            borderRadius: 5,
+                                            width: '45%',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                        }}
+                                        onPress={() => {
+                                            DeleteStaffApi(userData.staff_id);
+                                            closeconfirmodal();
+                                        }}
+                                    >
+                                        <Text
+                                            style={{
+                                                color: 'white',
+                                                fontWeight: 'bold',
+                                                fontFamily: 'Inter-Regular',
+                                            }}>
+                                            Yes
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
+                        </TouchableOpacity>
+                    </Modal>
 
-                            <View style={{ width: "100%", height: "75%", position: "relative" }}>
-                                <Image
-                                    source={{ uri: selectedDoc ? encodeURI(selectedDoc.url) : null }}
+                    <Modal
+                        visible={docModalVisible}
+                        transparent={true}
+                        animationType="fade"
+                        onRequestClose={() => setDocModalVisible(false)}
+                    >
+                        <TouchableOpacity
+                            style={{
+                                flex: 1,
+                                backgroundColor: "rgba(0,0,0,0.7)",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                padding: 20,
+                            }}
+                            activeOpacity={1}
+                            onPress={() => setDocModalVisible(false)}
+                        >
+                            <TouchableWithoutFeedback onPress={() => { }}>
+                                <View
                                     style={{
                                         width: "100%",
-                                        height: "100%",
-                                        borderRadius: 12,
-                                        backgroundColor: "#E5E7EB",
-                                        resizeMode: "contain",
-                                    }}
-                                />
-
-                                <TouchableOpacity
-                                    onPress={downloadImage}
-                                    style={{
-                                        position: "absolute",
-                                        bottom: 15,
-                                        right: 15,
-                                        backgroundColor: "rgba(255,255,255,0.9)",
-                                        padding: 10,
-                                        borderRadius: 50,
-                                        elevation: 5,
+                                        alignItems: "center",
+                                        position: "relative",
                                     }}
                                 >
-                                    <Ionicons name="download-outline" size={28} color="#111" />
-                                </TouchableOpacity>
-                            </View>
+                                    <View
+                                        style={{
+                                            flexDirection: "row",
+                                            justifyContent: "flex-end",
+                                            width: "105%",
+                                            paddingVertical: 5,
+                                        }}
+                                    >
+                                        <TouchableOpacity
+                                            onPress={() => setDocModalVisible(false)}
+                                            style={{
+                                                marginRight: 5,
+                                                backgroundColor: "white",
+                                                borderRadius: 50,
+                                                padding: 4,
+                                            }}
+                                        >
+                                            <Entypo name="cross" size={25} color="black" />
+                                        </TouchableOpacity>
+                                    </View>
 
-                            <Text
+                                    <View style={{ width: "100%", height: "75%", position: "relative" }}>
+                                        <Image
+                                            source={{ uri: selectedDoc ? encodeURI(selectedDoc.url) : null }}
+                                            style={{
+                                                width: "100%",
+                                                height: "100%",
+                                                borderRadius: 12,
+                                                backgroundColor: "#E5E7EB",
+                                                resizeMode: "contain",
+                                            }}
+                                        />
+
+                                        <TouchableOpacity
+                                            onPress={downloadImage}
+                                            style={{
+                                                position: "absolute",
+                                                bottom: 15,
+                                                right: 15,
+                                                backgroundColor: "rgba(255,255,255,0.9)",
+                                                padding: 10,
+                                                borderRadius: 50,
+                                                elevation: 5,
+                                            }}
+                                        >
+                                            <Ionicons name="download-outline" size={28} color="#111" />
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    <Text
+                                        style={{
+                                            marginTop: 15,
+                                            color: "#fff",
+                                            fontSize: 18,
+                                            fontFamily: "Inter-SemiBold",
+                                            textAlign: "center",
+                                        }}
+                                    >
+                                        {selectedDoc?.label}
+                                    </Text>
+                                </View>
+                            </TouchableWithoutFeedback>
+                        </TouchableOpacity>
+                    </Modal>
+
+                    {/* Reset Device Modal */}
+                    <Modal
+                        animationType="fade"
+                        transparent={true}
+                        visible={ResetModal}
+                        onRequestClose={() => setResetModal(false)}
+                    >
+                        <TouchableOpacity
+                            style={{
+                                flex: 1,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                            }}
+                            onPress={() => setResetModal(false)}
+                            activeOpacity={1}
+                        >
+                            <View
                                 style={{
-                                    marginTop: 15,
-                                    color: "#fff",
+                                    backgroundColor: 'white',
+                                    padding: 20,
+                                    borderRadius: 8,
+                                    width: '80%',
+                                    alignItems: 'center',
+                                }}
+                                onStartShouldSetResponder={() => true}
+                                onTouchEnd={e => e.stopPropagation()}
+                            >
+                                <Text style={{
                                     fontSize: 18,
-                                    fontFamily: "Inter-SemiBold",
-                                    textAlign: "center",
-                                }}
-                            >
-                                {selectedDoc?.label}
-                            </Text>
-                        </View>
-                    </TouchableWithoutFeedback>
-                </TouchableOpacity>
-            </Modal>
-
-            {/* Reset Device Modal */}
-            <Modal
-                animationType="fade"
-                transparent={true}
-                visible={ResetModal}
-                onRequestClose={() => setResetModal(false)}
-            >
-                <TouchableOpacity
-                    style={{
-                        flex: 1,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    }}
-                    onPress={() => setResetModal(false)}
-                    activeOpacity={1}
-                >
-                    <View
-                        style={{
-                            backgroundColor: 'white',
-                            padding: 20,
-                            borderRadius: 8,
-                            width: '80%',
-                            alignItems: 'center',
-                        }}
-                        onStartShouldSetResponder={() => true}
-                        onTouchEnd={e => e.stopPropagation()}
-                    >
-                        <Text style={{
-                            fontSize: 18,
-                            fontWeight: 'bold',
-                            marginBottom: 10,
-                            color: 'black',
-                            fontFamily: 'Inter-Medium'
-                        }}>
-                            Reset Device
-                        </Text>
-                        <Text style={{
-                            fontSize: 14,
-                            marginBottom: 20,
-                            textAlign: 'center',
-                            color: 'black',
-                            fontFamily: 'Inter-Medium'
-                        }}>
-                            Are you sure To Reset This Staff Device Id?
-                        </Text>
-                        <Text style={{
-                            fontSize: 14,
-                            marginBottom: 20,
-                            textAlign: 'center',
-                            color: 'black',
-                            fontFamily: 'Inter-Medium'
-                        }}>
-                            {selectedStaffName || '------'}
-                        </Text>
-                        <Text style={{
-                            fontSize: 14,
-                            marginBottom: 20,
-                            textAlign: 'center',
-                            color: 'black',
-                            fontFamily: 'Inter-Medium'
-                        }}>
-                            {DeviceId || '------'}
-                        </Text>
-
-                        <View
-                            style={{
-                                flexDirection: 'row',
-                                justifyContent: 'space-between',
-                                width: '100%',
-                            }}
-                        >
-                            <TouchableOpacity
-                                style={{
-                                    backgroundColor: '#ddd',
-                                    padding: 10,
-                                    borderRadius: 5,
-                                    width: '45%',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                }}
-                                onPress={() => setResetModal(false)}
-                            >
-                                <Text style={{
+                                    fontWeight: 'bold',
+                                    marginBottom: 10,
                                     color: 'black',
-                                    fontWeight: 'bold',
-                                    fontFamily: 'Inter-Regular',
+                                    fontFamily: 'Inter-Medium'
                                 }}>
-                                    Cancel
+                                    Reset Device
                                 </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={{
-                                    backgroundColor: colors.Brown,
-                                    padding: 10,
-                                    borderRadius: 5,
-                                    width: '45%',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                }}
-                                onPress={() => {
-                                    if (selectedStaffId) {
-                                        DeviceIdReset(selectedStaffId);
-                                    }
-                                }}
-                            >
                                 <Text style={{
-                                    color: 'white',
-                                    fontWeight: 'bold',
-                                    fontFamily: 'Inter-Regular',
+                                    fontSize: 14,
+                                    marginBottom: 20,
+                                    textAlign: 'center',
+                                    color: 'black',
+                                    fontFamily: 'Inter-Medium'
                                 }}>
-                                    Reset
+                                    Are you sure To Reset This Staff Device Id?
                                 </Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </TouchableOpacity>
-            </Modal>
+                                <Text style={{
+                                    fontSize: 14,
+                                    marginBottom: 20,
+                                    textAlign: 'center',
+                                    color: 'black',
+                                    fontFamily: 'Inter-Medium'
+                                }}>
+                                    {selectedStaffName || '------'}
+                                </Text>
+                                <Text style={{
+                                    fontSize: 14,
+                                    marginBottom: 20,
+                                    textAlign: 'center',
+                                    color: 'black',
+                                    fontFamily: 'Inter-Medium'
+                                }}>
+                                    {DeviceId || '------'}
+                                </Text>
 
-            {/* NEW MODAL FOR ICARD TYPE SELECTION */}
-            <Modal
-                animationType="fade"
-                transparent={true}
-                visible={icardTypeModalVisible}
-                onRequestClose={() => setIcardTypeModalVisible(false)}
-            >
-                <TouchableOpacity
-                    style={{
-                        flex: 1,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    }}
-                    onPress={() => setIcardTypeModalVisible(false)}
-                    activeOpacity={1}
-                >
-                    <View
-                        style={{
-                            backgroundColor: 'white',
-                            padding: 20,
-                            borderRadius: 8,
-                            width: '80%',
-                            alignItems: 'center',
-                        }}
-                        onStartShouldSetResponder={() => true}
-                        onTouchEnd={e => e.stopPropagation()}
+                                <View
+                                    style={{
+                                        flexDirection: 'row',
+                                        justifyContent: 'space-between',
+                                        width: '100%',
+                                    }}
+                                >
+                                    <TouchableOpacity
+                                        style={{
+                                            backgroundColor: '#ddd',
+                                            padding: 10,
+                                            borderRadius: 5,
+                                            width: '45%',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                        }}
+                                        onPress={() => setResetModal(false)}
+                                    >
+                                        <Text style={{
+                                            color: 'black',
+                                            fontWeight: 'bold',
+                                            fontFamily: 'Inter-Regular',
+                                        }}>
+                                            Cancel
+                                        </Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={{
+                                            backgroundColor: colors.Brown,
+                                            padding: 10,
+                                            borderRadius: 5,
+                                            width: '45%',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                        }}
+                                        onPress={() => {
+                                            if (selectedStaffId) {
+                                                DeviceIdReset(selectedStaffId);
+                                            }
+                                        }}
+                                    >
+                                        <Text style={{
+                                            color: 'white',
+                                            fontWeight: 'bold',
+                                            fontFamily: 'Inter-Regular',
+                                        }}>
+                                            Reset
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </TouchableOpacity>
+                    </Modal>
+
+                    {/* NEW MODAL FOR ICARD TYPE SELECTION */}
+                    <Modal
+                        animationType="fade"
+                        transparent={true}
+                        visible={icardTypeModalVisible}
+                        onRequestClose={() => setIcardTypeModalVisible(false)}
                     >
-                        <Text style={{
-                            fontSize: 18,
-                            fontWeight: 'bold',
-                            marginBottom: 10,
-                            color: 'black',
-                            fontFamily: 'Inter-Medium'
-                        }}>
-                            Select I-Card Type
-                        </Text>
-
                         <TouchableOpacity
                             style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                paddingVertical: 12,
-                                borderBottomWidth: 1,
-                                borderColor: '#eee',
-                                width: '100%',
+                                flex: 1,
                                 justifyContent: 'center',
-                                gap: 8,
-                            }}
-                            onPress={() => {
-                                setIcardTypeModalVisible(false);
-                                navigation.navigate("WebviewScreen", { type: "mjs", userId: userData.staff_id, userData: staffdetail });
-                            }}
-                        >
-                            <Ionicons name="card-outline" size={22} color={colors.Brown} />
-                            <Text style={{ fontSize: 16, fontFamily: 'Inter-Regular', color: colors.Brown }}>
-                                Maa Jagdamba Service
-                            </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={{
-                                flexDirection: 'row',
                                 alignItems: 'center',
-                                paddingVertical: 12,
-                                width: '100%',
-                                justifyContent: 'center',
-                                gap: 8,
-                            }}
-                            onPress={() => {
-                                setIcardTypeModalVisible(false);
-                                navigation.navigate("WebviewScreen", { type: "kanha", userId: userData.staff_id, userData: staffdetail });
-                            }}
-                        >
-                            <Ionicons name="card-outline" size={22} color={colors.Brown} />
-                            <Text style={{ fontSize: 16, fontFamily: 'Inter-Regular', color: colors.Brown }}>
-                                Kanha Enterprise
-                            </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={{
-                                marginTop: 15,
-                                paddingVertical: 10,
-                                paddingHorizontal: 20,
-                                backgroundColor: '#ddd',
-                                borderRadius: 5,
+                                backgroundColor: 'rgba(0, 0, 0, 0.5)',
                             }}
                             onPress={() => setIcardTypeModalVisible(false)}
+                            activeOpacity={1}
                         >
-                            <Text style={{ fontSize: 14, fontFamily: 'Inter-Regular', color: 'black' }}>
-                                Cancel
-                            </Text>
+                            <View
+                                style={{
+                                    backgroundColor: 'white',
+                                    padding: 20,
+                                    borderRadius: 8,
+                                    width: '80%',
+                                    alignItems: 'center',
+                                }}
+                                onStartShouldSetResponder={() => true}
+                                onTouchEnd={e => e.stopPropagation()}
+                            >
+                                <Text style={{
+                                    fontSize: 18,
+                                    fontWeight: 'bold',
+                                    marginBottom: 10,
+                                    color: 'black',
+                                    fontFamily: 'Inter-Medium'
+                                }}>
+                                    Select I-Card Type
+                                </Text>
+
+                                <TouchableOpacity
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        paddingVertical: 12,
+                                        borderBottomWidth: 1,
+                                        borderColor: '#eee',
+                                        width: '100%',
+                                        justifyContent: 'center',
+                                        gap: 8,
+                                    }}
+                                    onPress={() => {
+                                        setIcardTypeModalVisible(false);
+                                        navigation.navigate("WebviewScreen", { type: "mjs", userId: userData.staff_id, userData: staffdetail });
+                                    }}
+                                >
+                                    <Ionicons name="card-outline" size={22} color={colors.Brown} />
+                                    <Text style={{ fontSize: 16, fontFamily: 'Inter-Regular', color: colors.Brown }}>
+                                        Maa Jagdamba Service
+                                    </Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        paddingVertical: 12,
+                                        width: '100%',
+                                        justifyContent: 'center',
+                                        gap: 8,
+                                    }}
+                                    onPress={() => {
+                                        setIcardTypeModalVisible(false);
+                                        navigation.navigate("WebviewScreen", { type: "kanha", userId: userData.staff_id, userData: staffdetail });
+                                    }}
+                                >
+                                    <Ionicons name="card-outline" size={22} color={colors.Brown} />
+                                    <Text style={{ fontSize: 16, fontFamily: 'Inter-Regular', color: colors.Brown }}>
+                                        Kanha Enterprise
+                                    </Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={{
+                                        marginTop: 15,
+                                        paddingVertical: 10,
+                                        paddingHorizontal: 20,
+                                        backgroundColor: '#ddd',
+                                        borderRadius: 5,
+                                    }}
+                                    onPress={() => setIcardTypeModalVisible(false)}
+                                >
+                                    <Text style={{ fontSize: 14, fontFamily: 'Inter-Regular', color: 'black' }}>
+                                        Cancel
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
                         </TouchableOpacity>
-                    </View>
-                </TouchableOpacity>
-            </Modal>
+                    </Modal>
+                </>
+            )}
+
         </View>
     )
 }

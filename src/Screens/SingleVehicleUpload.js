@@ -4,9 +4,10 @@ import {
     TextInput,
     TouchableOpacity,
     ScrollView,
-    ToastAndroid,
+
     Keyboard,
-    FlatList
+    FlatList,
+    ActivityIndicator
 } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -15,6 +16,7 @@ import colors from '../CommonFiles/Colors';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import FinanceList from './FinanceList';
 import { ENDPOINTS } from '../CommonFiles/Constant';
+import Toast from 'react-native-toast-message';
 
 const SingleVehicleUpload = () => {
     const navigation = useNavigation();
@@ -47,6 +49,7 @@ const SingleVehicleUpload = () => {
 
     const [filteredData, setFilteredData] = useState([]);
     const [financeList, setFinanceList] = useState([]);
+    const [loading, setLoading] = useState(false);
 
 
     const handleSearch = (query) => {
@@ -139,6 +142,7 @@ const SingleVehicleUpload = () => {
     const handleSubmit = async () => {
 
         if (!validate()) return;
+        setLoading(true);
 
         try {
             const payload = {
@@ -184,18 +188,40 @@ const SingleVehicleUpload = () => {
             const result = await response.json();
 
             if (result.code == 200) {
-                ToastAndroid.show(
-                    route.params?.vehicleData.full_vehicle_id ? 'Vehicle Updated Successfully!' : 'Vehicle Uploaded Successfully!',
-                    ToastAndroid.SHORT
-                );
-                // Reset form or navigate back etc
-                navigation.goBack();
+                Toast.show({
+                    type: 'success',
+                    text1: route.params?.vehicleData.full_vehicle_id
+                        ? 'Vehicle Updated Successfully!'
+                        : 'Vehicle Uploaded Successfully!',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
+
+                // 500ms ke delay ke saath navigation
+                setTimeout(() => {
+                    navigation.goBack();
+                }, 500);
             } else {
-                ToastAndroid.show(result.message || 'Upload failed', ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'error',
+                    text1: result.message || 'Upload failed',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
             }
         } catch (error) {
             console.log('Upload error:', error.message);
-            ToastAndroid.show('Error uploading vehicle', ToastAndroid.SHORT);
+            Toast.show({
+                type: 'error',
+                text1: 'Error uploading vehicle',
+                position: 'bottom',
+                bottomOffset: 60,
+                visibilityTime: 2000,
+            });
+        } finally {
+            setLoading(false); // 👈 loader stop
         }
     };
 
@@ -221,7 +247,13 @@ const SingleVehicleUpload = () => {
                 setFilteredData(result.payload)
             } else {
                 setFinanceList([]);
-                ToastAndroid.show("No finance data found", ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'error',
+                    text1: 'No finance data found',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
             }
         } catch (error) {
             console.log("Finance list fetch error:", error.message);
@@ -235,6 +267,14 @@ const SingleVehicleUpload = () => {
             onPress={() => {
                 setSelectedType(item.finance_name);
                 setIsDropdownVisible(false);
+
+                // 👇 select hote hi error remove
+                if (errors.finance) {
+                    setErrors(prev => ({
+                        ...prev,
+                        finance: ''
+                    }));
+                }
             }}
             style={{
                 padding: 10,
@@ -290,7 +330,7 @@ const SingleVehicleUpload = () => {
             >
 
 
-                <Text style={{ fontSize: 14, color: 'black', marginBottom: 5 }}>Finance List <Text style={{ color: 'red', fontFamily: 'Inter-Bold' }}>*</Text> </Text>
+                <Text style={{ fontSize: 14, color: 'black', marginBottom: 5 }}>Finance List<Text style={{ color: 'red', fontFamily: 'Inter-Bold' }}>*</Text> </Text>
                 <View style={{ marginBottom: 15 }}>
                     <TouchableOpacity
                         style={{
@@ -300,7 +340,7 @@ const SingleVehicleUpload = () => {
                             flexDirection: 'row',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            borderColor: '#ddd',
+                            borderColor: errors.finance ? 'red' : '#ddd',
                             borderWidth: 1,
                         }}
                         onPress={() => setIsDropdownVisible(!isDropdownVisible)}>
@@ -685,17 +725,27 @@ const SingleVehicleUpload = () => {
                 />
 
                 <Text style={{ fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 6, fontFamily: 'Inter-Medium' }}>
-                    RC Number <Text style={{ color: 'red', fontFamily: 'Inter-Bold' }}>*</Text>
+                    RC Number<Text style={{ color: 'red', fontFamily: 'Inter-Bold' }}>*</Text>
                 </Text>
                 <TextInput
                     value={rcNumber}
-                    onChangeText={setRcNumber}
+                    onChangeText={(text) => {
+                        setRcNumber(text);
+
+                        // 👇 typing start hote hi error remove
+                        if (errors.rcNumber) {
+                            setErrors(prev => ({
+                                ...prev,
+                                rcNumber: ''
+                            }));
+                        }
+                    }}
                     placeholder="Enter RC Number"
                     placeholderTextColor="#888"
                     style={{
                         backgroundColor: '#fff',
                         borderWidth: 1,
-                        borderColor: '#ccc',
+                        borderColor: errors.rcNumber ? 'red' : '#ccc',
                         borderRadius: 8,
                         paddingHorizontal: 14,
                         paddingVertical: 12,
@@ -767,15 +817,27 @@ const SingleVehicleUpload = () => {
                 {/* Submit Button */}
                 <TouchableOpacity
                     onPress={handleSubmit}
+                    disabled={loading}
                     style={{
                         backgroundColor: colors.Brown || '#8B4513',
                         padding: 14,
                         borderRadius: 8,
                         alignItems: 'center',
                         marginTop: 10,
+                        opacity: loading ? 0.7 : 1
                     }}
                 >
-                    <Text style={{ color: '#fff', fontSize: 18, fontFamily: 'Inter-Regular' }}>{route.params?.vehicleData.full_vehicle_id ? 'Update' : 'Submit'}</Text>
+                    {loading ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                        <Text style={{
+                            color: '#fff',
+                            fontSize: 18,
+                            fontFamily: 'Inter-Regular'
+                        }}>
+                            {route.params?.vehicleData.full_vehicle_id ? 'Update' : 'Submit'}
+                        </Text>
+                    )}
                 </TouchableOpacity>
             </ScrollView>
         </View>

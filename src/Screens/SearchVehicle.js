@@ -46,7 +46,7 @@ const SearchVehicle = () => {
   const [staff_financelist, setStaff_financelist] = useState(null);
   const [easyreppo_financelist, seteasyreppo_financelist] = useState(null);
   const [rentAgencyId, setRentAgencyId] = useState(null);
-
+  const [downloadModal, setDownloadModal] = useState(false);
   const textInputRef = useRef(null);
   const availableTypes = ['Reg No', 'Chassis No', 'Eng No', 'Agg No'];
 
@@ -376,7 +376,7 @@ const SearchVehicle = () => {
       }
     } catch (err) {
       console.log("❌ handleLocalSearch error:", err);
-      Alert.alert("Error", "Failed to search from database");
+      setDownloadModal(true);
     } finally {
       setSearchLoading(false);
     }
@@ -941,6 +941,115 @@ const SearchVehicle = () => {
                 </TouchableOpacity>
               </>
             )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={downloadModal}
+        onRequestClose={() => setDownloadModal(false)}
+      >
+        <TouchableOpacity
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          }}
+          onPress={() => setDownloadModal(false)}
+          activeOpacity={1}
+        >
+          <View
+            style={{
+              backgroundColor: 'white',
+              padding: 20,
+              borderRadius: 8,
+              width: '80%',
+              alignItems: 'center',
+            }}
+            onStartShouldSetResponder={() => true}
+            onTouchEnd={e => e.stopPropagation()}
+          >
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: 'bold',
+                marginBottom: 10,
+                color: 'black',
+                fontFamily: 'Inter-Medium',
+              }}
+            >
+              Data Not Available
+            </Text>
+
+            <Text
+              style={{
+                fontSize: 14,
+                marginBottom: 20,
+                textAlign: 'center',
+                color: 'black',
+                fontFamily: 'Inter-Medium',
+              }}
+            >
+              Vehicle data not available. Please download it from the first screen to search.
+            </Text>
+
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                width: '100%',
+              }}
+            >
+              <TouchableOpacity
+                style={{
+                  backgroundColor: '#ddd',
+                  padding: 10,
+                  borderRadius: 5,
+                  width: '45%',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+                onPress={() => setDownloadModal(false)}
+              >
+                <Text
+                  style={{
+                    color: 'black',
+                    fontWeight: 'bold',
+                    fontFamily: 'Inter-Regular',
+                  }}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{
+                  backgroundColor: colors.Brown,
+                  padding: 10,
+                  borderRadius: 5,
+                  width: '45%',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+                onPress={() => {
+                  setDownloadModal(false);
+                  navigation.navigate('FirstScreen');
+                }}
+              >
+                <Text
+                  style={{
+                    color: 'white',
+                    fontWeight: 'bold',
+                    fontFamily: 'Inter-Regular',
+                  }}
+                >
+                  Ok
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </TouchableOpacity>
       </Modal>

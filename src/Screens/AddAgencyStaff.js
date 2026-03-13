@@ -8,14 +8,15 @@ import {
     ScrollView,
     FlatList,
     Alert,
-    ToastAndroid,
     Keyboard,
     Modal,
     ActivityIndicator,
+    Animated,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import colors from '../CommonFiles/Colors';
 import { ENDPOINTS } from '../CommonFiles/Constant';
+import Toast from 'react-native-toast-message';
 
 const AddAgencyStaff = () => {
     const navigation = useNavigation();
@@ -35,7 +36,7 @@ const AddAgencyStaff = () => {
 
     const route = useRoute();
     const { agencyId, staff_id, staff_name, staff_email, staff_mobile, staff_password, staff_address, staff_type } = route.params || {};
-    console.log("agency id and staff id", agencyId, staff_id);
+    console.log("agency id and staff id", agencyId, staff_id, staff_type);
 
 
     // Error states
@@ -69,6 +70,24 @@ const AddAgencyStaff = () => {
     };
 
 
+    const mapStaffType = (type) => {
+        if (!type) return null;
+
+        const lowerType = type.toLowerCase();
+
+        if (lowerType === 'normal' || lowerType === 'field staff') {
+            return 'normal';
+        }
+
+        if (lowerType === 'subadmin' || lowerType === 'admin staff' ||
+            lowerType === 'admin') {
+            return 'subadmin';
+        }
+
+        return null;
+    };
+
+
     React.useEffect(() => {
         if (staff_id) {
             setName(staff_name || '');
@@ -76,8 +95,10 @@ const AddAgencyStaff = () => {
             setMobile(staff_mobile || '');
             setPassword(staff_password || '');
             setAddress(staff_address || '');
+            const mappedType = mapStaffType(staff_type);
+
             setSelectedType(
-                dropdownData.find(item => item.value === (staff_type === 'main' ? 'subadmin' : staff_type)) || null
+                dropdownData.find(item => item.value === mappedType) || null
             );
         }
     }, [staff_id]);
@@ -172,26 +193,41 @@ const AddAgencyStaff = () => {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                ToastAndroid.show(errorData.message || 'Failed to save staff.', ToastAndroid.SHORT);
-                return;
+                Toast.show({
+                    type: 'error',
+                    text1: errorData.message || 'Failed to save staff.',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                }); return;
             }
 
             const data = await response.json();
 
             if (data.code === 200) {
-                ToastAndroid.show(
-                    staff_id ? 'Staff updated successfully' : 'Staff added successfully',
-                    ToastAndroid.SHORT
-                );
-                if (isAdmin) {
-                    navigation.replace('PermissionScreen', {
-                        staff_id: data.payload.staff_id,
-                        staff_type: data.payload.staff_type,
-                        staff_name: data.payload.staff_name
-                    });
-                } else {
-                    navigation.goBack();
-                }
+                // ✅ New custom toast
+
+                Toast.show({
+                    type: 'success',
+                    text1: staff_id
+                        ? 'Staff updated successfully'
+                        : 'Staff added successfully',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
+                // Delay navigation a little
+                setTimeout(() => {
+                    if (isAdmin) {
+                        navigation.replace('PermissionScreen', {
+                            staff_id: data.payload.staff_id,
+                            staff_type: data.payload.staff_type,
+                            staff_name: data.payload.staff_name
+                        });
+                    } else {
+                        navigation.goBack();
+                    }
+                }, 500);
             } else if (data.code === 400 && data.message === 'This mobile number is blacklisted') {
                 // 🔹 Blacklist case
                 const payload = data.payload;
@@ -265,7 +301,7 @@ const AddAgencyStaff = () => {
 
                 {/* Name */}
                 <Text style={{ fontSize: 16, fontWeight: '600', color: '#222', marginBottom: 6, fontFamily: 'Inter-Medium' }}>
-                    Name <Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
+                    Name<Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
                 </Text>
                 <TextInput
                     value={name}
@@ -288,17 +324,17 @@ const AddAgencyStaff = () => {
                         color: '#000',
                         borderWidth: 1,
                         borderColor: nameError ? 'red' : '#ccc',
-                        marginBottom: 5,
+                        marginBottom: nameError ? 0 : 15,
                         fontFamily: 'Inter-Regular'
                     }}
                 />
 
-                {nameError ? <Text style={{ color: 'red', marginBottom: 2, fontFamily: 'Inter-Regular' }}>{nameError}</Text> : null}
+                {nameError ? <Text style={{ color: 'red', marginBottom: 2, fontFamily: 'Inter-Regular', marginBottom: 5 }}>{nameError}</Text> : null}
 
 
                 {/* Mobile */}
                 <Text style={{ fontSize: 16, fontWeight: '600', color: '#222', marginBottom: 5, fontFamily: 'Inter-Medium' }}>
-                    Mobile Number <Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
+                    Mobile Number<Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
                 </Text>
                 <TextInput
                     value={mobile}
@@ -321,13 +357,13 @@ const AddAgencyStaff = () => {
                         color: '#000',
                         borderWidth: 1,
                         borderColor: mobileError ? 'red' : '#ccc',
-                        marginBottom: 15,
+                        marginBottom: mobileError ? 0 : 15,
                         fontFamily: 'Inter-Regular'
 
                     }}
                 />
 
-                {mobileError ? <Text style={{ color: 'red', marginBottom: 2, fontFamily: 'Inter-Regular' }}>{mobileError}</Text> : null}
+                {mobileError ? <Text style={{ color: 'red', marginBottom: 2, fontFamily: 'Inter-Regular', marginBottom: 5 }}>{mobileError}</Text> : null}
 
                 {/* Email */}
                 <Text style={{ fontSize: 16, fontWeight: '600', color: '#222', marginBottom: 5, fontFamily: 'Inter-Medium' }}>
@@ -368,7 +404,7 @@ const AddAgencyStaff = () => {
 
                 {/* Password */}
                 <Text style={{ fontSize: 16, fontWeight: '600', color: '#222', marginBottom: 6, fontFamily: 'Inter-Medium' }}>
-                    Password <Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
+                    Password<Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
                 </Text>
                 <View
                     style={{
@@ -378,7 +414,7 @@ const AddAgencyStaff = () => {
                         borderColor: passwordError ? 'red' : '#ccc',
                         borderRadius: 8,
                         backgroundColor: '#fff',
-                        marginBottom: 5,
+                        marginBottom: passwordError ? 0 : 15,
                         paddingRight: 10,
                     }}
                 >
@@ -415,15 +451,15 @@ const AddAgencyStaff = () => {
                     </TouchableOpacity>
                 </View>
 
-                {passwordError ? <Text style={{ color: 'red', marginBottom: 2, fontFamily: 'Inter-Regular' }}>{passwordError}</Text> : null}
+                {passwordError ? <Text style={{ color: 'red', marginBottom: 2, fontFamily: 'Inter-Regular', marginBottom: 5 }}>{passwordError}</Text> : null}
 
 
 
                 {/* Staff Type Dropdown */}
                 <Text style={{ fontSize: 16, fontWeight: '600', color: '#222', marginBottom: 6, fontFamily: 'Inter-Medium' }}>
-                    Staff Type <Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
+                    Staff Type<Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
                 </Text>
-                <View style={{ position: 'relative', marginBottom: 5 }}>
+                <View style={{ position: 'relative', marginBottom: staffTypeError ? 0 : 5 }}>
                     <TouchableOpacity
                         style={{
                             backgroundColor: '#fff',
@@ -485,7 +521,7 @@ const AddAgencyStaff = () => {
                     )}
                 </View>
 
-                {staffTypeError ? <Text style={{ color: 'red', marginBottom: 2, fontFamily: 'Inter-Regular' }}>{staffTypeError}</Text> : null}
+                {staffTypeError ? <Text style={{ color: 'red', marginBottom: 2, fontFamily: 'Inter-Regular', marginBottom: 5 }}>{staffTypeError}</Text> : null}
 
 
                 {/* Address */}

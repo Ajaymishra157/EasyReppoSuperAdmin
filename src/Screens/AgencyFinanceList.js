@@ -1,5 +1,5 @@
 
-import { Text, TouchableOpacity, View, FlatList, ToastAndroid, ActivityIndicator, Image, TextInput } from 'react-native';
+import { Text, TouchableOpacity, View, FlatList, ActivityIndicator, Image, TextInput } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import CheckBox from '@react-native-community/checkbox';
 import colors from '../CommonFiles/Colors';
@@ -7,6 +7,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ENDPOINTS } from '../CommonFiles/Constant';
+import Toast from 'react-native-toast-message';
 
 const AgencyFinanceList = () => {
     const Finance = require('../assets/images/budget.png');
@@ -14,6 +15,7 @@ const AgencyFinanceList = () => {
     const navigation = useNavigation();
     const route = useRoute();
     const { agencyId, agencyName } = route.params || {};
+    console.log("agency id and agency name", agencyId, agencyName);
 
 
     const [financeList, setFinanceList] = useState([]);
@@ -32,7 +34,7 @@ const AgencyFinanceList = () => {
     //         const staffId = await AsyncStorage.getItem('staff_id');
 
     //         if (!staffId) {
-    //             ToastAndroid.show('No staff ID found', ToastAndroid.SHORT);
+    //             
     //             return;
     //         }
 
@@ -54,11 +56,11 @@ const AgencyFinanceList = () => {
 
     //             }
     //         } else {
-    //             ToastAndroid.show(result.message || 'Failed to logout staff', ToastAndroid.SHORT);
+    //          
     //         }
     //     } catch (error) {
     //         console.log('Logout error:', error.message);
-    //         ToastAndroid.show('Error logging out staff', ToastAndroid.SHORT);
+    //         
     //     }
     // };
 
@@ -197,12 +199,23 @@ const AgencyFinanceList = () => {
             const result = await response.json();
 
             if (result.code === 200) {
-                ToastAndroid.show("List updated successfully", ToastAndroid.SHORT);
-                setFinanceList(tempFinanceList); // 🔥 permanent save
+                Toast.show({
+                    type: 'success',
+                    text1: 'List updated successfully',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000, // SHORT duration
+                }); setFinanceList(tempFinanceList); // 🔥 permanent save
                 setFilteredList(tempFinanceList);
                 setIsEditMode(false);
             } else {
-                ToastAndroid.show("Failed to update list", ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'error',
+                    text1: 'Failed to update list',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000, // SHORT duration
+                });
             }
         } catch (error) {
             console.log("Error updating list:", error.message);

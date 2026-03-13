@@ -1,5 +1,5 @@
-import { FlatList, StyleSheet, Text, TouchableOpacity, View, Modal, ToastAndroid, RefreshControl, ActivityIndicator, TextInput, Image } from 'react-native'
-import React, { useCallback, useEffect, useState } from 'react'
+import { FlatList, StyleSheet, Text, TouchableOpacity, View, Modal, RefreshControl, ActivityIndicator, TextInput, Image, Dimensions, TouchableWithoutFeedback } from 'react-native'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import colors from '../CommonFiles/Colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -10,20 +10,22 @@ import EvilIcons from 'react-native-vector-icons/EvilIcons'
 import AreaShimmer from '../Component/AreaShimmer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Toast from 'react-native-toast-message';
 const AreaList = () => {
     const navigation = useNavigation();
     const Map = require('../assets/images/map.png');
     const [AreaList, setAreaList] = useState([]);
     const [originalAreaData, setoriginalAreaData] = useState([]);
     const [text, setText] = useState(null);
-
+    const SCREEN_HEIGHT = Dimensions.get('window').height;
+    const MODAL_HEIGHT = 130;
     const [AreaListLoading, setAreaListLoading] = useState(false);
     const [ConfrimationModal, setConfrimationModal] = useState(false);
     const [SelectedArea, setSelectedArea] = useState('');
     const [refreshing, setRefreshing] = useState(false);
 
     const [isModalVisible, setIsModalVisible] = useState(false);
-
+    const modalPositionRef = useRef({ top: 0, left: 0 });
     const [userType, setUsertype] = useState(null);
 
     useFocusEffect(
@@ -116,9 +118,24 @@ const AreaList = () => {
         setConfrimationModal(false); // Hide the modal
     };
 
-    const OpenModal = Area => {
-        setSelectedArea(Area);
-        setIsModalVisible(true); // Open the modal
+    const OpenModal = (item, event) => {
+        setSelectedArea(item);
+        event.currentTarget.measure((x, y, width, height, pageX, pageY) => {
+
+            let calculatedTop = pageY + height;
+
+            // 👇 Check if modal will go outside screen
+            if (pageY + height + MODAL_HEIGHT > SCREEN_HEIGHT) {
+                // Open above the button
+                calculatedTop = pageY - MODAL_HEIGHT;
+            }
+
+            modalPositionRef.current = {
+                top: calculatedTop,
+                left: pageX - 160,
+            };
+            setIsModalVisible(true); // Open the modal
+        });
     };
 
     const handleCloseModal = () => {
@@ -154,16 +171,22 @@ const AreaList = () => {
 
             if (response.ok) {
                 if (result.code === 200) {
-                    ToastAndroid.show(
-                        'Area Deleted Successfully',
-                        ToastAndroid.SHORT,
-                    );
+                    Toast.show({
+                        type: 'success',
+                        text1: 'Area Deleted Successfully',
+                        position: 'bottom',
+                        bottomOffset: 60,
+                        visibilityTime: 2000,
+                    });
                     fetchAreaList();
                 } else {
-                    ToastAndroid.show(
-                        'Area not Delete',
-                        ToastAndroid.SHORT,
-                    );
+                    Toast.show({
+                        type: 'error',
+                        text1: 'Area not Deleted',
+                        position: 'bottom',
+                        bottomOffset: 60,
+                        visibilityTime: 2000,
+                    });
                     console.log('Error:', 'Failed to load staff data');
                 }
             } else {
@@ -197,15 +220,23 @@ const AreaList = () => {
 
 
 
-    useEffect(() => {
-        fetchAreaList();
-    }, []);
-
+    // useEffect(() => {
+    //     fetchAreaList();
+    // }, []);
     useFocusEffect(
         useCallback(() => {
+            setText('');
             fetchAreaList();
         }, []), // Empty array ensures this is called only when the screen is focused
     );
+
+    // useFocusEffect(
+    //     useCallback(() => {
+    //         if (!text || text.trim() === '') {
+    //             fetchAreaList();
+    //         }
+    //     }, [text])
+    // );
 
     const handleTextChange = (inputText) => {
         setText(inputText);
@@ -253,7 +284,7 @@ const AreaList = () => {
                     permissions?.area?.delete
                 ) && (
                         <TouchableOpacity
-                            onPress={() => OpenModal(item)}
+                            onPress={(event) => OpenModal(item, event)}
                             style={{
                                 width: '100%',
                                 justifyContent: 'center',
@@ -308,152 +339,156 @@ const AreaList = () => {
                     Area List
                 </Text>
             </View>
-            <View style={{ width: '100%', paddingHorizontal: 10 }}>
-                <View
-                    style={{
-                        width: '100%',
-
-                        borderWidth: 1,
-                        borderColor: colors.Brown,
-                        marginTop: 5,
-                        marginBottom: 5,
-                        borderRadius: 8,
-                        height: 50,
-                        backgroundColor: 'white',
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        borderColor: colors.Brown,
-
-                    }}>
-                    <View style={{
-                        width: 30,  // निश्चित width दी है
-                        height: 50, // पूरी height ली है
-                        justifyContent: 'center',
-                        alignItems: 'center',
-
-                    }}>
-                        <MaterialIcons name='search' size={24} color='black' />
-                    </View>
-                    <TextInput
+            {(AreaListLoading || originalAreaData.length > 0) && (
+                <View style={{ width: '100%', paddingHorizontal: 10 }}>
+                    <View
                         style={{
-                            flex: 1,
-                            fontSize: 16,
-                            fontFamily: 'Inter-Regular',
+                            width: '100%',
 
-                            color: 'black',
+                            borderWidth: 1,
+                            borderColor: colors.Brown,
+                            marginTop: 5,
+                            marginBottom: 5,
+                            borderRadius: 8,
                             height: 50,
-                        }}
+                            backgroundColor: 'white',
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            borderColor: colors.Brown,
 
-                        placeholder="Search Area Name"
-                        placeholderTextColor="grey"
-                        value={text}
-                        onChangeText={handleTextChange}
-                    />
-                    {text ? (
-                        <TouchableOpacity
-                            onPress={() => {
+                        }}>
+                        <View style={{
+                            width: 30,  // निश्चित width दी है
+                            height: 50, // पूरी height ली है
+                            justifyContent: 'center',
+                            alignItems: 'center',
 
-                                setText(''); // Clear the search text
-                                setAreaList(originalAreaData);
-
-                            }}
+                        }}>
+                            <MaterialIcons name='search' size={24} color='black' />
+                        </View>
+                        <TextInput
                             style={{
-                                marginRight: 7,
-                                height: 40,
+                                flex: 1,
+                                fontSize: 16,
+                                fontFamily: 'Inter-Regular',
+
+                                color: 'black',
+                                height: 50,
+                            }}
+
+                            placeholder="Search Area Name"
+                            placeholderTextColor="grey"
+                            value={text}
+                            onChangeText={handleTextChange}
+                        />
+                        {text ? (
+                            <TouchableOpacity
+                                onPress={() => {
+
+                                    setText(''); // Clear the search text
+                                    setAreaList(originalAreaData);
+
+                                }}
+                                style={{
+                                    marginRight: 7,
+                                    height: 40,
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                }}>
+                                <Entypo name="cross" size={20} color="black" />
+                            </TouchableOpacity>
+                        ) : null}
+                    </View>
+                </View>
+            )}
+
+            {/* Table Header */}
+            {AreaList.length > 0 && (
+                <View style={{ backgroundColor: 'white' }}>
+                    <View
+                        style={{
+                            flexDirection: 'row',
+                            backgroundColor: '#ddd',
+                            padding: 7,
+                            borderRadius: 5,
+                        }}>
+                        <View
+                            style={{
+                                width: '10%',
                                 justifyContent: 'center',
                                 alignItems: 'center',
                             }}>
-                            <Entypo name="cross" size={20} color="black" />
-                        </TouchableOpacity>
-                    ) : null}
-                </View>
-            </View>
-
-            {/* Table Header */}
-            <View style={{ backgroundColor: 'white' }}>
-                <View
-                    style={{
-                        flexDirection: 'row',
-                        backgroundColor: '#ddd',
-                        padding: 7,
-                        borderRadius: 5,
-                    }}>
-                    <View
-                        style={{
-                            width: '10%',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                        }}>
-                        <Text
+                            <Text
+                                style={{
+                                    fontWeight: 'bold',
+                                    fontFamily: 'Inter-Regular',
+                                    textAlign: 'center',
+                                    fontSize: 12,
+                                    color: 'black',
+                                }}>
+                                #
+                            </Text>
+                        </View>
+                        <View
                             style={{
-                                fontWeight: 'bold',
-                                fontFamily: 'Inter-Regular',
-                                textAlign: 'center',
-                                fontSize: 12,
-                                color: 'black',
+                                width: '40%',
+                                justifyContent: 'center',
+                                alignItems: 'flex-start'
                             }}>
-                            #
-                        </Text>
-                    </View>
-                    <View
-                        style={{
-                            width: '40%',
-                            justifyContent: 'center',
-                            alignItems: 'flex-start'
-                        }}>
-                        <Text
+                            <Text
+                                style={{
+                                    fontWeight: 'bold',
+                                    fontFamily: 'Inter-Regular',
+                                    textAlign: 'center',
+                                    fontSize: 12,
+                                    color: 'black',
+                                }}>
+                                AREA
+                            </Text>
+                        </View>
+                        <View
                             style={{
-                                fontWeight: 'bold',
-                                fontFamily: 'Inter-Regular',
-                                textAlign: 'center',
-                                fontSize: 12,
-                                color: 'black',
+                                width: '40%',
+                                justifyContent: 'center',
+                                alignItems: 'flex-start'
                             }}>
-                            AREA
-                        </Text>
-                    </View>
-                    <View
-                        style={{
-                            width: '40%',
-                            justifyContent: 'center',
-                            alignItems: 'flex-start'
-                        }}>
-                        <Text
-                            style={{
-                                fontWeight: 'bold',
-                                fontFamily: 'Inter-Regular',
-                                textAlign: 'center',
-                                fontSize: 12,
-                                color: 'black',
-                            }}>
-                            LOCATION
-                        </Text>
-                    </View>
+                            <Text
+                                style={{
+                                    fontWeight: 'bold',
+                                    fontFamily: 'Inter-Regular',
+                                    textAlign: 'center',
+                                    fontSize: 12,
+                                    color: 'black',
+                                }}>
+                                LOCATION
+                            </Text>
+                        </View>
 
 
-                    <View
-                        style={{
-                            width: '10%',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                        }}>
-                        <Text
+                        <View
                             style={{
-                                fontWeight: 'bold',
-                                fontFamily: 'Inter-Regular',
-                                textAlign: 'center',
-                                fontSize: 12,
-                                color: 'black',
+                                width: '10%',
+                                justifyContent: 'center',
+                                alignItems: 'center',
                             }}>
+                            <Text
+                                style={{
+                                    fontWeight: 'bold',
+                                    fontFamily: 'Inter-Regular',
+                                    textAlign: 'center',
+                                    fontSize: 12,
+                                    color: 'black',
+                                }}>
 
-                        </Text>
+                            </Text>
+                        </View>
+
                     </View>
+
 
                 </View>
-
-
-            </View>
+            )}
 
             {/* Area List */}
             <View style={{ flex: 1, backgroundColor: 'white' }}>
@@ -576,168 +611,100 @@ const AreaList = () => {
 
             <Modal
                 visible={isModalVisible}
-                animationType="slide"
-                transparent={true}
-                onRequestClose={handleCloseModal}>
-                <TouchableOpacity
-                    style={{
-                        flex: 1,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    }}
-                    activeOpacity={1}
-                    onPress={handleCloseModal}>
-                    <View
-                        style={{
-                            flexDirection: 'row',
-                            justifyContent: 'flex-end',
-                            width: '80%',
-                            paddingVertical: 5,
-                        }}>
-                        <TouchableOpacity
-                            onPress={handleCloseModal}
-                            style={{
-                                marginRight: 5,
-                                backgroundColor: 'white',
-                                borderRadius: 50,
-                            }}>
-                            <Entypo name="cross" size={25} color="black" />
-                        </TouchableOpacity>
-                    </View>
-                    <View
-                        style={{
-                            backgroundColor: 'white',
-                            padding: 10,
-                            borderRadius: 15,
-                            width: '80%',
-                            alignItems: 'center',
-                            elevation: 5, // Adds shadow for Android
-                            shadowColor: '#000', // Shadow for iOS
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.1,
-                            shadowRadius: 5,
-                        }}
-                        onStartShouldSetResponder={() => true} // Prevent modal from closing on content click
-                        onTouchEnd={e => e.stopPropagation()}>
+                animationType="fade"
+                transparent
+                onRequestClose={handleCloseModal}
+            >
+                <TouchableWithoutFeedback onPress={handleCloseModal}>
+                    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}>
+
                         <View
                             style={{
-                                flexDirection: 'row',
-                                width: '100%',
-                                justifyContent: 'center',
-                            }}>
+                                position: 'absolute',
+                                top: modalPositionRef.current.top,
+                                left: modalPositionRef.current.left,
+                                backgroundColor: 'white',
+                                paddingVertical: 6,
+                                borderRadius: 12,
+                                width: 180,
+                                elevation: 6,
+                                shadowColor: '#000',
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.2,
+                                shadowRadius: 4,
+                            }}
+                        >
+                            {/* Title */}
                             <Text
                                 style={{
-                                    fontSize: 18,
-                                    fontWeight: 'bold',
-                                    marginBottom: 20,
+                                    fontSize: 14,
+                                    fontFamily: 'Inter-SemiBold',
+                                    paddingHorizontal: 12,
+                                    paddingVertical: 6,
                                     color: 'black',
-                                    fontFamily: 'Inter-Regular',
-                                }}>
+                                }}
+                            >
                                 Select Action
                             </Text>
 
-                        </View>
-                        <View style={{ gap: 3, width: '80%' }}>
-
-                            {/* Update Leave Button */}
-
-                            {(
-                                userType === 'SuperAdmin' ||
+                            {/* Update Area */}
+                            {(userType === 'SuperAdmin' ||
                                 !permissions.area ||
-                                permissions.area.update
-                            ) && (
+                                permissions.area.update) && (
                                     <TouchableOpacity
                                         style={{
-                                            borderColor: 'black',
-                                            borderWidth: 1,
-                                            borderRadius: 10,
-                                            width: '100%',
-                                            justifyContent: 'center',
-                                            alignItems: 'center',
-                                            paddingVertical: 12,
-                                            marginTop: 10,
                                             flexDirection: 'row',
-                                            gap: 15,
+                                            alignItems: 'center',
+                                            paddingVertical: 8,
+                                            paddingHorizontal: 12,
+                                            borderTopWidth: 1,
+                                            borderColor: '#eee',
                                         }}
-                                        onPress={handleEdit}>
-                                        <AntDesign name="edit" size={24} color="black" />
+                                        onPress={handleEdit}
+                                    >
+                                        <AntDesign name="edit" size={18} color="#3B82F6" />
                                         <Text
                                             style={{
-                                                color: 'black',
-                                                fontFamily: 'Inter-Regular',
-                                                fontSize: 16,
-                                            }}>
+                                                fontSize: 13,
+                                                color: '#3B82F6',
+                                                marginLeft: 8,
+                                            }}
+                                        >
                                             Update Area
                                         </Text>
                                     </TouchableOpacity>
                                 )}
 
-                            {/* Delete Leave Button */}
-
-                            {(
-                                userType === 'SuperAdmin' ||
+                            {/* Delete Area */}
+                            {(userType === 'SuperAdmin' ||
                                 !permissions.area ||
-                                permissions.area.delete
-                            ) && (
+                                permissions.area.delete) && (
                                     <TouchableOpacity
                                         style={{
-                                            borderColor: 'red',
-                                            borderWidth: 1,
-                                            borderRadius: 10,
-                                            width: '100%',
-                                            justifyContent: 'center',
-                                            alignItems: 'center',
-                                            paddingVertical: 12,
                                             flexDirection: 'row',
-                                            gap: 15,
-                                            marginTop: 10,
+                                            alignItems: 'center',
+                                            paddingVertical: 8,
+                                            paddingHorizontal: 12,
+                                            borderTopWidth: 1,
+                                            borderColor: '#eee',
                                         }}
-                                        onPress={handleDelete}>
-                                        <AntDesign name="delete" size={24} color="red" />
+                                        onPress={handleDelete}
+                                    >
+                                        <AntDesign name="delete" size={18} color="#DC2626" />
                                         <Text
                                             style={{
-                                                color: 'red',
-                                                fontFamily: 'Inter-Regular',
-                                                fontSize: 16,
-                                            }}>
+                                                fontSize: 13,
+                                                color: '#DC2626',
+                                                marginLeft: 8,
+                                            }}
+                                        >
                                             Delete Area
                                         </Text>
                                     </TouchableOpacity>
                                 )}
-
-                            {/* Info Staff Button */}
-                            {/* <TouchableOpacity
-                                style={{
-                                    borderColor: colors.Brown,
-                                    borderWidth: 1,
-                                    borderRadius: 10,
-                                    width: '100%',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                    paddingVertical: 12,
-                                    marginTop: 10,
-                                    flexDirection: 'row',
-                                    gap: 15,
-                                }}
-                                onPress={() => {
-                                    SetInfoModal(true);
-                                    setIsModalVisible(false);
-                                }}>
-                                <AntDesign name="infocirlceo" size={20} color="black" />
-
-                                <Text
-                                    style={{
-                                        color: 'black',
-                                        fontFamily: 'Inter-Regular',
-                                        fontSize: 16,
-                                    }}>
-                                    Information Area
-                                </Text>
-                            </TouchableOpacity> */}
                         </View>
                     </View>
-                </TouchableOpacity>
+                </TouchableWithoutFeedback>
             </Modal>
 
             {/* Sticky Add New Button */}

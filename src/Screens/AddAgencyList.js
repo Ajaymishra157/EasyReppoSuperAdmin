@@ -1,13 +1,15 @@
-import { Text, View, TextInput, TouchableOpacity, ScrollView, ToastAndroid, Keyboard } from 'react-native';
+import { Text, View, TextInput, TouchableOpacity, ScrollView, Keyboard, ActivityIndicator } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import colors from '../CommonFiles/Colors'; // Optional, fallback added
 import { ENDPOINTS } from '../CommonFiles/Constant';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import Toast from 'react-native-toast-message';
 
 const AddAgencyList = () => {
     const route = useRoute();
     const { agencyData } = route.params || {};
+    const [loading, setLoading] = useState(false);
 
     const navigation = useNavigation();
     const [agencyName, setAgencyName] = useState('');
@@ -31,10 +33,10 @@ const AddAgencyList = () => {
 
     const validate = () => {
         const newErrors = {};
-        if (!agencyName.trim()) newErrors.agencyName = 'Agency Name is required';
-        if (!username.trim()) newErrors.username = 'Username is required';
-        if (!password.trim()) newErrors.password = 'Password is required';
-        if (!mobile.trim()) newErrors.mobile = 'Mobile Number is required';
+        if (!agencyName.trim()) newErrors.agencyName = 'Agency Name Is Required';
+        if (!username.trim()) newErrors.username = 'Username Is Required';
+        if (!password.trim()) newErrors.password = 'Password Is Required';
+        if (!mobile.trim()) newErrors.mobile = 'Mobile Number Is Required';
         else if (!/^\d{10}$/.test(mobile.trim())) newErrors.mobile = 'Mobile Number must be 10 digits';
 
 
@@ -44,6 +46,9 @@ const AddAgencyList = () => {
 
     const handleSubmit = async () => {
         if (!validate()) return;
+
+
+        setLoading(true);
 
         const payload = {
             agency_name: agencyName,
@@ -71,23 +76,43 @@ const AddAgencyList = () => {
             const data = await response.json();
 
             if (data.code === 200) {
-                ToastAndroid.show(
-                    agencyData ? 'Agency updated successfully!' : 'Agency added successfully!',
-                    ToastAndroid.SHORT
-                );
+                Toast.show({
+                    type: 'success',
+                    text1: agencyData
+                        ? 'Agency updated successfully!'
+                        : 'Agency added successfully!',
+                    position: 'bottom',
+                    visibilityTime: 2000,
+                });
                 setAgencyName('');
                 setUsername('');
                 setPassword('');
                 setMobile('');
                 setEmail('');
                 setErrors({});
-                navigation.goBack();
+                setTimeout(() => {
+                    navigation.goBack();
+                }, 500);
             } else {
-                ToastAndroid.show(data.message || 'Something went wrong!', ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'error',
+                    text1: data?.message || 'Something went wrong!',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
             }
         } catch (error) {
             console.error('API error:', error);
-            ToastAndroid.show('Network error. Please try again.', ToastAndroid.SHORT);
+            Toast.show({
+                type: 'error',
+                text1: 'Network error. Please try again.',
+                position: 'bottom',
+                bottomOffset: 60,
+                visibilityTime: 2000,
+            });
+        } finally {
+            setLoading(false); // 👈 Stop Loader (Important)
         }
     };
 
@@ -146,7 +171,12 @@ const AddAgencyList = () => {
                 </Text>
                 <TextInput
                     value={agencyName}
-                    onChangeText={setAgencyName}
+                    onChangeText={(text) => {
+                        setAgencyName(text);
+                        if (errors.agencyName) {
+                            setErrors(prev => ({ ...prev, agencyName: '' }));
+                        }
+                    }}
                     placeholder="Enter Agency Name"
                     placeholderTextColor="#888"
 
@@ -154,13 +184,13 @@ const AddAgencyList = () => {
                     style={{
                         backgroundColor: agencyData ? '#f2f2f2' : '#fff', // Light grey when disabled
                         borderWidth: 1,
-                        borderColor: agencyData ? '#ddd' : '#ccc',
+                        borderColor: errors.agencyName ? 'red' : '#ccc',
                         borderRadius: 8,
                         paddingHorizontal: 14,
                         paddingVertical: 12,
                         fontSize: 16,
                         color: agencyData ? '#888' : '#000',
-                        marginBottom: 8
+                        marginBottom: errors.agencyName ? 0 : 8
                         , fontFamily: 'Inter-Regular'
                     }}
                 />
@@ -168,23 +198,28 @@ const AddAgencyList = () => {
 
                 {/* Username */}
                 <Text style={{ fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 6, fontFamily: 'Inter-Medium' }}>
-                    Username <Text style={{ color: 'red', fontFamily: 'Inter-Bold' }}>*</Text>
+                    Username<Text style={{ color: 'red', fontFamily: 'Inter-Bold' }}>*</Text>
                 </Text>
                 <TextInput
                     value={username}
-                    onChangeText={setUsername}
+                    onChangeText={(text) => {
+                        setUsername(text);
+                        if (errors.username) {
+                            setErrors(prev => ({ ...prev, username: '' }));
+                        }
+                    }}
                     placeholder="Enter Username"
                     placeholderTextColor="#888"
                     style={{
                         backgroundColor: '#fff',
                         borderWidth: 1,
-                        borderColor: '#ccc',
+                        borderColor: errors.username ? 'red' : '#ccc',
                         borderRadius: 8,
                         paddingHorizontal: 14,
                         paddingVertical: 12,
                         fontSize: 16,
                         color: '#000',
-                        marginBottom: 8
+                        marginBottom: errors.username ? 0 : 8
                         , fontFamily: 'Inter-Medium'
                     }}
                 />
@@ -192,7 +227,7 @@ const AddAgencyList = () => {
 
                 {/* Password */}
                 <Text style={{ fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 6, fontFamily: 'Inter-Medium' }}>
-                    Password <Text style={{ color: 'red', fontFamily: 'Inter-Bold' }}>*</Text>
+                    Password<Text style={{ color: 'red', fontFamily: 'Inter-Bold' }}>*</Text>
                 </Text>
                 <View
                     style={{
@@ -200,15 +235,20 @@ const AddAgencyList = () => {
                         alignItems: 'center',
                         backgroundColor: '#fff',
                         borderWidth: 1,
-                        borderColor: '#ccc',
+                        borderColor: errors.password ? 'red' : '#ccc',
                         borderRadius: 8,
                         paddingRight: 10,
-                        marginBottom: 8,
+                        marginBottom: errors.password ? 0 : 8,
                     }}
                 >
                     <TextInput
                         value={password}
-                        onChangeText={setPassword}
+                        onChangeText={(text) => {
+                            setPassword(text);
+                            if (errors.password) {
+                                setErrors(prev => ({ ...prev, password: '' }));
+                            }
+                        }}
                         placeholder="Enter Password"
                         placeholderTextColor="#888"
                         secureTextEntry={!showPassword}
@@ -229,11 +269,16 @@ const AddAgencyList = () => {
 
                 {/* Mobile Number */}
                 <Text style={{ fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 6, fontFamily: 'Inter-Medium' }}>
-                    Mobile Number <Text style={{ color: 'red', fontFamily: 'Inter-Bold' }}>*</Text>
+                    Mobile Number<Text style={{ color: 'red', fontFamily: 'Inter-Bold' }}>*</Text>
                 </Text>
                 <TextInput
                     value={mobile}
-                    onChangeText={setMobile}
+                    onChangeText={(text) => {
+                        setMobile(text);
+                        if (errors.mobile) {
+                            setErrors(prev => ({ ...prev, mobile: '' }));
+                        }
+                    }}
                     placeholder="Enter Mobile Number"
                     keyboardType="phone-pad"
                     maxLength={10}
@@ -241,13 +286,13 @@ const AddAgencyList = () => {
                     style={{
                         backgroundColor: '#fff',
                         borderWidth: 1,
-                        borderColor: '#ccc',
+                        borderColor: errors.mobile ? 'red' : '#ccc',
                         borderRadius: 8,
                         paddingHorizontal: 14,
                         paddingVertical: 12,
                         fontSize: 16,
                         color: '#000',
-                        marginBottom: 8, fontFamily: 'Inter-Medium'
+                        marginBottom: errors.mobile ? 0 : 8, fontFamily: 'Inter-Medium'
                     }}
                 />
                 {errors.mobile && <Text style={{ color: 'red', marginBottom: 8, fontFamily: 'Inter-Regular' }}>{errors.mobile}</Text>}
@@ -279,15 +324,21 @@ const AddAgencyList = () => {
                 {/* Submit Button */}
                 <TouchableOpacity
                     onPress={handleSubmit}
+                    disabled={loading}
                     style={{
                         backgroundColor: colors.Brown || '#8B4513',
                         paddingVertical: 14,
                         borderRadius: 8,
                         alignItems: 'center',
                         marginTop: 10,
+                        opacity: loading ? 0.7 : 1,
                     }}
                 >
-                    <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600', fontFamily: 'Inter-Regular' }}>{agencyData ? 'Update' : 'Submit'} </Text>
+                    {loading ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                        <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600', fontFamily: 'Inter-Regular' }}>{agencyData ? 'Update' : 'Submit'} </Text>
+                    )}
                 </TouchableOpacity>
             </ScrollView>
         </View >

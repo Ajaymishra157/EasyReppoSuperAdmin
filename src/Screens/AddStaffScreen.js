@@ -8,7 +8,6 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  ToastAndroid,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -21,6 +20,7 @@ import DeviceInfo from 'react-native-device-info';
 import ImagePicker from 'react-native-image-crop-picker';
 import RNFS from 'react-native-fs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
 
 const AddStaffScreen = () => {
   const navigation = useNavigation();
@@ -124,7 +124,13 @@ const AddStaffScreen = () => {
       const staffId = await AsyncStorage.getItem('staff_id');
 
       if (!staffId) {
-        ToastAndroid.show('No staff ID found', ToastAndroid.SHORT);
+        Toast.show({
+          type: 'error',
+          text1: 'No staff ID found',
+          position: 'bottom',
+          bottomOffset: 60,
+          visibilityTime: 2000,
+        });
         return;
       }
 
@@ -148,11 +154,17 @@ const AddStaffScreen = () => {
 
         }
       } else {
-        // ToastAndroid.show(result.message || 'Failed to logout staff', ToastAndroid.SHORT);
+        // Toast.show({
+        //   type: 'error',
+        //   text1: result.message || 'Failed to logout staff',
+        //   position: 'bottom',
+        //   bottomOffset: 60,
+        //   visibilityTime: 2000, // 2 sec
+        // });
       }
     } catch (error) {
       console.log('Logout error:', error.message);
-      ToastAndroid.show('Error logging  out out staff', ToastAndroid.SHORT);
+
     }
   };
 
@@ -193,9 +205,11 @@ const AddStaffScreen = () => {
   const [isDropdownVisible, setIsDropdownVisible] = useState(false); // Track dropdown visibility
   const [selectedType, setSelectedType] = useState(staff_type || 'normal'); // Store selected type
 
-  const [SelectedId, setSelectedId] = useState(
-    selectedType === 'Admin' ? 'main' : 'normal',
-  );
+  // const [SelectedId, setSelectedId] = useState(
+  //   selectedType === 'Admin' ? 'main' : 'normal',
+  // );
+  const [SelectedId, setSelectedId] = useState(staff_type || 'normal');
+  console.log("selected id and slected type", selectedType, SelectedId);
 
 
   const [dropdownData] = useState(
@@ -214,11 +228,10 @@ const AddStaffScreen = () => {
     }
   };
 
-  const handleSelect = staff => {
-    const { staff_id, staff_name } = staff;
-    setSelectedType(staff_name); setUsertype
-    setSelectedId(staff_id);
-    setIsDropdownVisible(false); // Close the dropdown after selection
+  const handleSelect = item => {
+    setSelectedType(item.staff_name);
+    setSelectedId(item.staff_id);
+    setIsDropdownVisible(false);
   };
 
   const [myDeviceId, setMyDeviceId] = useState(null);
@@ -385,15 +398,23 @@ const AddStaffScreen = () => {
 
 
           if (data.code === 200) {
-            ToastAndroid.show('Staff Updated Successfully', ToastAndroid.SHORT);
-            if (isAdmin) {
-              navigation.replace('PermissionScreen', {
-                staff_id: data.payload.staff_id,
-                staff_name: data.payload.staff_name
-              });
-            } else {
-              navigation.goBack();
-            }
+            Toast.show({
+              type: 'success',
+              text1: 'Staff Updated Successfully',
+              position: 'bottom',
+              visibilityTime: 2000, // 500 sec
+            });
+
+            setTimeout(() => {
+              if (isAdmin) {
+                navigation.replace('PermissionScreen', {
+                  staff_id: data.payload.staff_id,
+                  staff_name: data.payload.staff_name
+                });
+              } else {
+                navigation.goBack();
+              }
+            }, 500); // 3 sec delay before navigation
           } else {
             console.log('Update failed:', data.message);
           }
@@ -415,16 +436,28 @@ const AddStaffScreen = () => {
 
 
           if (data.code === 200) {
-            ToastAndroid.show('Staff Added Successfully', ToastAndroid.SHORT);
+            // Toast dikhe
+            Toast.show({
+              type: 'success',
+              text1: 'Staff Added Successfully',
+              position: 'bottom',
+              visibilityTime: 2000, // 2 sec toast
+            });
+
+            // Permission ID set karna
             setPermissionId(data.payload.staff_id);
-            if (isAdmin) {
-              navigation.replace('PermissionScreen', {
-                staff_id: data.payload.staff_id,
-                staff_name: data.payload.staff_name
-              });
-            } else {
-              navigation.goBack();
-            }
+
+            // 500ms ke baad navigation
+            setTimeout(() => {
+              if (isAdmin) {
+                navigation.replace('PermissionScreen', {
+                  staff_id: data.payload.staff_id,
+                  staff_name: data.payload.staff_name
+                });
+              } else {
+                navigation.goBack();
+              }
+            }, 500); // 0.5 sec delay
           } else if (data.code === 400 && data.message === 'This mobile number is blacklisted') {
             // 🔹 Blacklist case
             const payload = data.payload;
@@ -507,7 +540,7 @@ const AddStaffScreen = () => {
 
   //       // Check response status
   //       if (data.code == 200) {
-  //         ToastAndroid.show('Staff Add Successfully', ToastAndroid.SHORT);
+  //         
   //         navigation.navigate('HomeScreen');
   //       } else {
   //       }
@@ -585,7 +618,7 @@ const AddStaffScreen = () => {
               fontFamily: 'Inter-Medium',
               color: 'black',
             }}>
-            Name <Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
+            Name<Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
           </Text>
           <TextInput
             value={staffName}
@@ -601,7 +634,7 @@ const AddStaffScreen = () => {
               backgroundColor: '#fff',
               borderRadius: 8,
               padding: 12,
-              marginBottom: 10,
+              marginBottom: staffNameError ? 0 : 10,
               borderWidth: 1,
               borderColor: staffNameError ? 'red' : '#ddd',
               fontSize: 14,
@@ -668,7 +701,7 @@ const AddStaffScreen = () => {
               fontFamily: 'Inter-Medium',
               color: 'black',
             }}>
-            Mobile Number <Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
+            Mobile Number<Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
           </Text>
           <TextInput
             value={staffMobile}
@@ -686,7 +719,7 @@ const AddStaffScreen = () => {
               backgroundColor: '#fff',
               borderRadius: 8,
               padding: 12,
-              marginBottom: 10,
+              marginBottom: staffMobileError ? 0 : 10,
               borderWidth: 1,
               borderColor: staffMobileError ? 'red' : '#ddd',
               fontSize: 14,
@@ -713,7 +746,7 @@ const AddStaffScreen = () => {
               fontFamily: 'Inter-Medium',
               color: 'black',
             }}>
-            Password <Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
+            Password<Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
           </Text>
           <View
             style={{
@@ -722,7 +755,7 @@ const AddStaffScreen = () => {
               borderRadius: 8,
               padding: 3,
               borderColor: staffPasswordError ? 'red' : '#ddd',
-              marginBottom: 10,
+              marginBottom: staffPasswordError ? 0 : 10,
               borderWidth: 1,
             }}>
             <TextInput
@@ -1018,13 +1051,9 @@ const AddStaffScreen = () => {
         </View>
         {/* Submit Button */}
         <View style={{ flex: 1, justifyContent: 'flex-start' }}>
-          {StaffLoading ? (
-            <View>
-              <ActivityIndicator size="small" color={'#3b82f6'} />
-            </View>
-          ) : (
-            <View style={{ gap: 8 }}>
-              {/* {staff_id && (
+
+          <View style={{ gap: 8 }}>
+            {/* {staff_id && (
                 <TouchableOpacity
                   style={{
                     backgroundColor: colors.Brown,
@@ -1045,39 +1074,46 @@ const AddStaffScreen = () => {
                   </Text>
                 </TouchableOpacity>
               )} */}
-              <TouchableOpacity
-                style={{
-                  backgroundColor: colors.Brown,
-                  padding: 15,
-                  borderRadius: 8,
-                  alignItems: 'center',
-                  marginHorizontal: 20,
-                }}
-                onPress={() => {
-                  const isAdmin = SelectedId === 'main';
-                  handleSubmit(isAdmin); // It handles both goBack and replace
-                }}
-              >
+            <TouchableOpacity
+              disabled={StaffLoading}
+              style={{
+                backgroundColor: colors.Brown,
+                padding: 15,
+                borderRadius: 8,
+                alignItems: 'center',
+                marginHorizontal: 20,
+                opacity: StaffLoading ? 0.7 : 1,
+              }}
+              onPress={() => {
+                const isAdmin = SelectedId === 'main';
+                handleSubmit(isAdmin); // It handles both goBack and replace
+              }}
+            >
+              {StaffLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
                 <Text
                   style={{
                     color: '#fff',
                     fontSize: 16,
                     fontFamily: 'Inter-Medium',
-                  }}>
+                  }}
+                >
                   {selectedType === 'Admin' ||
                     selectedType === 'Admin Staff' ||
                     selectedType === 'main'
                     ? 'Next'
                     : 'Save'}
                 </Text>
-              </TouchableOpacity>
-              {/* {blacklistError ? (
+              )}
+            </TouchableOpacity>
+            {/* {blacklistError ? (
                 <Text style={{ color: 'red', fontSize: 14, marginHorizontal: 20, marginBottom: 10 }}>
                   {blacklistError}
                 </Text>
               ) : null} */}
-            </View>
-          )}
+          </View>
+
           <View style={{ justifyContent: 'center', alignItems: 'center' }}>
             {SubmitError && (
               <Text

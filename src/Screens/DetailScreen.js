@@ -1,4 +1,4 @@
-import { ActivityIndicator, Alert, Image, Keyboard, KeyboardAvoidingView, Linking, Modal, ScrollView, StyleSheet, Text, TextInput, ToastAndroid, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native'
+import { ActivityIndicator, Alert, Image, Keyboard, KeyboardAvoidingView, Linking, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import colors from '../CommonFiles/Colors';
@@ -10,6 +10,7 @@ import Clipboard from '@react-native-clipboard/clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ENDPOINTS } from '../CommonFiles/Constant';
 import { openDB } from '../utils/db';
+import Toast from 'react-native-toast-message';
 // import Geolocation from 'react-native-geolocation-service';
 
 
@@ -120,8 +121,13 @@ const DetailScreen = () => {
             const result = await response.json();
 
             if (result.code == 200) {
-                ToastAndroid.show('Vehicle deleted successfully!', ToastAndroid.SHORT);
-
+                Toast.show({
+                    type: 'success',
+                    text1: 'Vehicle deleted successfully!',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
                 // ✅ Delete from local SQLite database
                 try {
                     const db = await openDB();
@@ -138,13 +144,28 @@ const DetailScreen = () => {
                 if (route.params?.onDelete) {
                     route.params.onDelete(vehicleId);
                 }
-                navigation.goBack();
+                // ⏳ Delay navigation
+                setTimeout(() => {
+                    navigation.goBack();
+                }, 500);
             } else {
-                ToastAndroid.show('Failed to delete vehicle', ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'error',
+                    text1: 'Failed to delete vehicle',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
             }
         } catch (error) {
             console.error('Delete vehicle error:', error);
-            ToastAndroid.show('Error deleting vehicle', ToastAndroid.SHORT);
+            Toast.show({
+                type: 'error',
+                text1: 'Error deleting vehicle',
+                position: 'bottom',
+                bottomOffset: 60,
+                visibilityTime: 2000,
+            });
         }
     };
 
@@ -154,7 +175,13 @@ const DetailScreen = () => {
             const staffId = await AsyncStorage.getItem('staff_id');
 
             if (!staffId) {
-                ToastAndroid.show('No staff ID found', ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'error',
+                    text1: 'No staff ID found',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
                 return;
             }
 
@@ -178,11 +205,17 @@ const DetailScreen = () => {
 
                 }
             } else {
-                ToastAndroid.show(result.message || 'Failed to logout staff', ToastAndroid.SHORT);
+                // Toast.show({
+                //     type: 'error',
+                //     text1: result.message || 'Failed to logout staff',
+                //     position: 'bottom',
+                //     bottomOffset: 60,
+                //     visibilityTime: 2000,
+                // });
             }
         } catch (error) {
             console.log('Logout error:', error.message);
-            ToastAndroid.show('Error logging out staff', ToastAndroid.SHORT);
+
         }
     };
 
@@ -372,7 +405,7 @@ const DetailScreen = () => {
 
     //     if (selectedData) {
     //         Clipboard.setString(selectedData);
-    //         ToastAndroid.show("Field Copied", ToastAndroid.SHORT);
+    //       
     //     } else {
     //         // Alert.alert('No Fields Selected', 'Please select at least one field to copy.');
     //     }
@@ -395,7 +428,13 @@ const DetailScreen = () => {
 
         if (selectedData) {
             Clipboard.setString(selectedData);
-            ToastAndroid.show("Field Copied", ToastAndroid.SHORT);
+            Toast.show({
+                type: 'success',
+                text1: 'Field Copied',
+                position: 'bottom',
+                bottomOffset: 60,
+                visibilityTime: 2000,
+            });
         } else {
             // Optionally alert if nothing selected
         }
@@ -536,8 +575,13 @@ const DetailScreen = () => {
             const data = await response.json();
 
             if (data.code == 200) {
-                ToastAndroid.show('Staff added successfully!', ToastAndroid.SHORT);
-                setStaffName('');// Clear input
+                Toast.show({
+                    type: 'success',
+                    text1: 'Staff added successfully!',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                }); setStaffName('');// Clear input
             }
             else if (data.code === 400 && data.message === "Record already exists") {
                 // Show Modal instead of Alert

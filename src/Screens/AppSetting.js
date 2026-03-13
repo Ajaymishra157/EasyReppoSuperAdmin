@@ -1,10 +1,11 @@
-import { StyleSheet, Text, View, TouchableOpacity, TextInput, Switch, Keyboard, ScrollView, Alert, ToastAndroid } from 'react-native'
+import { StyleSheet, Text, View, TouchableOpacity, TextInput, Switch, Keyboard, ScrollView, Alert } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import colors from '../CommonFiles/Colors';
 import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ENDPOINTS } from '../CommonFiles/Constant';
+import Toast from 'react-native-toast-message';
 
 const AppSetting = () => {
     const navigation = useNavigation();
@@ -166,8 +167,13 @@ const AppSetting = () => {
 
             if (result.code === 200) {
 
-                ToastAndroid.show("settings updated successfully", ToastAndroid.SHORT);
-                // Refresh the settings after update
+                Toast.show({
+                    type: 'success',
+                    text1: 'Settings updated successfully',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });                // Refresh the settings after update
                 fetchAppSettings();
             } else {
                 console.log('❌ Error updating app settings:', result.message);

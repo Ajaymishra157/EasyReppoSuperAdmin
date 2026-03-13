@@ -7,7 +7,6 @@ import {
     ScrollView,
     Text,
     TextInput,
-    ToastAndroid,
     TouchableOpacity,
     View
 } from 'react-native';
@@ -17,6 +16,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ENDPOINTS } from '../CommonFiles/Constant';
 import RNFS from 'react-native-fs';
+import Toast from 'react-native-toast-message';
 
 const BORDER = '#E5E7EB';
 const TEXT = '#222';
@@ -179,7 +179,13 @@ const AgencyFiles = () => {
 
                 if (Platform.OS === 'android') {
                     await RNFS.scanFile(path);
-                    ToastAndroid.show(`${fileName} saved to Downloads`, ToastAndroid.LONG);
+                    Toast.show({
+                        type: 'success',
+                        text1: `${fileName} saved to Downloads`,
+                        position: 'bottom',
+                        bottomOffset: 60,
+                        visibilityTime: 3500, // LONG duration approx 3.5 sec
+                    });
                 } else {
                     Alert.alert('Saved', `${fileName} saved successfully`);
                 }
@@ -231,38 +237,40 @@ const AgencyFiles = () => {
             </View>
 
             {/* ✅ SEARCH BAR */}
-            <View style={{
-                margin: 10,
-                backgroundColor: '#F9FAFB',
-                borderRadius: 10,
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingHorizontal: 10,
-                borderWidth: 1,
-                borderColor: '#d3d5d8'
-            }}>
-                <Ionicons name="search-outline" size={18} color="#6B7280" />
+            {(fileList.length > 0 || search.length > 0) && (
+                <View style={{
+                    margin: 10,
+                    backgroundColor: '#F9FAFB',
+                    borderRadius: 10,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingHorizontal: 10,
+                    borderWidth: 1,
+                    borderColor: '#d3d5d8'
+                }}>
+                    <Ionicons name="search-outline" size={18} color="#6B7280" />
 
-                <TextInput
-                    placeholder="Search by Finance or File name..."
-                    placeholderTextColor="#9CA3AF"
-                    value={search}
-                    onChangeText={handleSearch}
-                    style={{
-                        flex: 1,
-                        paddingVertical: 8,
-                        paddingHorizontal: 6,
-                        fontFamily: 'Inter-Regular',
-                        color: '#111827'
-                    }}
-                />
+                    <TextInput
+                        placeholder="Search by Finance or File name..."
+                        placeholderTextColor="#9CA3AF"
+                        value={search}
+                        onChangeText={handleSearch}
+                        style={{
+                            flex: 1,
+                            paddingVertical: 8,
+                            paddingHorizontal: 6,
+                            fontFamily: 'Inter-Regular',
+                            color: '#111827'
+                        }}
+                    />
 
-                {search.length > 0 && (
-                    <TouchableOpacity onPress={() => handleSearch('')}>
-                        <Ionicons name="close-circle" size={18} color="#6B7280" />
-                    </TouchableOpacity>
-                )}
-            </View>
+                    {search.length > 0 && (
+                        <TouchableOpacity onPress={() => handleSearch('')}>
+                            <Ionicons name="close-circle" size={18} color="#6B7280" />
+                        </TouchableOpacity>
+                    )}
+                </View>
+            )}
 
 
             <View style={{ flex: 1 }}>

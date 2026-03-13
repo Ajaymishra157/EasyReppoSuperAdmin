@@ -17,6 +17,7 @@ import SplashScreen from '../Screens/SplashScreen';
 import ListingScreen from '../Screens/ListingScreen';
 import AreaList from '../Screens/AreaList';
 import AddArea from '../Screens/AddArea';
+import toastConfig from '../Component/ToastConfig'
 
 import CreateIntimation from '../Screens/CreateIntimation';
 import informationScreen from '../Screens/informationScreen';
@@ -53,6 +54,7 @@ import AgencyAddStaffSchedule from '../Screens/AgencyAddStaffSchedule';
 import PDFViewerScreen from '../Screens/PDFViewerScreen';
 import AgencyFiles from '../Screens/AgencyFiles';
 import AllVehicleSearch from '../Screens/AllVehicleSearch';
+import Toast from 'react-native-toast-message';
 
 
 const Stack = createNativeStackNavigator();
@@ -182,6 +184,7 @@ const RouteNavigation = () => {
 
 
       </Stack.Navigator>
+      <Toast config={toastConfig} />
     </NavigationContainer>
   );
 };

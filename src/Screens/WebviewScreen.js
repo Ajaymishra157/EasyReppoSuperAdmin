@@ -54,7 +54,7 @@ const WebviewScreen = ({ route }) => {
         setUserData(data.data);
       } catch (err) {
         console.log("Error fetching user data:", err);
-        Alert.alert("Error", "Unable to fetch user data");
+
       }
     };
 
@@ -115,7 +115,7 @@ const WebviewScreen = ({ route }) => {
       return html;
     } catch (err) {
       console.log("Error fetching HTML:", err);
-      Alert.alert("Error", "Cannot fetch HTML from server");
+
       return null;
     }
   };
@@ -136,7 +136,6 @@ const WebviewScreen = ({ route }) => {
       return file.filePath;
     } catch (err) {
       console.log("Error generating PDF:", err);
-      Alert.alert("Error", "Cannot generate PDF");
       return null;
     }
   };
@@ -457,7 +456,6 @@ const WebviewScreen = ({ route }) => {
   const handleDownload = async () => {
     const hasPermission = await requestPermission();
     if (!hasPermission) {
-      Alert.alert("Permission Required", "Storage permission is needed to download files.");
       return;
     }
 
@@ -509,7 +507,6 @@ const WebviewScreen = ({ route }) => {
       });
     } catch (err) {
       console.log("Error sharing PDF:", err);
-      Alert.alert("Error", err.message);
     }
   };
 

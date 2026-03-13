@@ -3,11 +3,12 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  ToastAndroid,
+
   TouchableOpacity,
   View,
   FlatList,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -16,12 +17,14 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ENDPOINTS } from '../CommonFiles/Constant';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
 
 
 const AddScheduleScreen = () => {
 
   const navigation = useNavigation();
   const route = useRoute();
+  const Staff = require('../assets/images/team.png');
 
   const { staff_id, staff_name, start_date, end_date, Schedule_id } =
     route.params || {};
@@ -67,9 +70,7 @@ const AddScheduleScreen = () => {
   const [startDate, setStartDate] = useState(
     convertToDateObject(start_date) || new Date(),
   ); // Default to current date
-  console.log('start date ye hai', startDate);
   const [endDate, setEndDate] = useState(convertToDateObject(end_date) || null); // Set endDate to null initially
-  console.log('endDate date ye hai', endDate);
 
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
@@ -105,7 +106,7 @@ const AddScheduleScreen = () => {
 
   console.log('selected id', selectedId);
   const [dropdownData, setDropdownData] = useState([]);
-  console.log('dropdownData', dropdownData);
+
 
   const [filteredData, setFilteredData] = useState([]); // Filtered data
   const [searchQuery, setSearchQuery] = useState('');
@@ -119,11 +120,17 @@ const AddScheduleScreen = () => {
   const AgencyStaffLogout = async (navigation, confirmLogout) => {
     try {
       const staffId = await AsyncStorage.getItem('staff_id');
-
       if (!staffId) {
-        ToastAndroid.show('No staff ID found', ToastAndroid.SHORT);
+        Toast.show({
+          type: 'error',
+          text1: 'No staff ID found',
+          position: 'bottom',
+          bottomOffset: 60,
+          visibilityTime: 2000,
+        });
         return;
       }
+
 
       const response = await fetch(ENDPOINTS.Staff_Agency_Logout, {
         method: 'POST',
@@ -145,11 +152,11 @@ const AddScheduleScreen = () => {
 
         }
       } else {
-        // ToastAndroid.show(result.message || 'Failed to logout staff', ToastAndroid.SHORT);
+
       }
     } catch (error) {
       console.log('Logout error:', error.message);
-      ToastAndroid.show('Error logging  out out staff', ToastAndroid.SHORT);
+
     }
   };
 
@@ -219,31 +226,42 @@ const AddScheduleScreen = () => {
     setSelectedType(staff_name); // For setting the staff name
     setselectedId(staff_id); // For setting the staff id
 
+    // ❗ error remove
+    setStaffNameError('');
+    // 🔹 Search reset
+    setSearchQuery('');
+    // 🔹 Full list restore
+    setFilteredData(dropdownData);
+
     // Close the dropdown after selection
     setIsDropdownVisible(false);
   };
 
 
+  // const handleSearch = text => {
+  //   setSearchQuery(text);
+
+  //   // Filter data based on text input
+  //   if (text === '') {
+  //     setFilteredData(dropdownData); // If search query is empty, show all items
+  //   } else {
+  //     const filtered = dropdownData.filter(item => {
+  //       const staffName = item.staff_name.toLowerCase();
+  //       const searchQuery = text.toLowerCase();
+
+  //       // Split staff name into words and check if the first word starts with the search query
+  //       const nameWords = staffName.split(' ');
+
+  //       // Only show items where the first word starts with the search query
+  //       return nameWords[0].startsWith(searchQuery);
+  //     });
+
+  //     setFilteredData(filtered);
+  //   }
+  // };
+
   const handleSearch = text => {
     setSearchQuery(text);
-
-    // Filter data based on text input
-    if (text === '') {
-      setFilteredData(dropdownData); // If search query is empty, show all items
-    } else {
-      const filtered = dropdownData.filter(item => {
-        const staffName = item.staff_name.toLowerCase();
-        const searchQuery = text.toLowerCase();
-
-        // Split staff name into words and check if the first word starts with the search query
-        const nameWords = staffName.split(' ');
-
-        // Only show items where the first word starts with the search query
-        return nameWords[0].startsWith(searchQuery);
-      });
-
-      setFilteredData(filtered);
-    }
   };
 
 
@@ -257,7 +275,7 @@ const AddScheduleScreen = () => {
     // Simulate API call or fetching more data
     setTimeout(() => {
       const nextData = dropdownData.slice(page * itemsPerPage, (page + 1) * itemsPerPage);
-      setData((prevData) => [...prevData, ...nextData]);
+      // setData((prevData) => [...prevData, ...nextData]);
       setPage(page + 1); // Increment the page number for next batch
       setLoadingMore(false);
     }, 1000); // Simulate network delay
@@ -339,7 +357,7 @@ const AddScheduleScreen = () => {
 
   //       // Check response status
   //       if (data.code == 200) {
-  //         ToastAndroid.show('Schedule Add Successfully', ToastAndroid.SHORT);
+  //      
   //         navigation.goBack();
   //       } else {
   //       }
@@ -388,10 +406,7 @@ const AddScheduleScreen = () => {
   //         console.log('Response:', data);
 
   //         if (data.code === 200) {
-  //           ToastAndroid.show(
-  //             'Schedule Updated Successfully',
-  //             ToastAndroid.SHORT,
-  //           );
+  //         
   //           navigation.navigate('StaffSchedule');
   //         } else {
   //           console.log('Update failed:', data.message);
@@ -415,10 +430,7 @@ const AddScheduleScreen = () => {
 
   //         // Check response status
   //         if (data.code === 200) {
-  //           ToastAndroid.show(
-  //             'Schedule Added Successfully',
-  //             ToastAndroid.SHORT,
-  //           );
+  //          
   //           navigation.navigate('StaffSchedule');
   //         } else {
   //           console.log('Add failed:', data.message);
@@ -481,10 +493,7 @@ const AddScheduleScreen = () => {
   //         console.log('Response:', data);
 
   //         if (data.code === 200) {
-  //           ToastAndroid.show(
-  //             'Schedule Updated Successfully',
-  //             ToastAndroid.SHORT,
-  //           );
+  //          
   //           navigation.goBack();
   //         } else {
   //           console.log('Update failed:', data.message);
@@ -511,10 +520,7 @@ const AddScheduleScreen = () => {
   //         console.log('Response:', data);
 
   //         if (data.code === 200) {
-  //           ToastAndroid.show(
-  //             'Schedule Added Successfully',
-  //             ToastAndroid.SHORT,
-  //           );
+  //          
   //           navigation.goBack();
   //         } else {
   //           console.log('Add failed:', data.message);
@@ -567,8 +573,17 @@ const AddScheduleScreen = () => {
       console.log('Response:', data);
 
       if (data.code === 200) {
-        ToastAndroid.show('Schedule Updated Successfully', ToastAndroid.SHORT);
-        navigation.goBack();
+
+        Toast.show({
+          type: 'success',
+          text1: 'Schedule Updated Successfully',
+          position: 'bottom',
+          visibilityTime: 2000, // 500 sec
+        });
+        setTimeout(() => {
+          navigation.goBack();
+        }, 500);
+
       } else {
         console.log('Update failed:', data.message);
       }
@@ -586,7 +601,7 @@ const AddScheduleScreen = () => {
 
       const formattedStartDate = formatDate(startDate); // Format start date
       const formattedEndDate = endDate ? formatDate(endDate) : null; // Format end date
-      console.log("Schedule Id ye hai", selectedId);
+      console.log("Schedule Id ye hai xxxx", selectedId, formattedStartDate, formattedEndDate);
 
       // Call Add API
       const response = await fetch(ENDPOINTS.Add_Schedule, {
@@ -609,8 +624,16 @@ const AddScheduleScreen = () => {
       console.log('Response:', data);
 
       if (data.code === 200) {
-        ToastAndroid.show('Schedule Added Successfully', ToastAndroid.SHORT);
-        navigation.goBack();
+
+        Toast.show({
+          type: 'success',
+          text1: 'Schedule Added Successfully',
+          position: 'bottom',
+          visibilityTime: 2000, // 500 sec
+        });
+        setTimeout(() => {
+          navigation.goBack();
+        }, 500);
       } else {
         console.log('Add failed:', data.message);
       }
@@ -642,25 +665,38 @@ const AddScheduleScreen = () => {
     }
   };
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      key={item.staff_id}
-      style={{
-        padding: 12,
-        borderBottomColor: '#ddd',
-        borderBottomWidth: 1,
-      }}
-      onPress={() => handleSelect(item)}>
-      <Text
+  const renderItem = ({ item }) => {
+    const isSelected = selectedId === item.staff_id;
+
+    return (
+      <TouchableOpacity
+        key={item.staff_id}
         style={{
-          fontSize: 16,
-          fontFamily: 'Inter-Regular',
-          color: 'black',
-        }}>
-        {item.staff_name}
-      </Text>
-    </TouchableOpacity>
-  );
+          padding: 8,
+          borderBottomColor: '#ddd',
+          borderBottomWidth: 1,
+          backgroundColor: isSelected ? colors.light : 'white',
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+        onPress={() => handleSelect(item)}
+      >
+        <Text
+          style={{
+            fontSize: 14,
+            fontFamily: 'Inter-Regular',
+            color: 'black',
+          }}>
+          {item.staff_name}
+        </Text>
+
+        {isSelected && (
+          <Ionicons name="checkmark" size={18} color={colors.Brown} />
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: '#f7f7f7' }}>
@@ -722,7 +758,7 @@ const AddScheduleScreen = () => {
               fontFamily: 'Inter-Medium',
               color: 'black',
             }}>
-            Staff Name <Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
+            Staff Name<Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
           </Text>
 
           <View style={{}}>
@@ -735,10 +771,17 @@ const AddScheduleScreen = () => {
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                borderColor: '#ddd',
+                borderColor: staffNameError ? 'red' : '#ddd',
                 borderWidth: 1,
               }}
-              onPress={() => setIsDropdownVisible(!isDropdownVisible)}>
+              onPress={() => {
+                setIsDropdownVisible(!isDropdownVisible);
+
+                if (!isDropdownVisible) {
+                  setSearchQuery('');
+                  setFilteredData(dropdownData);
+                }
+              }}>
               <Text
                 style={{
                   fontSize: 16,
@@ -764,43 +807,75 @@ const AddScheduleScreen = () => {
                   left: 0,
                   right: 0,
                   backgroundColor: 'white',
-                  borderRadius: 8,
                   borderColor: '#ddd',
                   borderWidth: 1,
                   zIndex: 1,
                   marginTop: 2,
-                  flex: 1,
                 }}>
-                {/* Search Input for filtering dropdown */}
-                <TextInput
-                  style={{
-                    height: 40,
-                    borderColor: colors.Brown,
-                    borderWidth: 1,
-                    borderRadius: 8,
-                    paddingLeft: 10,
-                    color: 'black',
-                    fontFamily: 'inter-Regular'
-                  }}
-                  placeholder="Search Staff"
-                  placeholderTextColor='#ccc'
-                  value={searchQuery}
-                  onChangeText={handleSearch}
-                />
 
-                {/* Scrollable dropdown list */}
-                <ScrollView
-                  style={{ maxHeight: 150 }}
-                  keyboardShouldPersistTaps="handled">
-                  <FlatList
-                    data={filteredData} // The list data to be rendered
-                    keyExtractor={(item) => item.staff_id.toString()} // Unique key for each item
-                    renderItem={renderItem} // Function to render each item
-                    onEndReached={loadMoreData} // Trigger loading more data when scrolled to the bottom
-                    onEndReachedThreshold={0.5} // Trigger when the user reaches 50% from the end
-                    keyboardShouldPersistTaps="handled"
-                  />
-                </ScrollView>
+                {/* STAFF AVAILABLE TABHI SEARCH BAR DIKHANA */}
+                {dropdownData.length > 0 && (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      borderColor: colors.Brown,
+                      borderWidth: 1,
+                      borderRadius: 8,
+                      paddingHorizontal: 8,
+                      marginBottom: 5,
+                    }}>
+                    <TextInput
+                      style={{
+                        flex: 1,
+                        height: 40,
+                        color: 'black',
+                        fontFamily: 'Inter-Regular',
+                      }}
+                      placeholder="Search Staff"
+                      placeholderTextColor="#ccc"
+                      value={searchQuery}
+                      onChangeText={handleSearch}
+                    />
+
+                    {searchQuery !== '' && (
+                      <TouchableOpacity
+                        onPress={() => {
+                          setSearchQuery('');
+                          setFilteredData(dropdownData);
+                        }}>
+                        <Ionicons name="close-circle" size={20} color="gray" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+
+                <FlatList
+                  style={{ maxHeight: 200 }}
+                  data={filteredData}
+                  keyExtractor={(item) => item.staff_id.toString()}
+                  renderItem={renderItem}
+                  keyboardShouldPersistTaps="handled"
+
+                  ListEmptyComponent={() => (
+                    <View
+                      style={{
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        paddingVertical: 20,
+                      }}>
+                      <Image source={Staff} style={{ width: 60, height: 60 }} />
+                      <Text
+                        style={{
+                          fontFamily: 'Inter-Regular',
+                          color: 'red',
+                          marginTop: 10,
+                        }}>
+                        No Staff Found
+                      </Text>
+                    </View>
+                  )}
+                />
               </View>
             )}
           </View>
@@ -810,7 +885,7 @@ const AddScheduleScreen = () => {
                 color: 'red',
                 fontSize: 12,
                 marginBottom: 10,
-                marginTop: 10,
+
                 fontFamily: 'inter-Regular',
               }}>
               {staffNameError}

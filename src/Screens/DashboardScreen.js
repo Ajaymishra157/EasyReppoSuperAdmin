@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Text, TouchableOpacity, View, Image, Alert, Modal, BackHandler, ToastAndroid, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
+import { Text, TouchableOpacity, View, Image, Alert, Modal, BackHandler, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome'; // Use FontAwesome for the icons
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons'
 import colors from '../CommonFiles/Colors';
@@ -10,6 +10,7 @@ import { ENDPOINTS } from '../CommonFiles/Constant';
 import WelcomeShimmer from '../Component/WelcomeShimmer';
 import RNExitApp from 'react-native-exit-app';
 import Ionicons from 'react-native-vector-icons/Ionicons'
+import Toast from 'react-native-toast-message';
 
 const DashboardScreen = () => {
   const [ConfrimationModal, setConfrimationModal] = useState(false);
@@ -124,7 +125,13 @@ const DashboardScreen = () => {
       const staffId = await AsyncStorage.getItem('staff_id');
 
       if (!staffId) {
-        ToastAndroid.show('No staff ID found', ToastAndroid.SHORT);
+        Toast.show({
+          type: 'error',
+          text1: 'No staff ID found',
+          position: 'bottom',
+          bottomOffset: 60,
+          visibilityTime: 2000,
+        });;
         return;
       }
 
@@ -154,11 +161,16 @@ const DashboardScreen = () => {
 
         }
       } else {
-        // ToastAndroid.show(result.message || 'Failed to logout staff', ToastAndroid.SHORT);
+        // Toast.show({
+        //   type: 'error',
+        //   text1: result.message || 'Failed to logout staff',
+        //   position: 'bottom',
+        //   bottomOffset: 60,
+        //   visibilityTime: 2000, // 2 sec
+        // });
       }
     } catch (error) {
       console.log('Logout error:', error.message);
-      ToastAndroid.show('Error logging out staff', ToastAndroid.SHORT);
     }
   };
 
@@ -266,11 +278,11 @@ const DashboardScreen = () => {
         <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold', fontFamily: 'Inter-Bold', }}> Easy Reppo </Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ flexGrow: 1, backgroundColor: '#f7f7f7', paddingBottom: 100 }} refreshControl={
+      <ScrollView contentContainerStyle={{ flexGrow: 1, backgroundColor: '#f7f7f7', paddingBottom: 80 }} refreshControl={
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          colors={['#9Bd35A', '#689F38']}
+          colors={[colors.Brown, colors.Brown]}
         />
       }>
 
@@ -294,17 +306,16 @@ const DashboardScreen = () => {
                 marginTop: 10,
                 paddingHorizontal: 15,
 
+
               }}>
               {/* First Box (Staff) */}
               <TouchableOpacity
                 style={{
-                  alignItems: 'center',
-                  justifyContent: 'center',
                   backgroundColor: 'white',
                   borderRadius: 15,
                   width: 100,
                   height: 120,
-                  padding: 10,
+                  padding: 5,
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.1,
@@ -313,42 +324,51 @@ const DashboardScreen = () => {
                 }}
                 onPress={() => {
                   navigation.navigate('HomeScreen');
-                }}>
-                <View
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: 30,
-                    backgroundColor: 'white',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginBottom: 10,
-                    borderWidth: 1,
-                    borderColor: '#000080'
-                  }}>
-                  <FontAwesome name="user" size={25} color="#000080" />
+                }}
+              >
+                {/* Top 70%: Icon */}
+                <View style={{ flex: 7, justifyContent: 'center', alignItems: 'center' }}>
+                  <View
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
+                      backgroundColor: 'white',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: '#000080',
+                    }}
+                  >
+                    <Ionicons name="people-outline" size={25} color="#000080" />
+                  </View>
                 </View>
-                <Text
-                  style={{
-                    color: 'black',
-                    fontSize: 12,
-                    textAlign: 'center',
-                    fontFamily: 'Inter-Medium',
-                  }}>
-                  Staff
-                </Text>
+
+                {/* Bottom 30%: Text */}
+                <View style={{ flex: 3, alignItems: 'center', paddingHorizontal: 5 }}>
+                  <Text
+                    style={{
+                      color: 'black',
+                      fontSize: 12,
+                      textAlign: 'center',
+                      fontFamily: 'Inter-Medium',
+                    }}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    Staff
+                  </Text>
+                </View>
               </TouchableOpacity>
 
               {/* Second Box (Schedule) */}
               <TouchableOpacity
                 style={{
-                  alignItems: 'center',
-                  justifyContent: 'center',
                   backgroundColor: 'white',
                   borderRadius: 15,
                   width: 100,
                   height: 120,
-                  padding: 10,
+                  padding: 5,
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.1,
@@ -357,41 +377,50 @@ const DashboardScreen = () => {
                 }}
                 onPress={() => {
                   navigation.navigate('StaffSchedule');
-                }}>
-                <View
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: 30,
-                    backgroundColor: 'white',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginBottom: 10,
-                    borderWidth: 1,
-                    borderColor: '#2E8B57'
-                  }}>
-                  <FontAwesome name="calendar" size={25} color="#2E8B57" />
+                }}
+              >
+                {/* Top 70%: Icon */}
+                <View style={{ flex: 7, justifyContent: 'center', alignItems: 'center' }}>
+                  <View
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
+                      backgroundColor: 'white',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: '#2E8B57',
+                    }}
+                  >
+                    <Ionicons name="calendar-outline" size={25} color="#2E8B57" />
+                  </View>
                 </View>
-                <Text
-                  style={{
-                    color: 'black',
-                    fontSize: 12,
-                    textAlign: 'center',
-                    fontFamily: 'Inter-Medium',
-                  }}>
-                  Schedule
-                </Text>
+
+                {/* Bottom 30%: Text */}
+                <View style={{ flex: 3, alignItems: 'center', paddingHorizontal: 5 }}>
+                  <Text
+                    style={{
+                      color: 'black',
+                      fontSize: 12,
+                      textAlign: 'center',
+                      fontFamily: 'Inter-Medium',
+                    }}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    Schedule
+                  </Text>
+                </View>
               </TouchableOpacity>
               {/* First Box */}
               <TouchableOpacity
                 style={{
-                  alignItems: 'center',
-                  justifyContent: 'center',
                   backgroundColor: 'white',
                   borderRadius: 15,
                   width: 100,
                   height: 120,
-                  padding: 10,
+                  padding: 5,
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.1,
@@ -400,33 +429,41 @@ const DashboardScreen = () => {
                 }}
                 onPress={() => {
                   navigation.navigate('SearchVehicle');
-                }}>
-                <View
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: 30,
-                    backgroundColor: 'white',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginBottom: 10,
-                    borderWidth: 1,
-                    borderColor: '#FFA500'
-                  }}>
-                  <Image
-                    source={sports}
-                    style={{ width: 25, height: 25, tintColor: '#FFA500' }}
-                  />
+                }}
+              >
+                {/* Top 70%: Icon */}
+                <View style={{ flex: 7, justifyContent: 'center', alignItems: 'center' }}>
+                  <View
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
+                      backgroundColor: 'white',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: '#FFA500',
+                    }}
+                  >
+                    <Ionicons name="mail-outline" size={25} color="#FFA500" />
+                  </View>
                 </View>
-                <Text
-                  style={{
-                    color: '#000', // Change text color to make it more visible on white
-                    fontSize: 12,
-                    textAlign: 'center',
-                    fontFamily: 'Inter-Medium',
-                  }}>
-                  Intimation
-                </Text>
+
+                {/* Bottom 30%: Text */}
+                <View style={{ flex: 3, alignItems: 'center', paddingHorizontal: 5 }}>
+                  <Text
+                    style={{
+                      color: '#000',
+                      fontSize: 12,
+                      textAlign: 'center',
+                      fontFamily: 'Inter-Medium',
+                    }}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    Intimation
+                  </Text>
+                </View>
               </TouchableOpacity>
             </View>
 
@@ -442,105 +479,115 @@ const DashboardScreen = () => {
               {/* third Box */}
               <TouchableOpacity
                 style={{
-                  alignItems: 'center',
-                  justifyContent: 'center',
                   backgroundColor: 'white',
                   borderRadius: 15,
                   width: 100,
                   height: 120,
-                  padding: 10,
+                  padding: 5,
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.1,
                   shadowRadius: 6,
                   elevation: 8, // For Android
-
                 }}
                 onPress={() => {
                   navigation.navigate('AreaList');
-                }}>
-                <View
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: 30,
-                    backgroundColor: 'white',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginBottom: 10,
-                    borderWidth: 1,
-                    borderColor: '#800080'
-                  }}>
-                  <MaterialIcons name="location-on" size={25} color="#800080" />
+                }}
+              >
+                {/* Top 70%: Icon */}
+                <View style={{ flex: 7, justifyContent: 'center', alignItems: 'center' }}>
+                  <View
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
+                      backgroundColor: 'white',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: '#800080',
+                    }}
+                  >
+                    <Ionicons name="location-outline" size={25} color="#800080" />
+                  </View>
                 </View>
-                <Text
-                  style={{
-                    color: 'black',
-                    fontSize: 12,
-                    textAlign: 'center',
-                    fontFamily: 'Inter-Medium',
 
-
-                  }}>
-                  Area
-                </Text>
+                {/* Bottom 30%: Text */}
+                <View style={{ flex: 3, alignItems: 'center', paddingHorizontal: 5 }}>
+                  <Text
+                    style={{
+                      color: 'black',
+                      fontSize: 12,
+                      textAlign: 'center',
+                      fontFamily: 'Inter-Medium',
+                    }}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    Area
+                  </Text>
+                </View>
               </TouchableOpacity>
               {/* Second Box */}
               <TouchableOpacity
                 style={{
-                  alignItems: 'center',
-                  justifyContent: 'center',
                   backgroundColor: 'white',
                   borderRadius: 15,
                   width: 100,
                   height: 120,
-                  padding: 10,
+                  padding: 5,
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.1,
                   shadowRadius: 6,
                   elevation: 8, // For Android
-
                 }}
                 onPress={() => {
                   navigation.navigate('ListingScreen');
-                }}>
-                <View
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: 30,
-                    backgroundColor: 'white',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginBottom: 10,
-                    borderWidth: 1,
-                    borderColor: '#8B0000'
-                  }}>
-                  <FontAwesome name="list" size={25} color="#8B0000" />
+                }}
+              >
+                {/* Top 70%: Icon */}
+                <View style={{ flex: 7, justifyContent: 'center', alignItems: 'center' }}>
+                  <View
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
+                      backgroundColor: 'white',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: '#8B0000',
+                    }}
+                  >
+                    <Ionicons name="checkmark-done-outline" size={25} color="#8B0000" />
+                  </View>
                 </View>
-                <Text
-                  style={{
-                    color: 'black',
-                    fontSize: 12,
-                    textAlign: 'center',
-                    fontFamily: 'Inter-Medium',
 
-
-
-                  }}>
-                  Pso Confirm/Cancel List
-                </Text>
+                {/* Bottom 30%: Text */}
+                <View style={{ flex: 3, alignItems: 'center', paddingHorizontal: 5 }}>
+                  <Text
+                    style={{
+                      color: 'black',
+                      fontSize: 12,
+                      textAlign: 'center',
+                      fontFamily: 'Inter-Medium',
+                    }}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    Pso Confirm/Cancel List
+                  </Text>
+                </View>
               </TouchableOpacity>
+
               <TouchableOpacity
                 style={{
-                  alignItems: 'center',
-                  justifyContent: 'center',
                   backgroundColor: 'white',
                   borderRadius: 15,
                   width: 100,
                   height: 120,
-                  padding: 10,
+                  padding: 5,
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.1,
@@ -549,32 +596,43 @@ const DashboardScreen = () => {
                 }}
                 onPress={() => {
                   navigation.navigate('SearchHistory');
-                }}>
-                <View
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: 30,
-                    backgroundColor: 'white',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginBottom: 10,
-                    borderWidth: 1,
-                    borderColor: '#87CEEB'
-                  }}>
-                  <FontAwesome name="search" size={25} color="#87CEEB" />
+                }}
+              >
+                {/* Top 70%: Icon */}
+                <View style={{ flex: 7, justifyContent: 'center', alignItems: 'center' }}>
+                  <View
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
+                      backgroundColor: 'white',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: '#87CEEB',
+                    }}
+                  >
+                    <Ionicons name="time-outline" size={25} color="#87CEEB" />
+                  </View>
                 </View>
-                <Text
-                  style={{
-                    color: 'black',
-                    fontSize: 12,
-                    textAlign: 'center',
-                    fontFamily: 'Inter-Medium',
 
-                  }}>
-                  Search History
-                </Text>
+                {/* Bottom 30%: Text */}
+                <View style={{ flex: 3, alignItems: 'center', paddingHorizontal: 5 }}>
+                  <Text
+                    style={{
+                      color: 'black',
+                      fontSize: 12,
+                      textAlign: 'center',
+                      fontFamily: 'Inter-Medium',
+                    }}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    Search History
+                  </Text>
+                </View>
               </TouchableOpacity>
+
             </View>
 
             <View
@@ -590,142 +648,158 @@ const DashboardScreen = () => {
 
               <TouchableOpacity
                 style={{
-                  alignItems: 'center',
-                  justifyContent: 'center',
                   backgroundColor: 'white',
                   borderRadius: 15,
                   width: 100,
                   height: 120,
-                  padding: 10,
+                  padding: 5,
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.1,
                   shadowRadius: 6,
                   elevation: 8,
-
                 }}
                 onPress={() => {
                   navigation.navigate('AllVehicleSearch');
                 }}
               >
-                <View
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: 30,
-                    backgroundColor: 'white', // Light Blue background
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginBottom: 10,
-                    borderWidth: 1.5,
-                    borderColor: '#1976D2', // Professional Blue border
-                  }}
-                >
-                  <Ionicons name="car-outline" size={25} color="#0D47A1" />
+                {/* Top 70%: Icon */}
+                <View style={{ flex: 7, justifyContent: 'center', alignItems: 'center' }}>
+                  <View
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
+                      backgroundColor: 'white',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      borderWidth: 1.5,
+                      borderColor: '#1976D2',
+                    }}
+                  >
+                    <Ionicons name="car-outline" size={25} color="#0D47A1" />
+                  </View>
                 </View>
 
-                <Text
-                  style={{
-                    color: '#333',
-                    fontSize: 12,
-                    textAlign: 'center',
-                    fontFamily: 'Inter-Medium',
-                  }}
-                >
-                  All Vehicle Search
-                </Text>
+                {/* Bottom 30%: Text */}
+                <View style={{ flex: 3, alignItems: 'center', paddingHorizontal: 5 }}>
+                  <Text
+                    style={{
+                      color: '#333',
+                      fontSize: 12,
+                      textAlign: 'center',
+                      fontFamily: 'Inter-Medium',
+                    }}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    All Vehicle Search
+                  </Text>
+                </View>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={{
-                  alignItems: 'center',
-                  justifyContent: 'center',
                   backgroundColor: 'white',
                   borderRadius: 15,
                   width: 100,
                   height: 120,
-                  padding: 10,
+                  padding: 5,
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.1,
                   shadowRadius: 6,
-                  elevation: 8, // For Android
+                  elevation: 8,
                 }}
                 onPress={() => {
                   navigation.navigate('AgencySelect');
                 }}
               >
-                <View
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: 30,
-                    backgroundColor: 'white',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginBottom: 10,
-                    borderWidth: 1,
-                    borderColor: '#4169E1', // Royal Blue
-                  }}
-                >
-                  <Image source={Agency} style={{ width: 25, height: 25 }} />
+                {/* Top 70%: Icon */}
+                <View style={{ flex: 7, justifyContent: 'center', alignItems: 'center' }}>
+                  <View
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
+                      backgroundColor: 'white',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: '#2563EB',
+                    }}
+                  >
+                    <Ionicons name="business-outline" size={25} color="#2563EB" />
+                  </View>
                 </View>
-                <Text
-                  style={{
-                    color: 'black',
-                    fontSize: 12,
-                    textAlign: 'center',
-                    fontFamily: 'Inter-Medium',
-                  }}
-                >
-                  Rent Agency
-                </Text>
+
+                {/* Bottom 30%: Text */}
+                <View style={{ flex: 3, alignItems: 'center', paddingHorizontal: 5 }}>
+                  <Text
+                    style={{
+                      color: 'black',
+                      fontSize: 12,
+                      textAlign: 'center',
+                      fontFamily: 'Inter-Medium',
+                    }}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    Rent Agency
+                  </Text>
+                </View>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={{
-                  alignItems: 'center',
-                  justifyContent: 'center',
                   backgroundColor: 'white',
                   borderRadius: 15,
                   width: 100,
                   height: 120,
-                  padding: 10,
+                  padding: 5,
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.1,
                   shadowRadius: 6,
-                  elevation: 8, // For Android
+                  elevation: 8,
                 }}
                 onPress={() => {
                   navigation.navigate('OtherApplist');
                 }}
               >
-                <View
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: 30,
-                    backgroundColor: 'white',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginBottom: 10,
-                    borderWidth: 1,
-                    borderColor: '#4169E1', // Royal Blue
-                  }}
-                >
-                  <Image source={Agency} style={{ width: 25, height: 25 }} />
+                {/* Top 70%: Icon */}
+                <View style={{ flex: 7, justifyContent: 'center', alignItems: 'center' }}>
+                  <View
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
+                      backgroundColor: 'white',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: '#F97316',
+                    }}
+                  >
+                    <Ionicons name="apps-outline" size={25} color="#F97316" />
+                  </View>
                 </View>
-                <Text
-                  style={{
-                    color: 'black',
-                    fontSize: 12,
-                    textAlign: 'center',
-                    fontFamily: 'Inter-Medium',
-                  }}
-                >
-                  Extra App
-                </Text>
+
+                {/* Bottom 30%: Text */}
+                <View style={{ flex: 3, alignItems: 'center', paddingHorizontal: 5 }}>
+                  <Text
+                    style={{
+                      color: 'black',
+                      fontSize: 12,
+                      textAlign: 'center',
+                      fontFamily: 'Inter-Medium',
+                    }}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    Extra App
+                  </Text>
+                </View>
               </TouchableOpacity>
 
 
@@ -743,104 +817,11 @@ const DashboardScreen = () => {
 
               <TouchableOpacity
                 style={{
-                  alignItems: 'center',
-                  justifyContent: 'center',
                   backgroundColor: 'white',
                   borderRadius: 15,
                   width: 100,
                   height: 120,
-                  padding: 10,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 6,
-                  elevation: 8, // For Android
-                }}
-                onPress={() => {
-                  navigation.navigate('SingleVehicleList');
-                }}
-              >
-                <View
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: 30,
-                    backgroundColor: 'white',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginBottom: 10,
-                    borderWidth: 1,
-                    borderColor: '#4169E1', // Royal Blue
-                  }}
-                >
-                  <Image source={Car} style={{ width: 50, height: 50 }} />
-                </View>
-                <Text
-                  style={{
-                    color: 'black',
-                    fontSize: 12,
-                    textAlign: 'center',
-                    fontFamily: 'Inter-Medium',
-                  }}
-                >
-                  Vehicle Upload
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: 'white',
-                  borderRadius: 15,
-                  width: 100,
-                  height: 120,
-                  padding: 10,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 6,
-                  elevation: 8, // For Android
-                }}
-                onPress={() => {
-                  navigation.navigate('SubAdminAgencyWise');
-                }}
-              >
-                <View
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: 30,
-                    backgroundColor: 'white',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginBottom: 10,
-                    borderWidth: 1,
-                    borderColor: '#4169E1', // Royal Blue
-                  }}
-                >
-                  <Image source={History} style={{ width: 25, height: 25 }} />
-                </View>
-                <Text
-                  style={{
-                    color: 'black',
-                    fontSize: 12,
-                    textAlign: 'center',
-                    fontFamily: 'Inter-Medium',
-                  }}
-                >
-                  SubAdmin History
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={{
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: 'white',
-                  borderRadius: 15,
-                  width: 100,
-                  height: 120,
-                  padding: 10,
+                  padding: 5,
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.1,
@@ -848,54 +829,146 @@ const DashboardScreen = () => {
                   elevation: 8,
                 }}
                 onPress={() => {
-                  navigation.navigate('BlackListUser'); // 👈 apna screen name
+                  navigation.navigate('SingleVehicleList');
                 }}
               >
-                <View
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: 30,
-                    backgroundColor: 'white',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginBottom: 10,
-                    borderWidth: 1,
-                    borderColor: '#DC2626', // 🔴 Red for blacklist
-                  }}
-                >
-                  <MaterialIcons name="block" size={26} color="#DC2626" />
+                {/* Top 70%: Icon */}
+                <View style={{ flex: 7, justifyContent: 'center', alignItems: 'center' }}>
+                  <View
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
+                      backgroundColor: 'white',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: '#0EA5E9',
+                    }}
+                  >
+                    <Ionicons name="cloud-upload-outline" size={25} color="#0EA5E9" />
+                  </View>
                 </View>
 
-                <Text
-                  style={{
-                    color: 'black',
-                    fontSize: 12,
-                    textAlign: 'center',
-                    fontFamily: 'Inter-Medium',
-                  }}
-                >
-                  Black List Staffs
-                </Text>
+                {/* Bottom 30%: Text */}
+                <View style={{ flex: 3, alignItems: 'center', paddingHorizontal: 5 }}>
+                  <Text
+                    style={{
+                      color: 'black',
+                      fontSize: 12,
+                      textAlign: 'center',
+                      fontFamily: 'Inter-Medium',
+                    }}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    Vehicle Upload
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: 'white',
+                  borderRadius: 15,
+                  width: 100,
+                  height: 120,
+                  padding: 5,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 6,
+                  elevation: 8,
+                }}
+                onPress={() => {
+                  navigation.navigate('SubAdminAgencyWise');
+                }}
+              >
+                {/* Top 70%: Icon */}
+                <View style={{ flex: 7, justifyContent: 'center', alignItems: 'center' }}>
+                  <View
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
+                      backgroundColor: 'white',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: '#475569',
+                    }}
+                  >
+                    <Ionicons name="document-text-outline" size={25} color="#475569" />
+                  </View>
+                </View>
+
+                {/* Bottom 30%: Text */}
+                <View style={{ flex: 3, alignItems: 'center', paddingHorizontal: 5 }}>
+                  <Text
+                    style={{
+                      color: 'black',
+                      fontSize: 12,
+                      textAlign: 'center',
+                      fontFamily: 'Inter-Medium',
+                    }}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    SubAdmin History
+                  </Text>
+                </View>
               </TouchableOpacity>
 
+              <TouchableOpacity
+                style={{
+                  backgroundColor: 'white',
+                  borderRadius: 15,
+                  width: 100,
+                  height: 120,
+                  padding: 5,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 6,
+                  elevation: 8,
+                }}
+                onPress={() => {
+                  navigation.navigate('BlackListUser');
+                }}
+              >
+                {/* Top 70%: Icon */}
+                <View style={{ flex: 7, justifyContent: 'center', alignItems: 'center' }}>
+                  <View
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
+                      backgroundColor: 'white',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: '#DC2626',
+                    }}
+                  >
+                    <Ionicons name="ban-outline" size={25} color="#DC2626" />
+                  </View>
+                </View>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                {/* Bottom 30%: Text */}
+                <View style={{ flex: 3, alignItems: 'center', paddingHorizontal: 5 }}>
+                  <Text
+                    style={{
+                      color: 'black',
+                      fontSize: 12,
+                      textAlign: 'center',
+                      fontFamily: 'Inter-Medium',
+                    }}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    Black List Staffs
+                  </Text>
+                </View>
+              </TouchableOpacity>
 
             </View>
 
@@ -910,113 +983,108 @@ const DashboardScreen = () => {
 
               <TouchableOpacity
                 style={{
-                  alignItems: 'center',
-                  justifyContent: 'center',
                   backgroundColor: 'white',
                   borderRadius: 15,
                   width: 100,
                   height: 120,
-                  padding: 10,
+                  padding: 5,
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.1,
                   shadowRadius: 6,
-                  elevation: 8, // For Android
+                  elevation: 8,
                 }}
                 onPress={() => {
                   navigation.navigate('StaffVehicleRecords');
                 }}
               >
-                <View
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: 30,
-                    backgroundColor: 'white',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginBottom: 10,
-                    borderWidth: 1,
-                    borderColor: '#3F51B5', // Royal Blue
-                  }}
-                >
-                  <Image source={staff} style={{ width: 25, height: 25 }} />
+                {/* Top 70%: Icon */}
+                <View style={{ flex: 7, justifyContent: 'center', alignItems: 'center' }}>
+                  <View
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
+                      backgroundColor: 'white',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: '#1E88E5',
+                    }}
+                  >
+                    <Ionicons name="car-sharp" size={25} color="#1E88E5" />
+                  </View>
                 </View>
-                <Text
-                  style={{
-                    color: 'black',
-                    fontSize: 12,
-                    textAlign: 'center',
-                    fontFamily: 'Inter-Medium',
-                  }}
-                >
-                  Staff Vehicle Records
-                </Text>
+
+                {/* Bottom 30%: Text */}
+                <View style={{ flex: 3, alignItems: 'center', paddingHorizontal: 5 }}>
+                  <Text
+                    style={{
+                      color: 'black',
+                      fontSize: 12,
+                      textAlign: 'center',
+                      fontFamily: 'Inter-Medium',
+                    }}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    Staff Vehicle Records
+                  </Text>
+                </View>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={{
-                  alignItems: 'center',
-                  justifyContent: 'center',
                   backgroundColor: 'white',
                   borderRadius: 15,
                   width: 100,
                   height: 120,
-                  padding: 10,
+                  padding: 5,
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.1,
                   shadowRadius: 6,
-                  elevation: 8, // For Android
-                  marginLeft: 30
+                  elevation: 8,
+                  marginLeft: 30,
                 }}
                 onPress={() => {
                   navigation.navigate('AppSetting');
                 }}
               >
-                <View
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: 30,
-                    backgroundColor: 'white',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginBottom: 10,
-                    borderWidth: 1,
-                    borderColor: '#009688', // Royal Blue
-                  }}
-                >
-                  <Ionicons name="settings-outline" size={25} color="#009688" />
-
+                {/* Top 70%: Icon */}
+                <View style={{ flex: 7, justifyContent: 'center', alignItems: 'center' }}>
+                  <View
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
+                      backgroundColor: 'white',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: '#009688',
+                    }}
+                  >
+                    <Ionicons name="settings-outline" size={25} color="#009688" />
+                  </View>
                 </View>
-                <Text
-                  style={{
-                    color: 'black',
-                    fontSize: 12,
-                    textAlign: 'center',
-                    fontFamily: 'Inter-Medium',
-                  }}
-                >
-                  App Settings
-                </Text>
+
+                {/* Bottom 30%: Text */}
+                <View style={{ flex: 3, alignItems: 'center', paddingHorizontal: 5 }}>
+                  <Text
+                    style={{
+                      color: 'black',
+                      fontSize: 12,
+                      textAlign: 'center',
+                      fontFamily: 'Inter-Medium',
+                    }}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    App Settings
+                  </Text>
+                </View>
               </TouchableOpacity>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
             </View>

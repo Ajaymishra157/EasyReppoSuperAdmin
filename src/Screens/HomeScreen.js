@@ -7,7 +7,7 @@ import {
   View,
   RefreshControl,
   ActivityIndicator,
-  ToastAndroid,
+
   Modal,
   Alert,
   TextInput,
@@ -30,6 +30,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import StaffShimmer from '../Component/StaffShimmer';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import CheckBox from '@react-native-community/checkbox';
+import Toast from 'react-native-toast-message';
 
 
 
@@ -44,7 +45,7 @@ const HomeScreen = () => {
   const [StaffLoading, setStaffLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [AllCount, setAllCount] = useState('');
-
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [InfoModal, SetInfoModal] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState(null);
@@ -62,7 +63,7 @@ const HomeScreen = () => {
   const [AdminCount, setAdminCount] = useState('');
   const [text, setText] = useState('');
   const [originalStaffData, setoriginalStaffData] = useState([]);
-
+  const hasStaff = originalStaffData.length > 0;
   const [FieldCount, setFieldCount] = useState('');
 
   const [selectedStaffId, setSelectedStaffId] = useState(null);
@@ -85,6 +86,22 @@ const HomeScreen = () => {
   const [shouldRefresh, setShouldRefresh] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const flatListRef = useRef(null);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => setKeyboardHeight(e.endCoordinates.height)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardHeight(0)
+    );
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   // useFocusEffect में conditional logic add करें
   useFocusEffect(
@@ -406,8 +423,13 @@ const HomeScreen = () => {
 
       if (response.ok) {
         if (result.code == 200) {
-          ToastAndroid.show('Staff Deleted Successfully', ToastAndroid.SHORT);
-          // reset
+          Toast.show({
+            type: 'success',
+            text1: 'Staff Deleted Successfully',
+            position: 'bottom',
+            bottomOffset: 60,
+            visibilityTime: 2000,
+          });          // reset
           setBlacklistChecked(false);
           setRemark('');
           fetchData();
@@ -529,7 +551,13 @@ const HomeScreen = () => {
 
       if (response.ok) {
         if (result.code === 200) {
-          ToastAndroid.show("Location Access changes successfully", ToastAndroid.SHORT);
+          Toast.show({
+            type: 'success',
+            text1: result.message || 'Location Access changes successfully',
+            position: 'bottom',
+            bottomOffset: 60,
+            visibilityTime: 2000,
+          });
           console.log('Success:', result.message || 'Updated successfully');
         } else {
           console.log('Error:', result.message || 'Failed to update');
@@ -556,7 +584,13 @@ const HomeScreen = () => {
       const staffId = await AsyncStorage.getItem('staff_id');
 
       if (!staffId) {
-        ToastAndroid.show('No staff ID found', ToastAndroid.SHORT);
+        Toast.show({
+          type: 'error',
+          text1: 'No staff ID found',
+          position: 'bottom',
+          bottomOffset: 60,
+          visibilityTime: 2000,
+        });
         return;
       }
 
@@ -580,11 +614,17 @@ const HomeScreen = () => {
 
         }
       } else {
-        ToastAndroid.show(result.message || 'Failed to logout staff', ToastAndroid.SHORT);
+        // Toast.show({
+        //   type: 'error',
+        //   text1: result.message || 'Failed to logout staff',
+        //   position: 'bottom',
+        //   bottomOffset: 60,
+        //   visibilityTime: 2000,
+        // });
       }
     } catch (error) {
       console.log('Logout error:', error.message);
-      ToastAndroid.show('Error logging out staff', ToastAndroid.SHORT);
+
     }
   };
 
@@ -627,7 +667,13 @@ const HomeScreen = () => {
 
       if (response.ok) {
         if (result.code === 200) {
-          ToastAndroid.show("Reset Device Id successfully", ToastAndroid.SHORT);
+          Toast.show({
+            type: 'success',
+            text1: 'Reset Device Id successfully',
+            position: 'bottom',
+            bottomOffset: 60,
+            visibilityTime: 2000,
+          });
           setResetModal(false);
           fetchData();
         } else {
@@ -651,7 +697,13 @@ const HomeScreen = () => {
 
       if (response.ok) {
         if (result.code === 200) {
-          ToastAndroid.show("All Device Ids reset successfully", ToastAndroid.SHORT);
+          Toast.show({
+            type: 'success',
+            text1: 'All Device Ids reset successfully',
+            position: 'bottom',
+            bottomOffset: 60,
+            visibilityTime: 2000,
+          });
           setResetModalAll(false);
           fetchData(); // Refresh staff list
         } else {
@@ -945,120 +997,122 @@ const HomeScreen = () => {
           Staff List
         </Text>
       </View>
-
-      <View style={{ width: '100%', paddingHorizontal: 10 }}>
-        <View
-          style={{
-            width: '100%',
-
-            borderWidth: 1,
-            borderColor: colors.Brown,
-            marginTop: 5,
-            marginBottom: 5,
-            borderRadius: 8,
-            height: 50,
-            backgroundColor: 'white',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            borderColor: colors.Brown,
-
-          }}>
-          <View style={{
-            width: 30,  // निश्चित width दी है
-            height: 50, // पूरी height ली है
-            justifyContent: 'center',
-            alignItems: 'center',
-
-          }}>
-            <MaterialIcons name='search' size={24} color='black' />
-          </View>
-          <TextInput
+      {(StaffLoading || originalStaffData.length > 0) && (
+        <View style={{ width: '100%', paddingHorizontal: 10 }}>
+          <View
             style={{
-              flex: 1,
-              fontSize: 16,
-              fontFamily: 'Inter-Regular',
+              width: '100%',
 
-              color: 'black',
+              borderWidth: 1,
+              borderColor: colors.Brown,
+              marginTop: 5,
+              marginBottom: 5,
+              borderRadius: 8,
               height: 50,
-            }}
+              backgroundColor: 'white',
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              borderColor: colors.Brown,
 
-            placeholder="Search Staff Name/Mobile No"
-            placeholderTextColor="grey"
-            value={text}
-            onChangeText={handleTextChange}
-          />
-          {text ? (
-            <TouchableOpacity
-              onPress={() => {
+            }}>
+            <View style={{
+              width: 30,  // निश्चित width दी है
+              height: 50, // पूरी height ली है
+              justifyContent: 'center',
+              alignItems: 'center',
 
-                setText(''); // Clear the search text
-                setStaffList(originalStaffData);
-
-              }}
+            }}>
+              <MaterialIcons name='search' size={24} color='black' />
+            </View>
+            <TextInput
               style={{
-                marginRight: 7,
-                height: 40,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}>
-              <Entypo name="cross" size={20} color="black" />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      </View>
+                flex: 1,
+                fontSize: 16,
+                fontFamily: 'Inter-Regular',
 
-      <View>
-        <ScrollView
-          horizontal
-          keyboardShouldPersistTaps='handled'
-          showsHorizontalScrollIndicator={false}
-          style={{
-            // FIXED HEIGHT
-            paddingVertical: 5,
-          }}
-          contentContainerStyle={{
-            paddingHorizontal: 10,
-            height: 60,
-            backgroundColor: 'white'
-          }}
-        >
-          {tabs.map((tab) => {
-            const isSelected = selectedTab === tab.key;
+                color: 'black',
+                height: 50,
+              }}
 
-            return (
+              placeholder="Search Staff Name/Mobile No"
+              placeholderTextColor="grey"
+              value={text}
+              onChangeText={handleTextChange}
+            />
+            {text ? (
               <TouchableOpacity
-                key={tab.key}
-                onPress={() => handleTabPress(tab.key)}
-                style={{
-                  backgroundColor: isSelected ? tab.bgColor : `${tab.bgColor}33`, // selected: full color, unselected: transparent version
-                  paddingVertical: 8,
-                  paddingHorizontal: 15,
-                  borderRadius: 8,
-                  marginRight: 10,
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                onPress={() => {
+
+                  setText(''); // Clear the search text
+                  setStaffList(originalStaffData);
+
                 }}
-              >
-                <Text style={{
-                  color: isSelected ? 'white' : 'black',
-                  fontFamily: 'Inter-Bold',
-                  fontSize: 12,
+                style={{
+                  marginRight: 7,
+                  height: 40,
+                  justifyContent: 'center',
+                  alignItems: 'center',
                 }}>
-                  {tab.label}
-                </Text>
-                <Text style={{
-                  color: isSelected ? 'white' : 'black',
-                  fontFamily: 'Inter-Regular',
-                  fontSize: 12,
-                }}>
-                  {tab.count || 0}
-                </Text>
+                <Entypo name="cross" size={20} color="black" />
               </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
+            ) : null}
+          </View>
+        </View>
+      )}
+      {(StaffLoading || originalStaffData.length > 0) && (
+        <View>
+          <ScrollView
+            horizontal
+            keyboardShouldPersistTaps='handled'
+            showsHorizontalScrollIndicator={false}
+            style={{
+              // FIXED HEIGHT
+              paddingVertical: 5,
+            }}
+            contentContainerStyle={{
+              paddingHorizontal: 10,
+              height: 60,
+              backgroundColor: 'white'
+            }}
+          >
+            {tabs.map((tab) => {
+              const isSelected = selectedTab === tab.key;
+
+              return (
+                <TouchableOpacity
+                  key={tab.key}
+                  onPress={() => handleTabPress(tab.key)}
+                  style={{
+                    backgroundColor: isSelected ? tab.bgColor : `${tab.bgColor}33`, // selected: full color, unselected: transparent version
+                    paddingVertical: 8,
+                    paddingHorizontal: 15,
+                    borderRadius: 8,
+                    marginRight: 10,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{
+                    color: isSelected ? 'white' : 'black',
+                    fontFamily: 'Inter-Bold',
+                    fontSize: 12,
+                  }}>
+                    {tab.label}
+                  </Text>
+                  <Text style={{
+                    color: isSelected ? 'white' : 'black',
+                    fontFamily: 'Inter-Regular',
+                    fontSize: 12,
+                  }}>
+                    {tab.count || 0}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
 
 
 
@@ -1107,7 +1161,7 @@ const HomeScreen = () => {
         ListFooterComponent={
           isLoadingMore ? (
             <View style={{ padding: 10, alignItems: 'center' }}>
-              <ActivityIndicator size="large" color={colors.Brown} />
+              <ActivityIndicator size="small" color={colors.Brown} />
             </View>
           ) : null
         }
@@ -1137,7 +1191,7 @@ const HomeScreen = () => {
         }
         contentContainerStyle={{
           flexGrow: 1,
-          paddingBottom: 80,
+          paddingBottom: keyboardHeight + 80,
           backgroundColor: 'white'
 
         }}
@@ -1146,25 +1200,24 @@ const HomeScreen = () => {
 
 
       {/* Sticky Add New Button */}
-      {/* Sticky Add New Button */}
-      {(
-        userType === 'SuperAdmin' ||
-        (userType === 'SubAdmin' && permissions?.staff?.insert) ||
-        (userType === 'main' && permissions?.staff?.insert)
-      ) && (
-          <View
-            style={{
-              position: 'absolute',
-              bottom: 20,
-              left: 20,
-              right: 20,
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              zIndex: 1,
-            }}
-          >
-            {/* Reset All Staff */}
+      <View
+        style={{
+          position: 'absolute',
+          bottom: 20,
+          left: 20,
+          right: 20,
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          zIndex: 1,
+        }}
+      >
+
+        {/* Reset All Staff */}
+        {(
+          (userType === 'SuperAdmin' && hasStaff) ||
+          (userType !== 'SuperAdmin' && permissions?.staff?.allstaffreset)
+        ) && (
             <TouchableOpacity
               style={{
                 flex: 1,
@@ -1181,15 +1234,32 @@ const HomeScreen = () => {
               }}
               onPress={() => OpenResetAllModal(selectedStaff)}
             >
-              <Image source={phone} style={{ width: 20, height: 20, tintColor: 'white' }} />
-              <Text style={{ color: 'white', fontSize: 14, fontFamily: 'Inter-Medium' }}>Reset All Staff</Text>
+              <Image
+                source={phone}
+                style={{ width: 20, height: 20, tintColor: 'white' }}
+              />
+              <Text
+                style={{
+                  color: 'white',
+                  fontSize: 14,
+                  fontFamily: 'Inter-Medium',
+                }}
+              >
+                Reset All Staff
+              </Text>
             </TouchableOpacity>
+          )}
 
-            {/* Add Staff */}
+        {/* Add Staff */}
+        {(userType === 'SuperAdmin' ||
+          permissions?.staff?.insert) && (
             <TouchableOpacity
               style={{
                 flex: 1,
-                marginLeft: 10,
+                marginLeft:
+                  (userType === 'SuperAdmin' || permissions?.staff?.allstaffreset)
+                    ? 10
+                    : 0,
                 backgroundColor: colors.Brown,
                 borderRadius: 10,
                 paddingVertical: 12,
@@ -1201,10 +1271,19 @@ const HomeScreen = () => {
               onPress={() => navigation.navigate('AddStaffScreen')}
             >
               <AntDesign name="plus" color="white" size={18} />
-              <Text style={{ color: 'white', fontSize: 14, fontFamily: 'Inter-Medium' }}>Add Staff</Text>
+              <Text
+                style={{
+                  color: 'white',
+                  fontSize: 14,
+                  fontFamily: 'Inter-Medium',
+                }}
+              >
+                Add Staff
+              </Text>
             </TouchableOpacity>
-          </View>
-        )}
+          )}
+
+      </View>
       <Modal
         visible={isModalVisible}
         animationType="slide"

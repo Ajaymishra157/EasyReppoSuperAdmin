@@ -1,4 +1,4 @@
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, ToastAndroid, Modal, Image } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Modal, Image } from 'react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -8,6 +8,7 @@ import Entypo from 'react-native-vector-icons/Entypo';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { ENDPOINTS } from '../CommonFiles/Constant';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
 
 
 const SingleVehicleList = () => {
@@ -133,16 +134,39 @@ const SingleVehicleList = () => {
 
             const result = await response.json();
 
-            if (result.code == 200) { // ya jo bhi tumhara API success flag ho
-                ToastAndroid.show('Vehicle deleted successfully!', ToastAndroid.SHORT);
-                // Ab data state se wo vehicle hatao
+            if (result.code == 200) { // API success
+                Toast.show({
+                    type: 'success',
+                    text1: 'Vehicle deleted successfully!',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
+
+
+                // Data state se vehicle remove karo 500ms ke delay ke saath
                 setData(prevData => prevData.filter(item => item.full_vehicle_id !== vehicleId));
+
+
             } else {
-                ToastAndroid.show('Failed to delete vehicle', ToastAndroid.SHORT);
+                Toast.show({
+                    type: 'error',
+                    text1: 'Failed to delete vehicle',
+                    position: 'bottom',
+                    bottomOffset: 60,
+                    visibilityTime: 2000,
+                });
             }
+
         } catch (error) {
             console.error('Delete vehicle error:', error);
-            ToastAndroid.show('Error deleting vehicle', ToastAndroid.SHORT);
+            Toast.show({
+                type: 'error',
+                text1: 'Error deleting vehicle',
+                position: 'bottom',
+                bottomOffset: 60,
+                visibilityTime: 2000,
+            });
         }
     };
 
@@ -163,7 +187,6 @@ const SingleVehicleList = () => {
             }
         } catch (err) {
             console.log('Vehicle list fetch error:', err.message);
-            ToastAndroid.show('Error fetching data', ToastAndroid.SHORT);
         } finally {
             setLoading(false);
         }
