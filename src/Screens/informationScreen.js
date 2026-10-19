@@ -45,6 +45,8 @@ const informationScreen = () => {
 
     const [isLoading, setIsLoading] = useState(true);
 
+
+
     const call = require('../assets/images/Call.png');
     const whatsapp = require('../assets/images/whatsapp.png');
 
@@ -57,6 +59,8 @@ const informationScreen = () => {
         setHistoryDetailModalVisible(false);
         setSelectedHistoryDetail(null);
     };
+
+
 
     const openMap = (location, lat, lng) => {
         let url = '';
@@ -158,6 +162,10 @@ const informationScreen = () => {
     const [searchHistoryLoading, setSearchHistoryLoading] = useState(false);
     const [scheduleHistoryLoading, setScheduleHistoryLoading] = useState(false);
     const [imageLoaded, setImageLoaded] = useState(false);
+    const [storedAgencyId, setStoredAgencyId] = useState(null);
+    console.log("stored agency id", storedAgencyId)
+
+
 
     const formatDateDMY = (dateStr) => {
         const date = new Date(dateStr);
@@ -175,12 +183,23 @@ const informationScreen = () => {
             const fetchUsertype = async () => {
                 usertype = await AsyncStorage.getItem('user_type');
                 const agency = await AsyncStorage.getItem('selected_agency');
+                const id = await AsyncStorage.getItem('rent_agency_id');
                 setUsertype(usertype);
+                setStoredAgencyId(Number(id));
+
+                // ✅ Now fetch search history immediately after agencyId is ready
+                if (agencyIdNum && userData?.staff_id) {
+                    console.log('Fetching search history with agency ID:', agencyIdNum, 'and staff ID:', userData.staff_id);
+                    await fetchSearchHistory();
+                }
             };
 
             fetchUsertype();
         }, []),
     );
+
+
+
 
     const [icardUrl, setIcardUrl] = useState(null);
     const [type, setType] = useState(null);
@@ -507,6 +526,23 @@ const informationScreen = () => {
     };
 
     const [permissions, setPermissions] = useState({});
+    const hasAnyAction =
+        (userType === 'SuperAdmin' ||
+            (userType === 'SubAdmin' && permissions?.staff?.icard) ||
+            (userType === 'main' && permissions?.staff?.icard)) ||
+        (userType === 'SuperAdmin' ||
+            (userType === 'SubAdmin' && permissions?.staff?.financelist) ||
+            (userType === 'main' && permissions?.staff?.financelist)) ||
+        (userType !== 'SubAdmin' && userType !== 'main' && userData.staff_type !== 'normal') ||
+        (userType === 'SuperAdmin' ||
+            (userType === 'SubAdmin' && permissions?.staff?.update) ||
+            (userType === 'main' && permissions?.staff?.update)) ||
+        (userType === 'SuperAdmin' ||
+            (userType === 'SubAdmin' && permissions?.staff?.delete) ||
+            (userType === 'main' && permissions?.staff?.delete)) ||
+        (userType === 'SuperAdmin' ||
+            (userType === 'SubAdmin' && permissions?.staff?.staffreset) ||
+            (userType === 'main' && permissions?.staff?.staffreset));
 
     const [loading, setLoading] = useState(false);
 
@@ -563,6 +599,11 @@ const informationScreen = () => {
         userType === 'SuperAdmin' ||
         (userType === 'SubAdmin' && permissions?.staff?.internetstatus) ||
         (userType === 'main' && permissions?.staff?.internetstatus);
+
+    const hasScheduleAddPermission =
+        userType === 'SuperAdmin' ||
+        (userType === 'SubAdmin' && permissions?.staff_schedule?.insert) ||
+        (userType === 'main' && permissions?.staff_schedule?.insert);
 
     const [isLocationEnabled, setIsLocationEnabled] = useState({
         [staffdetail.staff_id]: staffdetail.staff_location === 'Yes',
@@ -816,7 +857,8 @@ const informationScreen = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    user_id: userData.staff_id
+                    user_id: userData.staff_id,
+                    rent_agency_id: storedAgencyId,
                 }),
             });
 
@@ -939,8 +981,10 @@ const informationScreen = () => {
     };
 
     useEffect(() => {
-        fetchSearchHistory();
-    }, []);
+        if (storedAgencyId && userData?.staff_id) {
+            fetchSearchHistory();
+        }
+    }, [storedAgencyId, userData?.staff_id]);
 
     const [activeTab, setActiveTab] = useState("Search");
 
@@ -1056,6 +1100,7 @@ const informationScreen = () => {
                                 shadowRadius: 6,
                             }}
                         >
+                            {/* Profile Image */}
                             <TouchableOpacity onPress={handleImagePress}>
                                 {staffdetail.staff_image_profile ? (
                                     <Image
@@ -1093,6 +1138,7 @@ const informationScreen = () => {
                                 )}
                             </TouchableOpacity>
 
+                            {/* Name + Mobile + Call/WhatsApp */}
                             <View
                                 style={{
                                     flex: 1,
@@ -1157,63 +1203,69 @@ const informationScreen = () => {
                                 </View>
                             </View>
 
+                            {/* Right side: Account Toggle (conditional) + Three-dot menu */}
                             <View
                                 style={{
-                                    width: 100,
+                                    width: hasAccountStatusPermission ? 100 : 50, // 🔥 adjust width based on permission
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
                                     flexDirection: 'row',
                                 }}
                             >
-                                {AccountToggles[staffdetail.staff_id] ? (
-                                    <ActivityIndicator size="small" color="#8b5e3c" />
-                                ) : (
-                                    <Switch
-                                        trackColor={{ false: "#f54949", true: "#1cd181" }}
-                                        thumbColor="#fff"
-                                        disabled={!!AccountToggles[staffdetail.staff_id] || !hasAccountStatusPermission}
-                                        onValueChange={(value) => {
-                                            const staffId = staffdetail.staff_id;
-
-                                            setAccountToggles(prev => ({
-                                                ...prev,
-                                                [staffId]: true,
-                                            }));
-
-                                            setIsAccountEnabled(prev => ({
-                                                ...prev,
-                                                [staffId]: value,
-                                            }));
-
-                                            StaffAccountStatus(staffId, value ? 'On' : 'Off');
-                                        }}
-                                        value={
-                                            isAccountEnabled[staffdetail.staff_id] !== undefined
-                                                ? isAccountEnabled[staffdetail.staff_id]
-                                                : staffdetail.staff_status === 'Active'
-                                        }
-                                    />
+                                {/* 🔥 Account Status Toggle – only if permission exists */}
+                                {hasAccountStatusPermission && (
+                                    <>
+                                        {AccountToggles[staffdetail.staff_id] ? (
+                                            <ActivityIndicator size="small" color="#8b5e3c" />
+                                        ) : (
+                                            <Switch
+                                                trackColor={{ false: "#f54949", true: "#1cd181" }}
+                                                thumbColor="#fff"
+                                                disabled={!!AccountToggles[staffdetail.staff_id]}
+                                                onValueChange={(value) => {
+                                                    const staffId = staffdetail.staff_id;
+                                                    setAccountToggles(prev => ({
+                                                        ...prev,
+                                                        [staffId]: true,
+                                                    }));
+                                                    setIsAccountEnabled(prev => ({
+                                                        ...prev,
+                                                        [staffId]: value,
+                                                    }));
+                                                    StaffAccountStatus(staffId, value ? 'On' : 'Off');
+                                                }}
+                                                value={
+                                                    isAccountEnabled[staffdetail.staff_id] !== undefined
+                                                        ? isAccountEnabled[staffdetail.staff_id]
+                                                        : staffdetail.staff_status === 'Active'
+                                                }
+                                            />
+                                        )}
+                                    </>
                                 )}
 
-                                <TouchableOpacity
-                                    onPress={(e) => {
-                                        const { pageX, pageY } = e.nativeEvent;
-                                        OpenModal(pageX, pageY);
-                                    }}
-                                    style={{
-                                        padding: 6,
-                                        borderRadius: 10,
-                                        backgroundColor: '#f2f2f2',
-                                    }}
-                                >
-                                    <Entypo name="dots-three-vertical" size={18} color="#000" />
-                                </TouchableOpacity>
+                                {/* Three-dot menu - always visible */}
+                                {hasAnyAction && (
+                                    <TouchableOpacity
+                                        onPress={(e) => {
+                                            const { pageX, pageY } = e.nativeEvent;
+                                            OpenModal(pageX, pageY);
+                                        }}
+                                        style={{
+                                            padding: 6,
+                                            borderRadius: 10,
+                                            backgroundColor: '#f2f2f2',
+                                        }}
+                                    >
+                                        <Entypo name="dots-three-vertical" size={18} color="#000" />
+                                    </TouchableOpacity>
+                                )}
                             </View>
                         </View>
                     </View>
 
                     <ScrollView
-                        contentContainerStyle={{ flexGrow: 1 }}
+                        contentContainerStyle={{ flexGrow: 1, paddingBottom: 10 }}
                         showsVerticalScrollIndicator={false}
                     >
                         <View style={{
@@ -1420,7 +1472,7 @@ const informationScreen = () => {
                                         </Text>
                                     </View>
 
-                                    {staffdetail.account_status === "Expired" && (
+                                    {staffdetail.account_status === "Expired" && hasScheduleAddPermission && (
                                         <TouchableOpacity
                                             style={{
                                                 backgroundColor: '#4A7DFE',
@@ -1482,7 +1534,7 @@ const informationScreen = () => {
                                     minHeight: 180,
                                 }}>
                                     {activeTab === "Search" && (
-                                        <View style={{ flex: 1 }}>
+                                        <View style={{ height: searchHistory.length > 0 ? 300 : 300 }}>
                                             {searchHistoryLoading ? (
                                                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 }}>
                                                     <ActivityIndicator size="large" color={colors.Brown} />
@@ -1492,11 +1544,20 @@ const informationScreen = () => {
                                                 </View>
                                             ) : searchHistory.length > 0 ? (
                                                 <FlatList
+                                                    nestedScrollEnabled={true}
                                                     data={displayedSearchHistory}
                                                     keyExtractor={(item, index) => index.toString()}
                                                     showsVerticalScrollIndicator={false}
                                                     onEndReached={loadMoreSearchHistory}
                                                     onEndReachedThreshold={0.5}
+
+                                                    // ←←← Yeh naye props add karo
+                                                    initialNumToRender={10}
+                                                    maxToRenderPerBatch={10}
+                                                    windowSize={21}
+                                                    removeClippedSubviews={true}
+                                                    updateCellsBatchingPeriod={30}
+
                                                     ListFooterComponent={
                                                         loadingMore ? (
                                                             <View style={{ padding: 20 }}>
@@ -1621,7 +1682,7 @@ const informationScreen = () => {
                                     )}
 
                                     {activeTab === "Schedule" && (
-                                        <View style={{ flex: 1 }}>
+                                        <View style={{ height: 300 }}>
                                             {scheduleHistoryLoading ? (
                                                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 }}>
                                                     <ActivityIndicator size="large" color={colors.Brown} />
@@ -1631,6 +1692,7 @@ const informationScreen = () => {
                                                 </View>
                                             ) : scheduleHistory.length > 0 ? (
                                                 <FlatList
+                                                    nestedScrollEnabled={true}
                                                     data={displayedScheduleHistory}
                                                     keyExtractor={(item, index) => index.toString()}
                                                     showsVerticalScrollIndicator={false}
@@ -2166,29 +2228,34 @@ const informationScreen = () => {
                                 </Text>
 
                                 {/* View I-Card - now opens modal */}
-                                <TouchableOpacity
-                                    style={{
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        paddingVertical: 10,
-                                        borderBottomWidth: 1,
-                                        borderColor: '#eee',
-                                        gap: 12,
-                                    }}
-                                    onPress={() => {
-                                        setIcardTypeModalVisible(true);
-                                        handleCloseModalthree();
-                                    }}
-                                >
-                                    <Ionicons name="eye-outline" size={20} color={colors.Brown} />
-                                    <Text style={{
-                                        fontSize: 15,
-                                        fontFamily: 'Inter-Regular',
-                                        color: colors.Brown,
-                                    }}>
-                                        View I-Card
-                                    </Text>
-                                </TouchableOpacity>
+                                {(userType === 'SuperAdmin' ||
+                                    (userType === 'SubAdmin' && permissions?.staff?.icard) ||
+                                    (userType === 'main' && permissions?.staff?.icard)
+                                ) && (
+                                        <TouchableOpacity
+                                            style={{
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                paddingVertical: 10,
+                                                borderBottomWidth: 1,
+                                                borderColor: '#eee',
+                                                gap: 12,
+                                            }}
+                                            onPress={() => {
+                                                setIcardTypeModalVisible(true);
+                                                handleCloseModalthree();
+                                            }}
+                                        >
+                                            <Ionicons name="eye-outline" size={20} color={colors.Brown} />
+                                            <Text style={{
+                                                fontSize: 15,
+                                                fontFamily: 'Inter-Regular',
+                                                color: colors.Brown,
+                                            }}>
+                                                View I-Card
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )}
 
                                 {/* Manage Finance - conditional as before */}
                                 {(userType === 'SuperAdmin' ||
@@ -2226,7 +2293,7 @@ const informationScreen = () => {
                                     )}
 
                                 {/* NEW: Manage Permission - only for admin */}
-                                {(userType !== 'SubAdmin' && userType !== 'main' && userData.staff_type !== 'normal') && (
+                                {(userType !== 'SubAdmin' && userType !== 'main' && userData.staff_type !== 'normal' && userData.staff_type !== 'TL') && (
                                     <TouchableOpacity
                                         style={{
                                             flexDirection: 'row',
@@ -2253,82 +2320,99 @@ const informationScreen = () => {
                                 )}
 
                                 {/* Update Staff */}
-                                <TouchableOpacity
-                                    style={{
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        paddingVertical: 10,
-                                        borderBottomWidth: 1,
-                                        borderColor: '#eee',
-                                        gap: 12,
-                                    }}
-                                    onPress={handleEdit}
-                                >
-                                    <Feather name="edit-3" size={20} color="#3B82F6" />
-                                    <Text
-                                        style={{
-                                            fontSize: 15,
-                                            fontFamily: 'Inter-Regular',
-                                            color: '#3B82F6',
-                                        }}
-                                    >
-                                        Update Staff
-                                    </Text>
-                                </TouchableOpacity>
+
+                                {(userType === 'SuperAdmin' ||
+                                    (userType === 'SubAdmin' && permissions?.staff?.update) ||
+                                    (userType === 'main' && permissions?.staff?.update)
+                                ) && (
+                                        <TouchableOpacity
+                                            style={{
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                paddingVertical: 10,
+                                                borderBottomWidth: 1,
+                                                borderColor: '#eee',
+                                                gap: 12,
+                                            }}
+                                            onPress={handleEdit}
+                                        >
+                                            <Feather name="edit-3" size={20} color="#3B82F6" />
+                                            <Text
+                                                style={{
+                                                    fontSize: 15,
+                                                    fontFamily: 'Inter-Regular',
+                                                    color: '#3B82F6',
+                                                }}
+                                            >
+                                                Update Staff
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )}
 
                                 {/* Delete Staff */}
-                                <TouchableOpacity
-                                    style={{
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        paddingVertical: 10,
-                                        borderBottomWidth: 1,
-                                        borderColor: '#eee',
-                                        gap: 12,
-                                    }}
-                                    onPress={() => {
-                                        handleDelete(userData.staff_id);
-                                        handleCloseModalthree();
-                                    }}
-                                >
-                                    <Ionicons name="trash-outline" size={20} color="#DC2626" />
-                                    <Text
-                                        style={{
-                                            fontSize: 15,
-                                            fontFamily: 'Inter-Regular',
-                                            color: '#DC2626',
-                                        }}
-                                    >
-                                        Delete Staff
-                                    </Text>
-                                </TouchableOpacity>
+                                {/* 5. Delete Staff - 🔥 CONDITION ADDED 🔥 */}
+                                {(userType === 'SuperAdmin' ||
+                                    (userType === 'SubAdmin' && permissions?.staff?.delete) ||
+                                    (userType === 'main' && permissions?.staff?.delete)
+                                ) && (
+                                        <TouchableOpacity
+                                            style={{
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                paddingVertical: 10,
+                                                borderBottomWidth: 1,
+                                                borderColor: '#eee',
+                                                gap: 12,
+                                            }}
+                                            onPress={() => {
+                                                handleDelete(userData.staff_id);
+                                                handleCloseModalthree();
+                                            }}
+                                        >
+                                            <Ionicons name="trash-outline" size={20} color="#DC2626" />
+                                            <Text
+                                                style={{
+                                                    fontSize: 15,
+                                                    fontFamily: 'Inter-Regular',
+                                                    color: '#DC2626',
+                                                }}
+                                            >
+                                                Delete Staff
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )}
 
                                 {/* Reset Device */}
-                                <TouchableOpacity
-                                    style={{
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        paddingVertical: 10,
+                                {(userType === 'SuperAdmin' ||
+                                    (userType === 'SubAdmin' && permissions?.staff?.staffreset) ||
+                                    (userType === 'main' && permissions?.staff?.staffreset)
+                                ) && (
+                                        <TouchableOpacity
+                                            style={{
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                paddingVertical: 10,
 
-                                        gap: 12,
-                                    }}
-                                    onPress={() => {
-                                        setSelectedStaffId(userData.staff_id);
-                                        setSelectedStaffName(userData.staff_name);
-                                        setDeviceId(staffdetail.native_device_id || '---');
-                                        setResetModal(true);
-                                        handleCloseModalthree();
-                                    }}
-                                >
-                                    <Ionicons name="phone-portrait-outline" size={20} color={colors.Brown} />
-                                    <Text style={{
-                                        fontSize: 15,
-                                        fontFamily: 'Inter-Regular',
-                                        color: colors.Brown,
-                                    }}>
-                                        Reset Device
-                                    </Text>
-                                </TouchableOpacity>
+                                                gap: 12,
+                                            }}
+                                            onPress={() => {
+                                                setSelectedStaffId(userData.staff_id);
+                                                setSelectedStaffName(userData.staff_name);
+                                                setDeviceId(staffdetail.native_device_id || '---');
+                                                setResetModal(true);
+                                                handleCloseModalthree();
+                                            }}
+                                        >
+                                            <Ionicons name="phone-portrait-outline" size={20} color={colors.Brown} />
+                                            <Text style={{
+                                                fontSize: 15,
+                                                fontFamily: 'Inter-Regular',
+                                                color: colors.Brown,
+                                            }}>
+                                                Reset Device
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )}
                             </View>
                         </TouchableOpacity>
                     </Modal>

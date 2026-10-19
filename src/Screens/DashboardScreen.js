@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Text, TouchableOpacity, View, Image, Alert, Modal, BackHandler, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
+import { Text, TouchableOpacity, View, Image, Alert, Modal, BackHandler, ScrollView, RefreshControl, ActivityIndicator, StatusBar } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome'; // Use FontAwesome for the icons
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons'
 import colors from '../CommonFiles/Colors';
@@ -274,6 +274,10 @@ const DashboardScreen = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#f7f7f7' }}>
+      <StatusBar
+        backgroundColor={colors.Brown}
+        barStyle="light-content"
+      />
       <View style={{ backgroundColor: colors.Brown, paddingVertical: 15, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', }}>
         <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold', fontFamily: 'Inter-Bold', }}> Easy Reppo </Text>
       </View>
@@ -612,7 +616,7 @@ const DashboardScreen = () => {
                       borderColor: '#87CEEB',
                     }}
                   >
-                    <Ionicons name="time-outline" size={25} color="#87CEEB" />
+                    <Ionicons name="search-outline" size={25} color="#87CEEB" />
                   </View>
                 </View>
 
@@ -710,6 +714,59 @@ const DashboardScreen = () => {
                   shadowOpacity: 0.1,
                   shadowRadius: 6,
                   elevation: 8,
+
+                }}
+                onPress={() => {
+                  navigation.navigate('AllStaffList');
+                }}
+              >
+                {/* Top 70%: Icon */}
+                <View style={{ flex: 7, justifyContent: 'center', alignItems: 'center' }}>
+                  <View
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
+                      backgroundColor: 'white',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: '#7C3AED',
+                    }}
+                  >
+                    <Ionicons name="people-circle-outline" size={25} color="#7C3AED" />
+                  </View>
+                </View>
+
+                {/* Bottom 30%: Text */}
+                <View style={{ flex: 3, alignItems: 'center', paddingHorizontal: 5 }}>
+                  <Text
+                    style={{
+                      color: 'black',
+                      fontSize: 12,
+                      textAlign: 'center',
+                      fontFamily: 'Inter-Medium',
+                    }}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    All Staff List
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{
+                  backgroundColor: 'white',
+                  borderRadius: 15,
+                  width: 100,
+                  height: 120,
+                  padding: 5,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 6,
+                  elevation: 8,
                 }}
                 onPress={() => {
                   navigation.navigate('AgencySelect');
@@ -749,6 +806,24 @@ const DashboardScreen = () => {
                   </Text>
                 </View>
               </TouchableOpacity>
+
+
+
+
+
+
+
+
+            </View>
+
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                width: '100%',
+                marginTop: 30,
+                paddingHorizontal: 15,
+              }}>
 
               <TouchableOpacity
                 style={{
@@ -801,19 +876,6 @@ const DashboardScreen = () => {
                   </Text>
                 </View>
               </TouchableOpacity>
-
-
-
-            </View>
-
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                width: '100%',
-                marginTop: 30,
-                paddingHorizontal: 15,
-              }}>
 
               <TouchableOpacity
                 style={{
@@ -918,6 +980,19 @@ const DashboardScreen = () => {
                 </View>
               </TouchableOpacity>
 
+
+
+            </View>
+
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                width: '100%',
+                marginTop: 30,
+                paddingHorizontal: 15,
+              }}>
+
               <TouchableOpacity
                 style={{
                   backgroundColor: 'white',
@@ -970,17 +1045,6 @@ const DashboardScreen = () => {
                 </View>
               </TouchableOpacity>
 
-            </View>
-
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'flex-start',
-                width: '100%',
-                marginTop: 30,
-                paddingHorizontal: 15,
-              }}>
-
               <TouchableOpacity
                 style={{
                   backgroundColor: 'white',
@@ -993,6 +1057,7 @@ const DashboardScreen = () => {
                   shadowOpacity: 0.1,
                   shadowRadius: 6,
                   elevation: 8,
+
                 }}
                 onPress={() => {
                   navigation.navigate('StaffVehicleRecords');
@@ -1033,6 +1098,8 @@ const DashboardScreen = () => {
                 </View>
               </TouchableOpacity>
 
+
+
               <TouchableOpacity
                 style={{
                   backgroundColor: 'white',
@@ -1045,7 +1112,7 @@ const DashboardScreen = () => {
                   shadowOpacity: 0.1,
                   shadowRadius: 6,
                   elevation: 8,
-                  marginLeft: 30,
+
                 }}
                 onPress={() => {
                   navigation.navigate('AppSetting');
@@ -1088,155 +1155,268 @@ const DashboardScreen = () => {
 
 
             </View>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                width: '100%',
+                marginTop: 30,
+                paddingHorizontal: 15,
+              }}>
+
+              <TouchableOpacity
+                style={{
+                  backgroundColor: 'white',
+                  borderRadius: 15,
+                  width: 100,
+                  height: 120,
+                  padding: 5,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 6,
+                  elevation: 8,
+                }}
+                onPress={() => {
+                  navigation.navigate('VehicleFileDetails');
+                }}
+              >
+                {/* Top 70%: Icon */}
+                <View style={{ flex: 7, justifyContent: 'center', alignItems: 'center' }}>
+                  <View
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: 25,
+                      backgroundColor: 'white',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: '#4169E1',
+                    }}
+                  >
+                    <Ionicons name="folder-open-outline" size={24} color="#4169E1" />
+                  </View>
+                </View>
+
+                {/* Bottom 30%: Text */}
+                <View style={{ flex: 3, alignItems: 'center', paddingHorizontal: 5 }}>
+                  <Text
+                    style={{
+                      color: 'black',
+                      fontSize: 12,
+                      textAlign: 'center',
+                      fontFamily: 'Inter-Medium',
+                    }}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    File List
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+            </View>
           </>
         )}
 
         {userType == 'main' && (() => {
           if (isLoadingPermissions) {
             return (
-              <View style={{ height: 600, alignItems: 'center', justifyContent: 'center', padding: 40 }}>
+              <View
+                style={{
+                  height: 600,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 40,
+                }}>
                 <ActivityIndicator size="large" color="#022e29" />
                 <Text style={{ marginTop: 10 }}>Loading permissions...</Text>
               </View>
             );
           }
+
           const items = [
             permissions?.staff && {
               label: 'Staff',
-              icon: <FontAwesome name="user" size={25} color="#000080" />,
+              icon: <Ionicons name="people-outline" size={25} color="#000080" />,
               navigateTo: 'HomeScreen',
               borderColor: '#000080',
             },
+
             permissions?.staff_schedule && {
               label: 'Schedule',
-              icon: <FontAwesome name="calendar" size={25} color="#2E8B57" />,
+              icon: <Ionicons name="calendar-outline" size={25} color="#2E8B57" />,
               navigateTo: 'StaffSchedule',
               borderColor: '#2E8B57',
             },
+
             permissions?.search_history && {
               label: 'Search History',
-              icon: <FontAwesome name="search" size={25} color="#87CEEB" />,
+              icon: <Ionicons name="search-outline" size={25} color="#87CEEB" />,
               navigateTo: 'SearchHistory',
               borderColor: '#87CEEB',
             },
+
             permissions?.intimation && {
               label: 'Intimation',
-              icon: <Image source={sports} style={{ width: 25, height: 25, tintColor: '#FFA500' }} />,
+              icon: <Ionicons name="mail-outline" size={25} color="#FFA500" />,
               navigateTo: 'SearchVehicle',
               borderColor: '#FFA500',
             },
+
             permissions?.pso_list && {
               label: 'PSO CONFIRM/CANCEL LIST',
-              icon: <FontAwesome name="list" size={25} color="#8B0000" />,
+              icon: <Ionicons name="list-outline" size={25} color="#8B0000" />,
               navigateTo: 'ListingScreen',
               borderColor: '#8B0000',
               fontSize: 11,
             },
+
             permissions?.area && {
               label: 'Area',
-              icon: <MaterialIcons name="location-on" size={25} color="#800080" />,
+              icon: (
+                <Ionicons
+                  name="location-outline"
+                  size={25}
+                  color="#800080"
+                />
+              ),
               navigateTo: 'AreaList',
               borderColor: '#800080',
             },
+
             permissions?.rent_agency && {
               label: 'Rent Agency',
-              icon: <Image source={Agency} style={{ width: 25, height: 25 }} />,
+              icon: (
+                <Ionicons name="business-outline" size={25} color="#2563EB" />
+              ),
               navigateTo: 'AgencySelect',
-              borderColor: '#42eb6cff',
+              borderColor: '#2563EB',
             },
+
             permissions?.vehicle_upload && {
               label: 'Vehicle Upload',
-              icon: <Image source={Car} style={{ width: 25, height: 25 }} />,
+              icon: <Ionicons name="cloud-upload-outline" size={25} color="#0EA5E9" />,
               navigateTo: 'SingleVehicleList',
-              borderColor: '#2E8B57',
+              borderColor: '#0EA5E9',
             },
 
             permissions?.subadmin_history && {
               label: 'SubAdmin History',
-              icon: <Image source={History} style={{ width: 30, height: 30 }} />,
+              icon: (
+                <Ionicons name="document-text-outline" size={25} color="#475569" />
+              ),
               navigateTo: 'SubAdminAgencyWise',
-              borderColor: '#87CEEB',
+              borderColor: '#475569',
             },
-            permissions?.black_list_staffs && {  // ✅ Check your permission key
-              label: 'Black List Staffs',
-              icon: <FontAwesome name="ban" size={25} color="#FF0000" />, // ya koi custom icon/image
-              navigateTo: 'BlackListUser', // jo screen aapka black list staff screen hai
-              borderColor: '#FF0000',
-            }
 
+            permissions?.black_list_staffs && {
+              label: 'Black List Staffs',
+              icon: < Ionicons name="ban-outline" size={25} color="#DC2626" />,
+              navigateTo: 'BlackListUser',
+              borderColor: '#DC2626',
+            },
           ].filter(Boolean);
 
           if (items.length === 0) {
             return (
-              <View style={{ height: 600, padding: 40, alignItems: 'center', justifyContent: 'center', }}>
+              <View
+                style={{
+                  height: 600,
+                  padding: 40,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
                 <Image source={Permission} style={{ width: 70, height: 70 }} />
-                <Text style={{ fontSize: 16, color: 'red', fontFamily: 'Inter-Regular', marginTop: 20 }}>
+
+                <Text
+                  style={{
+                    fontSize: 16,
+                    color: 'red',
+                    fontFamily: 'Inter-Regular',
+                    marginTop: 20,
+                  }}>
                   No Permission Assigned
                 </Text>
               </View>
             );
           }
+
           return (
             <View
               style={{
                 flexDirection: 'row',
                 flexWrap: 'wrap',
-                justifyContent: 'flex-start',
-                gap: 25,
+                justifyContent: 'space-between',
                 marginTop: 30,
-                paddingHorizontal: 20,
-                paddingBottom: 80
-
-              }}
-            >
-              {/* Collect all boxes dynamically */}
+                paddingHorizontal: 15,
+                paddingBottom: 80,
+              }}>
               {items.map((item, index) => (
                 <TouchableOpacity
                   key={index}
                   style={{
-                    alignItems: 'center',
-                    justifyContent: 'center',
                     backgroundColor: 'white',
                     borderRadius: 15,
-                    width: 100,
+
+                    // ✅ 3 item ek row me
+                    width: '30%',
+
                     height: 120,
-                    padding: 10,
+                    padding: 5,
+
                     shadowColor: '#000',
                     shadowOffset: { width: 0, height: 4 },
                     shadowOpacity: 0.1,
                     shadowRadius: 6,
                     elevation: 8,
-                    marginBottom: 7,
+
+                    // ✅ second row se spacing
+                    marginTop: index >= 3 ? 25 : 0,
 
 
                   }}
-                  onPress={() => navigation.navigate(item.navigateTo)}
-                >
+                  onPress={() => navigation.navigate(item.navigateTo)}>
+
+                  {/* Top 70% */}
                   <View
                     style={{
-                      width: 50,
-                      height: 50,
-                      borderRadius: 30,
-                      backgroundColor: 'white',
+                      flex: 7,
                       justifyContent: 'center',
                       alignItems: 'center',
-                      marginBottom: 10,
-                      borderWidth: 1,
-                      borderColor: item.borderColor,
-                    }}
-                  >
-                    {item.icon}
+                    }}>
+                    <View
+                      style={{
+                        width: 50,
+                        height: 50,
+                        borderRadius: 25,
+                        backgroundColor: 'white',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        borderWidth: 1,
+                        borderColor: item.borderColor,
+                      }}>
+                      {item.icon}
+                    </View>
                   </View>
-                  <Text
-                    style={{
-                      color: 'black',
-                      fontSize: item.fontSize || 12,
-                      textAlign: 'center',
-                      fontFamily: 'Inter-Medium',
-                    }}
-                  >
-                    {item.label}
-                  </Text>
+
+                  {/* Bottom 30% */}
+                  <View style={{ flex: 3, alignItems: 'center', paddingHorizontal: 5 }}>
+                    <Text
+                      style={{
+                        color: 'black',
+                        fontSize: item.fontSize || 12,
+                        textAlign: 'center',
+                        fontFamily: 'Inter-Medium',
+
+                      }}
+                      numberOfLines={2}
+                      ellipsizeMode="tail">
+                      {item.label}
+                    </Text>
+                  </View>
+
                 </TouchableOpacity>
               ))}
             </View>
@@ -1253,32 +1433,56 @@ const DashboardScreen = () => {
               </View>
             );
           }
+
           const items = [
             permissions?.staff && {
               label: 'Staff',
-              icon: <FontAwesome name="user" size={25} color="#000080" />,
+              icon: <Ionicons name="people-outline" size={25} color="#000080" />,
               navigateTo: 'HomeScreen',
               borderColor: '#000080',
             },
+
             permissions?.staff_schedule && {
               label: 'Schedule',
-              icon: <FontAwesome name="calendar" size={25} color="#2E8B57" />,
+              icon: <Ionicons name="calendar-outline" size={25} color="#2E8B57" />,
               navigateTo: 'StaffSchedule',
               borderColor: '#2E8B57',
             },
+
             permissions?.search_history && {
               label: 'Search History',
-              icon: <FontAwesome name="search" size={25} color="#87CEEB" />,
+              icon: <Ionicons name="search-outline" size={25} color="#87CEEB" />,
               navigateTo: 'SearchHistory',
               borderColor: '#87CEEB',
             },
-          ]
-            .filter(Boolean);
+            permissions?.staff_vehicle_record?.insert && {
+              label: 'Staff Vehicle Record',
+              icon: <Ionicons name="car-sharp" size={25} color="#1E88E5" />,
+              navigateTo: 'StaffVehicleRecords',
+              borderColor: '#1E88E5',
+            },
+          ].filter(Boolean);
+
           if (items.length === 0) {
             return (
-              <View style={{ height: 600, padding: 40, alignItems: 'center', justifyContent: 'center', }}>
+              <View
+                style={{
+                  height: 600,
+                  padding: 40,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
                 <Image source={Permission} style={{ width: 70, height: 70 }} />
-                <Text style={{ fontSize: 16, color: 'red', fontFamily: 'Inter-Regular', marginTop: 20 }}>
+
+                <Text
+                  style={{
+                    fontSize: 16,
+                    color: 'red',
+                    fontFamily: 'Inter-Regular',
+                    marginTop: 20,
+                  }}
+                >
                   No Permission Assigned
                 </Text>
               </View>
@@ -1295,52 +1499,70 @@ const DashboardScreen = () => {
                 paddingHorizontal: 15,
               }}
             >
-
-
               {items.map((item, index) => (
                 <TouchableOpacity
                   key={index}
                   style={{
-                    alignItems: 'center',
-                    justifyContent: 'center',
                     backgroundColor: 'white',
                     borderRadius: 15,
                     width: 100,
                     height: 120,
-                    padding: 10,
+                    padding: 5,
                     shadowColor: '#000',
                     shadowOffset: { width: 0, height: 4 },
                     shadowOpacity: 0.1,
                     shadowRadius: 6,
                     elevation: 8,
+                    // ✅ 4th menu se top margin
+                    marginTop: index >= 3 ? 20 : 0,
                   }}
                   onPress={() => navigation.navigate(item.navigateTo)}
                 >
+                  {/* Top 70% */}
                   <View
                     style={{
-                      width: 50,
-                      height: 50,
-                      borderRadius: 30,
-                      backgroundColor: 'white',
+                      flex: 7,
                       justifyContent: 'center',
                       alignItems: 'center',
-                      marginBottom: 10,
-                      borderWidth: 1,
-                      borderColor: item.borderColor,
                     }}
                   >
-                    {item.icon}
+                    <View
+                      style={{
+                        width: 50,
+                        height: 50,
+                        borderRadius: 25,
+                        backgroundColor: 'white',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        borderWidth: 1,
+                        borderColor: item.borderColor,
+                      }}
+                    >
+                      {item.icon}
+                    </View>
                   </View>
-                  <Text
+
+                  {/* Bottom 30% */}
+                  <View
                     style={{
-                      color: 'black',
-                      fontSize: item.fontSize || 12,
-                      textAlign: 'center',
-                      fontFamily: 'Inter-Medium',
+                      flex: 3,
+                      alignItems: 'center',
+                      paddingHorizontal: 5,
                     }}
                   >
-                    {item.label}
-                  </Text>
+                    <Text
+                      style={{
+                        color: 'black',
+                        fontSize: 12,
+                        textAlign: 'center',
+                        fontFamily: 'Inter-Medium',
+                      }}
+                      numberOfLines={2}
+                      ellipsizeMode="tail"
+                    >
+                      {item.label}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>
@@ -1512,7 +1734,7 @@ const DashboardScreen = () => {
         </TouchableOpacity>
       </Modal>
 
-      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+      <View style={{}}>
         <Bottomtab />
       </View>
     </View>

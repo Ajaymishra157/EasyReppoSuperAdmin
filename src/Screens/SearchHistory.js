@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ENDPOINTS } from '../CommonFiles/Constant';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import colors from '../CommonFiles/Colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Entypo from 'react-native-vector-icons/Entypo';
@@ -31,12 +31,14 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Toast from 'react-native-toast-message';
 // import { getGoogleApiKey } from '../CommonFiles/LocationService';
 
-Geocoder.init('AIzaSyBvoWcgSBGvofFvJi2tPnOyr7mj7Plc1pk');
+Geocoder.init('AIzaSyD0ATjEFzc87llMY3CsGlhxi-EGMu828Ds');
 
 
 const SearchHistory = () => {
   const History = require('../assets/images/history.png');
   const navigation = useNavigation();
+  const route = useRoute();
+  const { agencyId: paramAgencyId, agencyName } = route.params || {};
 
   // const [geoReady, setGeoReady] = useState(false);
   const [SearchHistory, setSearchHistory] = useState([]);
@@ -74,6 +76,15 @@ const SearchHistory = () => {
 
   const [permissions, setPermissions] = useState({});
   const [loading, setLoading] = useState(false);
+
+
+
+  // param se aaye to wahi, warna logged-in user ki agency
+  const getRentAgencyId = async () => {
+    if (paramAgencyId) return parseInt(paramAgencyId, 10);
+    const stored = await AsyncStorage.getItem('rent_agency_id');
+    return stored !== null ? parseInt(stored, 10) : null;
+  };
 
   // useEffect(() => {
   //   const initGeocoder = async () => {
@@ -322,7 +333,7 @@ const SearchHistory = () => {
         SearchHistoryApi(fromDate, tillDate);
       }
       // }
-    }, [fromDate, tillDate, search])
+    }, [fromDate, tillDate, search, paramAgencyId])
   );
 
   const handleSubmit = () => {
@@ -473,8 +484,7 @@ const SearchHistory = () => {
 
     setLoadingMore(true);
     try {
-      const storedAgencyId = await AsyncStorage.getItem('rent_agency_id');
-      const rentAgencyId = storedAgencyId !== null ? parseInt(storedAgencyId, 10) : null;
+      const rentAgencyId = await getRentAgencyId();
       console.log('Fetching page2:', pageNumber, 'from', fromdate, 'to', tilldate, 'rent Agency Id', rentAgencyId);
 
       const response = await fetch(ENDPOINTS.search_history_paginate, {
@@ -569,8 +579,7 @@ const SearchHistory = () => {
       return;
     }
 
-    const storedAgencyId = await AsyncStorage.getItem('rent_agency_id');
-    const rentAgencyId = storedAgencyId !== null ? parseInt(storedAgencyId, 10) : null;
+    const rentAgencyId = await getRentAgencyId();
 
     setCurrentSearch(inputText);
     setIsSearchActive(true);
@@ -948,7 +957,7 @@ const SearchHistory = () => {
             fontWeight: 'bold',
             fontFamily: 'Inter-Bold',
           }}>
-          Search History
+          {agencyName ? `${agencyName} - Search History` : 'Search History'}
         </Text>
 
 

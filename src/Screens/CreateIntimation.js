@@ -380,6 +380,9 @@ const CreateIntimation = () => {
                     form_time: selectedType === 'Confirm' ? formattedTime : time,
                     staff_id: staffId || '',
                     reposession_agent: ReppoAgency || '',
+                    // ✅ NEW FIELDS
+                    pos: pos || '',
+                    vehicle_bucket: bucket || '',
                 }),
             });
 
@@ -603,7 +606,7 @@ const CreateIntimation = () => {
     //         <!-- Finance and Agency Details (Displayed on left and right side) -->
     //         <div class="static-name">
 
-    //         <p>${.vehicle_finance_name || '----------'
+    //         <p>${.vehicle_finance_name_admin || '----------'
     //             }</p>
     //    <p>${SelectedAgency || '----------'
     //             }</p>
@@ -899,7 +902,7 @@ const CreateIntimation = () => {
     //           <!-- Finance and Agency Details (Displayed on left and right side) -->
     //           <div class="static-name">
 
-    //           <p>${.vehicle_finance_name || '----------'
+    //           <p>${.vehicle_finance_name_admin || '----------'
     //             }</p>
     //      <p>${SelectedAgency || '----------'
     //             }</p>
@@ -1517,7 +1520,7 @@ const CreateIntimation = () => {
     //         // Create the message content
     //         const messageContent = `*Manager :* ${.vehicle_manager || ''}
     // *Month :* ${.vehicle_month || ''}
-    // *Finance :* ${.vehicle_finance_name || ''}
+    // *Finance :* ${.vehicle_finance_name_admin || ''}
     // *Branch :* ${.vehicle_branch || ''}
     // *Agreement Number :* ${.vehicle_agreement_no || ''}
     // *App ID :* ${.vehicle_app_id || ''}

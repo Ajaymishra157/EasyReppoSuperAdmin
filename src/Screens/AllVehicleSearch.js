@@ -31,7 +31,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Toast from 'react-native-toast-message';
 // import { getGoogleApiKey } from '../CommonFiles/LocationService';
 
-Geocoder.init('AIzaSyBvoWcgSBGvofFvJi2tPnOyr7mj7Plc1pk');
+Geocoder.init('AIzaSyD0ATjEFzc87llMY3CsGlhxi-EGMu828Ds');
 
 
 const AllVehicleSearch = () => {

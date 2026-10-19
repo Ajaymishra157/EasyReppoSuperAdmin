@@ -43,7 +43,7 @@ const VehicleUploadList = () => {
         { label: 'MONTH', value: vehicleData.vehicle_month },
         { label: 'BRANCH', value: vehicleData.vehicle_branch },
         { label: 'AGGREMENT NUMBER', value: vehicleData.vehicle_agreement_no },
-        { label: 'FINANCE NAME', value: vehicleData.vehicle_finance_name },
+        { label: 'FINANCE NAME', value: vehicleData.vehicle_finance_name_admin },
         { label: 'APP ID', value: vehicleData.vehicle_app_id },
         { label: 'CUSTOMER NAME', value: vehicleData.vehicle_customer_name },
         { label: 'PRODUCT', value: vehicleData.vehicle_product },

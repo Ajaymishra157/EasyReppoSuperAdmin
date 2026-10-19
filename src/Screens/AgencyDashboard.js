@@ -343,6 +343,113 @@ const AgencyDashboard = () => {
                     </View>
                 </TouchableOpacity>
 
+
+                {/* Search History */}
+                <TouchableOpacity
+                    style={{
+                        backgroundColor: 'white',
+                        borderRadius: 15,
+                        width: 100,
+                        height: 120,
+                        padding: 5,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 6,
+                        elevation: 8,
+                    }}
+                    onPress={() => {
+                        navigation.navigate('SearchHistory', {
+                            agencyId: agencyId,
+                            agencyName: agencyName,
+                        });
+                    }}
+                >
+                    <View style={{ flex: 7, justifyContent: 'center', alignItems: 'center' }}>
+                        <View style={{
+                            width: 50, height: 50, borderRadius: 25, backgroundColor: 'white',
+                            justifyContent: 'center', alignItems: 'center',
+                            borderWidth: 1, borderColor: '#87CEEB',
+                        }}>
+                            <Ionicons name="search-outline" size={25} color="#87CEEB" />
+                        </View>
+                    </View>
+                    <View style={{ flex: 3, alignItems: 'center', paddingHorizontal: 5 }}>
+                        <Text
+                            style={{ color: 'black', fontSize: 12, textAlign: 'center', fontFamily: 'Inter-Medium' }}
+                            numberOfLines={2}
+                            ellipsizeMode="tail"
+                        >
+                            Search History
+                        </Text>
+                    </View>
+                </TouchableOpacity>
+
+            </View>
+
+
+            {/* SECOND ROW */}
+            <View
+                style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    width: '100%',
+                    marginTop: 15,
+                    paddingHorizontal: 15,
+                }}>
+
+
+
+
+                {/* Finance Management */}
+                {(
+                    userType === 'SuperAdmin' ||
+                    !permissions?.rent_agency ||
+                    permissions?.rent_agency?.update
+                ) ? (
+                    <TouchableOpacity
+                        style={{
+                            backgroundColor: 'white',
+                            borderRadius: 15,
+                            width: 100,
+                            height: 120,
+                            padding: 5,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.1,
+                            shadowRadius: 6,
+                            elevation: 8,
+                        }}
+                        onPress={() => {
+                            navigation.navigate('AgencyFinanceList', {
+                                agencyId: agencyId,
+                                agencyName: agencyName,
+                            });
+                        }}
+                    >
+                        <View style={{ flex: 7, justifyContent: 'center', alignItems: 'center' }}>
+                            <View style={{
+                                width: 50, height: 50, borderRadius: 25, backgroundColor: 'white',
+                                justifyContent: 'center', alignItems: 'center',
+                                borderWidth: 1, borderColor: '#2563EB',
+                            }}>
+                                <Ionicons name="business-outline" size={25} color="#2563EB" />
+                            </View>
+                        </View>
+                        <View style={{ flex: 3, alignItems: 'center', paddingHorizontal: 5 }}>
+                            <Text
+                                style={{ color: 'black', fontSize: 12, textAlign: 'center', fontFamily: 'Inter-Medium' }}
+                                numberOfLines={2}
+                                ellipsizeMode="tail"
+                            >
+                                Finance Management
+                            </Text>
+                        </View>
+                    </TouchableOpacity>
+                ) : (
+                    <View style={{ width: 100, height: 120 }} />
+                )}
+
                 {/* Third Box (File List) */}
                 <TouchableOpacity
                     style={{
@@ -401,6 +508,7 @@ const AgencyDashboard = () => {
                 </TouchableOpacity>
 
 
+                <View style={{ width: 100, height: 120 }} />
             </View>
 
 
@@ -474,8 +582,8 @@ const AgencyDashboard = () => {
                                             flexDirection: 'row',
                                             alignItems: 'center',
                                             paddingVertical: 10,
-                                            borderBottomWidth: 1,
-                                            borderColor: '#eee',
+                                            // borderBottomWidth: 1,
+                                            // borderColor: '#eee',
                                             gap: 12,
                                         }}
                                         onPress={() => {
@@ -491,7 +599,7 @@ const AgencyDashboard = () => {
                                 )}
 
                             {/* Finance List */}
-                            {(
+                            {/* {(
                                 userType === 'SuperAdmin' ||
                                 !permissions.rent_agency ||
                                 permissions.rent_agency.update
@@ -517,7 +625,7 @@ const AgencyDashboard = () => {
                                             Agency Finance List
                                         </Text>
                                     </TouchableOpacity>
-                                )}
+                                )} */}
                         </View>
                     </View>
                 </TouchableWithoutFeedback>
@@ -615,7 +723,7 @@ const AgencyDashboard = () => {
                     </View>
                 </TouchableOpacity>
             </Modal>
-        </View>
+        </View >
     )
 }
 

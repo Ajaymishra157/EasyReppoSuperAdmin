@@ -82,6 +82,10 @@ const PermissionScreen = () => {
 
 
 
+    const [staffVehicleRecordAdd, setStaffVehicleRecordAdd] = useState(false);
+
+
+
 
     useEffect(() => {
         loadPermissions();
@@ -199,6 +203,11 @@ const PermissionScreen = () => {
                 });
 
 
+                updateStateFromPermission('Staff_Vehicle_Record', {
+                    insert: setStaffVehicleRecordAdd,
+                });
+
+
             } else {
                 console.log('No permission data found');
             }
@@ -220,6 +229,7 @@ const PermissionScreen = () => {
             vehicleAdd, vehicleUpdate, vehicleDelete,
             subadminHistoryFilter,
             blacklistAdd, blacklistDelete, blacklistUpdate,
+            staffVehicleRecordAdd,
 
         ].some(permission => permission === true);
     };
@@ -258,6 +268,8 @@ const PermissionScreen = () => {
                 "Black List Add": "insert",
                 "Black List Delete": "delete",
                 "Black List Update": "update",
+
+                "View": "View",
 
 
             };
@@ -318,6 +330,12 @@ const PermissionScreen = () => {
                     name: "Black_List_Staffs",
                     states: [blacklistAdd, blacklistDelete, blacklistUpdate],
                     labels: ["Add", "Delete", "Update"],
+                },
+
+                {
+                    name: "Staff_Vehicle_Record",
+                    states: [staffVehicleRecordAdd],
+                    labels: ["Add"],
                 },
 
 
@@ -451,6 +469,12 @@ const PermissionScreen = () => {
                         <PermissionBlock title="Staff" states={[staffAdd, staffDelete, staffUpdate, staffAccountStatus, FinanceList, staffinternetStatus, staffreset, allStaffReset, staffiCard]} setters={[setStaffAdd, setStaffDelete, setStaffUpdate, setstaffAccountStatus, setFinanceList, setstaffInternetStatus, setstaffReset, setAllStaffReset, setStaffiCard]} labels={["Add", "Delete", "Update", "Account Status", "Finance List", "Internet Status", "Single Staff Reset", "All Staff Reset", "iCard"]} />
                         <PermissionBlock title="Schedule" states={[scheduleAdd, scheduleDelete, scheduleUpdate]} setters={[setScheduleAdd, setScheduleDelete, setScheduleUpdate]} labels={["Add", "Delete", "Update"]} />
                         <PermissionBlock title="Search History" states={[searchhistoryFilter]} setters={[setsearchhistoryFilter]} labels={["Search Filter"]} />
+                        <PermissionBlock
+                            title="Staff Vehicle Record"
+                            states={[staffVehicleRecordAdd]}
+                            setters={[setStaffVehicleRecordAdd]}
+                            labels={["Add"]}
+                        />
 
                     </>
 

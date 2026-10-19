@@ -373,7 +373,7 @@ const IntimationScreen = () => {
       console.log("engine_no (vehicle_engine_no):", vehicleDetails?.vehicle_engine_no);
       console.log("product (vehicle_product):", vehicleDetails?.vehicle_product);
       console.log("customer_name (vehicle_customer_name):", vehicleDetails?.vehicle_customer_name);
-      console.log("customer_name (vehicle_customer_name):", vehicleDetails?.vehicle_finance_name);
+      console.log("customer_name (vehicle_customer_name):", vehicleDetails?.vehicle_finance_name_admin);
 
 
       console.log("SelectedAgency:", SelectedAgency);
@@ -416,7 +416,7 @@ const IntimationScreen = () => {
           reppo_address: ReppoAddress,
           confirm_status: selectedType,
           agency_select: SelectedAgency,
-          finance_name: vehicleDetails.vehicle_finance_name,
+          finance_name: vehicleDetails.vehicle_finance_name_admin,
           police_station_area: selectedAreaId,
           intimation_status: selectedType,
           agency_name: SendAgency,
@@ -424,6 +424,9 @@ const IntimationScreen = () => {
           form_time: selectedType === 'Confirm' ? formattedTime : time,
           staff_id: staffId || '',
           reposession_agent: ReppoAgency || '',
+          // ✅ NEW FIELDS
+          pos: vehicleDetails.vehicle_principle_outstanding || '',
+          vehicle_bucket: vehicleDetails.vehicle_bucket || '',
         }),
       });
 
@@ -654,7 +657,7 @@ money even after several reminders. We are going to repossess the vehicle
         <!-- Finance and Agency Details (Displayed on left and right side) -->
         <div class="static-name">
       
-        <p>${vehicleDetails.vehicle_finance_name || '----------'
+        <p>${vehicleDetails.vehicle_finance_name_admin || '----------'
       }</p>
    <p>${SelectedAgency || '----------'
       }</p>
@@ -958,7 +961,7 @@ even after several reminders. We had repossessed the vehicle.
           <!-- Finance and Agency Details (Displayed on left and right side) -->
           <div class="static-name">
         
-          <p>${vehicleDetails.vehicle_finance_name || '----------'
+          <p>${vehicleDetails.vehicle_finance_name_admin || '----------'
       }</p>
      <p>${SelectedAgency || '----------'
       }</p>
@@ -1266,7 +1269,7 @@ even after several reminders. We had repossessed the vehicle.
 
     <!-- Footer Details -->
     <div class="footer-details">
-      <p>${vehicleDetails.vehicle_finance_name || '----------'}</p>
+      <p>${vehicleDetails.vehicle_finance_name_admin || '----------'}</p>
       <p>${SelectedAgency || '----------'}</p>
     </div>
   </body>
@@ -1514,7 +1517,7 @@ even after several reminders. We had repossessed the vehicle.
 
             <!-- Footer Details -->
             <div class="footer-details">
-              <p>${vehicleDetails.vehicle_finance_name || '----------'}</p>
+              <p>${vehicleDetails.vehicle_finance_name_admin || '----------'}</p>
               <p>${SelectedAgency || '----------'}</p>
             </div>
           </body>
@@ -1573,7 +1576,7 @@ even after several reminders. We had repossessed the vehicle.
     // Create the message content
     const messageContent = `*Manager :* ${vehicleDetails.vehicle_manager || ''}
 *Month :* ${vehicleDetails.vehicle_month || ''}
-*Finance :* ${vehicleDetails.vehicle_finance_name || ''}
+*Finance :* ${vehicleDetails.vehicle_finance_name_admin || ''}
 *Branch :* ${vehicleDetails.vehicle_branch || ''}
 *Agreement Number :* ${vehicleDetails.vehicle_agreement_no || ''}
 *App ID :* ${vehicleDetails.vehicle_app_id || ''}
@@ -1616,7 +1619,7 @@ even after several reminders. We had repossessed the vehicle.
     { label: 'RC No', value: vehicleDetails.vehicle_registration_no },
     { label: 'Engine No', value: vehicleDetails.vehicle_engine_no },
     { label: 'Chasis No', value: vehicleDetails.vehicle_chassis_no },
-    { label: 'Finance Name', value: vehicleDetails.vehicle_finance_name },
+    { label: 'Finance Name', value: vehicleDetails.vehicle_finance_name_admin },
     { label: 'Product', value: vehicleDetails.vehicle_product },
     { label: 'Customer Name', value: vehicleDetails.vehicle_customer_name },
     { label: 'Manager', value: vehicleDetails.vehicle_manager },

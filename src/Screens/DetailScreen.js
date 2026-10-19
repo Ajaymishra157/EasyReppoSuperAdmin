@@ -19,7 +19,7 @@ const DetailScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
     const { vehicleData, currentLat, currentLong, locationName } = route.params || {};
-    console.log("ye hai sare data", currentLat, currentLong, locationName);
+
 
     const whatsapp = require('../assets/images/whatsapp.png');
     const Call = require('../assets/images/Call.png');
@@ -28,6 +28,8 @@ const DetailScreen = () => {
     const [DetailModal, setDetailModal] = useState(false);
     const [modalType, setModalType] = useState('copy');  // "copy" ya "whatsapp"
     const [userType, setUsertype] = useState(null);
+    const [canAdd, setCanAdd] = useState(false);
+    const [permissionLoading, setPermissionLoading] = useState(true);
 
     const [vehicleId, setVehicleId] = useState('');
 
@@ -39,64 +41,69 @@ const DetailScreen = () => {
 
 
     const [permissions, setPermissions] = useState({});
-
+    const [addingStaff, setAddingStaff] = useState(false);
 
     const [duplicateModalVisible, setDuplicateModalVisible] = useState(false);
     const [duplicateStaff, setDuplicateStaff] = useState(null);
+    const [storedAgencyId, setStoredAgencyId] = useState(null);
+    console.log("ye hai all data", storedAgencyId, vehicleData?.data_type)
 
+    useEffect(() => {
+        const getAgencyId = async () => {
+            const id = await AsyncStorage.getItem('rent_agency_id');
+            setStoredAgencyId(Number(id)); // convert to number ⚠️ important
+        };
 
+        getAgencyId();
+    }, []);
 
-    const fetchPermissions = async () => {
+    const shouldHideManager = () => {
+        const agencyId = Number(storedAgencyId || 0);
 
+        return (
+            (userType === 'SubAdmin' && vehicleData?.owner_type === 'owner') ||
+            (agencyId !== 0 && vehicleData?.data_type === 'mjs')
+        );
+    };
+
+    const checkAddPermission = async () => {
         try {
-            const staff_id = await AsyncStorage.getItem('staff_id');
-            if (!staff_id) {
-                console.warn('No staff_id found');
-                setLoading(false);
+            const storedUserType = await AsyncStorage.getItem('user_type');
+            setUsertype(storedUserType);
+
+            if (storedUserType === 'SuperAdmin' || storedUserType === 'main') {
+                setCanAdd(true);
                 return;
             }
+
+            const staff_id = await AsyncStorage.getItem('staff_id');
             const response = await fetch(ENDPOINTS.List_Staff_Permission, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ staff_id: staff_id }),
+                body: JSON.stringify({ staff_id }),
             });
 
             const result = await response.json();
 
             if (result.code === 200 && result.payload) {
-
-                const permData = {};
-
-                result.payload.forEach(item => {
-                    // Convert menu name to lowercase key
-                    const menuName = item.menu_name.toLowerCase();
-
-                    // Split permissions, convert to lowercase, trim spaces
-                    const permsArray = item.menu_permission
-                        .split(',')
-                        .map(p => p.trim().toLowerCase());
-
-                    // Create boolean map for this menu
-                    const permsObject = {};
-                    permsArray.forEach(perm => {
-                        permsObject[perm] = true;
-                    });
-
-                    permData[menuName] = permsObject;
-                });
-
-                setPermissions(permData);
-            } else {
-                console.warn('Failed to fetch permissions or no payload');
+                const vehicleRecord = result.payload.find(
+                    item => item.menu_name === 'Staff_Vehicle_Record'
+                );
+                const hasPermission = vehicleRecord
+                    ? vehicleRecord.menu_permission.split(',').map(p => p.trim().toLowerCase()).includes('insert')
+                    : false;
+                setCanAdd(hasPermission);
             }
         } catch (error) {
-            console.error('Error fetching permissions:', error);
+            console.error('Permission check error:', error);
+            setCanAdd(false);
+        } finally {
+            setPermissionLoading(false); // ✅ loading band karo
         }
-
-    }
+    };
 
     useEffect(() => {
-        fetchPermissions();
+        checkAddPermission();
     }, []);
 
 
@@ -264,7 +271,7 @@ const DetailScreen = () => {
         { label: 'RC NUMBER', key: 'vehicle_registration_no' },
         { label: 'ENGINE NUMBER', key: 'vehicle_engine_no' },
         { label: 'CHASSIS NUMBER', key: 'vehicle_chassis_no' },
-        { label: 'FINANCE NAME', key: 'vehicle_finance_name' },
+        { label: 'FINANCE NAME', key: 'vehicle_finance_name_admin' },
         { label: 'PRODUCT', key: 'vehicle_product' },
         { label: 'CUSTOMER NAME', key: 'vehicle_customer_name' },
         { label: 'FINANCE CONTACT PERSON NAME', key: 'vehicle_finance_contact_person_name' },
@@ -276,7 +283,7 @@ const DetailScreen = () => {
         { label: 'MONTH', value: vehicleData.vehicle_month },
         { label: 'BRANCH', value: vehicleData.vehicle_branch },
         { label: 'AGGREMENT NUMBER', value: vehicleData.vehicle_agreement_no },
-        { label: 'FINANCE NAME', value: vehicleData.vehicle_finance_name },
+        { label: 'FINANCE NAME', value: vehicleData.vehicle_finance_name_admin },
         { label: 'APP ID', value: vehicleData.vehicle_app_id },
         { label: 'CUSTOMER NAME', value: vehicleData.vehicle_customer_name },
         { label: 'PRODUCT', value: vehicleData.vehicle_product },
@@ -339,7 +346,6 @@ const DetailScreen = () => {
             }
 
             const data = await response.json();
-            console.log('API Response:', data);
 
             if (data.code === 200) {
 
@@ -374,11 +380,23 @@ const DetailScreen = () => {
     };
 
     const filteredFields = fields.filter(item => {
-        if (userType === 'SubAdmin' && vehicleData.owner_type === 'owner' && item.label === 'MANAGER') {
+        if (item.label === 'MANAGER' && shouldHideManager()) {
             return false; // exclude MANAGER
         }
         return true;
     });
+
+    // ✅ Sync isAllSelected with selectedFields
+    useEffect(() => {
+        const totalFields = fields.length;
+        const selectedCount = Object.keys(selectedFields).length;
+
+        if (selectedCount === totalFields && totalFields > 0) {
+            setIsAllSelected(true);
+        } else {
+            setIsAllSelected(false);
+        }
+    }, [selectedFields, fields]);
 
 
     const toggleSelectAll = () => {
@@ -415,7 +433,7 @@ const DetailScreen = () => {
 
     const handleCopy = () => {
         const filteredFields = fields.filter(item => {
-            if (userType === 'SubAdmin' && vehicleData.owner_type === 'owner' && item.label === 'MANAGER') {
+            if (item.label === 'MANAGER' && shouldHideManager()) {
                 return false; // Exclude MANAGER here as well
             }
             return true;
@@ -447,7 +465,7 @@ const DetailScreen = () => {
 
 
         const filteredFields = fields.filter(item => {
-            if (userType === 'SubAdmin' && vehicleData.owner_type === 'owner' && item.label === 'MANAGER') {
+            if (item.label === 'MANAGER' && shouldHideManager()) {
                 return false; // Exclude MANAGER
             }
             return true;
@@ -561,14 +579,31 @@ const DetailScreen = () => {
         }
 
         try {
+            setAddingStaff(true);
             setErrorMessage('');
+
+            // ✅ Fresh agency id lo
+            const agencyId = await AsyncStorage.getItem('rent_agency_id');
             // Replace with your API call
             const response = await fetch(ENDPOINTS.add_staff_vehicle_records, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     full_vehicle_id: vehicleData.full_vehicle_id,
-                    staff_name: staffName
+                    staff_name: staffName,
+                    rent_agency_id: Number(agencyId) || 0, // Add agency ID to the payload
+                    vehicle_registration_no: vehicleData.vehicle_registration_no,
+                    vehicle_engine_no: vehicleData.vehicle_engine_no,
+                    vehicle_chassis_no: vehicleData.vehicle_chassis_no,
+                    vehicle_agreement_no: vehicleData.vehicle_agreement_no,
+                    vehicle_product: vehicleData.vehicle_product,
+                    vehicle_customer_name: vehicleData.vehicle_customer_name,
+                    vehicle_finance_name: vehicleData.vehicle_finance_name_admin,
+                    agency_person_name: vehicleData.agency_person_name,
+                    agency_contact_number: vehicleData.agency_contact_number,
+                    vehicle_upload_file_name: vehicleData.vehicle_upload_file_name,
+                    pos: vehicleData.vehicle_principle_outstanding || '',
+                    vehicle_bucket: vehicleData.vehicle_bucket || '',
                 }),
             });
 
@@ -593,6 +628,9 @@ const DetailScreen = () => {
         } catch (error) {
             console.error(error);
             setErrorMessage('Error adding staff');
+        }
+        finally {
+            setAddingStaff(false);  // ✅ loader stop
         }
     };
 
@@ -674,7 +712,7 @@ const DetailScreen = () => {
             <ScrollView contentContainerStyle={{ paddingBottom: keyboardVisible ? 100 : 30, flexGrow: 1 }} style={{ backgroundColor: 'white', margin: 10 }} keyboardShouldPersistTaps='handled' showsVerticalScrollIndicator={false}>
                 <View style={{ marginBottom: 3, borderWidth: 1, borderColor: '#ddd' }}>
                     {fields
-                        .filter(item => !(userType === 'SubAdmin' && vehicleData.owner_type === 'owner' && item.label === 'MANAGER'))
+                        .filter(item => !(item.label === 'MANAGER' && shouldHideManager()))
                         .map((item, index) => (
                             <View
                                 key={index}
@@ -762,12 +800,33 @@ const DetailScreen = () => {
 
                 </View>
 
-                {userType === 'SuperAdmin' && (
+                {/* {userType === 'SuperAdmin' && ( */}
+                {permissionLoading ? (
+                    // ✅ Shimmer placeholder
+                    <View style={{ marginTop: 10, padding: 10 }}>
+                        <View style={{
+                            height: 14, width: '40%', backgroundColor: '#e0e0e0',
+                            borderRadius: 4, marginBottom: 8
+                        }} />
+                        <View style={{
+                            flexDirection: 'row', gap: 10
+                        }}>
+                            <View style={{
+                                flex: 1, height: 36, backgroundColor: '#e0e0e0',
+                                borderRadius: 5
+                            }} />
+                            <View style={{
+                                width: 60, height: 36, backgroundColor: '#e0e0e0',
+                                borderRadius: 5
+                            }} />
+                        </View>
+                    </View>
+                ) : canAdd ? (
                     <View style={{ marginTop: 10, padding: 10 }}>
 
                         {/* Label */}
                         <Text style={{ color: 'black', fontFamily: 'Inter-Regular', fontSize: 12, marginBottom: 5 }}>
-                            Enter Staff Name <Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
+                            Enter Staff Name<Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
                         </Text>
 
                         {/* Input + Button */}
@@ -777,7 +836,7 @@ const DetailScreen = () => {
                                     style={{
                                         flex: 1,
                                         borderWidth: 1,
-                                        borderColor: '#ddd',
+                                        borderColor: errorMessage ? 'red' : '#ddd',
                                         paddingVertical: 5,
                                         paddingHorizontal: 10,
                                         borderRadius: 5,
@@ -788,33 +847,46 @@ const DetailScreen = () => {
                                     placeholder="Staff Name - Mobile Number"
                                     placeholderTextColor='#ddd'
                                     value={staffName}
-                                    onChangeText={setStaffName}
+                                    onChangeText={(text) => {
+                                        setStaffName(text);
+                                        if (errorMessage) {
+                                            setErrorMessage(''); // typing start hote hi error hata do
+                                        }
+                                    }}
                                 />
 
                                 <TouchableOpacity
                                     onPress={handleAddStaff}
+                                    disabled={addingStaff} // double click prevent
                                     style={{
                                         backgroundColor: '#173161',
                                         paddingVertical: 8,
                                         paddingHorizontal: 15,
                                         borderRadius: 5,
+                                        justifyContent: 'center',
+                                        alignItems: 'center'
                                     }}
                                 >
-                                    <Text style={{ color: 'white', fontFamily: 'Inter-Bold', fontSize: 12 }}>
-                                        Add
-                                    </Text>
+                                    {addingStaff ? (
+                                        <ActivityIndicator color="white" size="small" />
+                                    ) : (
+                                        <Text style={{ color: 'white', fontFamily: 'Inter-Bold', fontSize: 12 }}>
+                                            Add
+                                        </Text>
+                                    )}
                                 </TouchableOpacity>
 
                             </View>
                             {errorMessage !== '' && (
-                                <Text style={{ color: 'red', fontSize: 12, marginTop: 5, fontFamily: 'Inter-Regular' }}>
+                                <Text style={{ color: 'red', fontSize: 12, fontFamily: 'Inter-Regular' }}>
                                     {errorMessage}
                                 </Text>
                             )}
                         </View>
 
                     </View>
-                )}
+                ) : null}
+                {/* )} */}
 
                 {userType === 'normal' && (
                     <View style={{

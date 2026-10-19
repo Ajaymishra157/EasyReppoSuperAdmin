@@ -46,7 +46,7 @@ export const prepareDB = async () => {
 
       await db.executeSql(`
         CREATE INDEX IF NOT EXISTS idx_finance_name 
-        ON full_vehicle_detail (vehicle_finance_name);
+        ON full_vehicle_detail (vehicle_finance_name_admin);
       `);
 
       await db.executeSql("PRAGMA analysis_limit=4000;");
@@ -78,7 +78,7 @@ export const bulkInsertVehicles = async (vehicles) => {
           v.vehicle_excel_upload_number,
           v.vehicle_upload_file_name,
           v.vehicle_month,
-          v.vehicle_finance_name,
+          v.vehicle_finance_name_admin,
           v.finance_name,
           v.vehicle_manager,
           v.vehicle_branch,
@@ -115,7 +115,7 @@ export const bulkInsertVehicles = async (vehicles) => {
       const sql = `
         INSERT INTO full_vehicle_detail (
           full_vehicle_id, vehicle_excel_upload_number, vehicle_upload_file_name, vehicle_month,
-          vehicle_finance_name, finance_name, vehicle_manager, vehicle_branch, vehicle_agreement_no,
+          vehicle_finance_name_admin, finance_name, vehicle_manager, vehicle_branch, vehicle_agreement_no,
           vehicle_app_id, vehicle_customer_name, vehicle_customer_number,
           vehicle_customer_address, vehicle_bucket, vehicle_emi,
           vehicle_principle_outstanding, vehicle_total_outstanding, vehicle_product,

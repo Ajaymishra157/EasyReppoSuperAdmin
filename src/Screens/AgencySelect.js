@@ -517,11 +517,13 @@ const AgencySelect = () => {
                     renderItem={({ item }) => (
                         <View
                             style={{
-                                backgroundColor: '#fff',
+                                backgroundColor: Number(item.total_vehicle) === 0 ? '#FFF1F1' : '#fff',
+
+                                borderColor: Number(item.total_vehicle) === 0 ? '#F5B5B5' : '#ddd',
                                 marginVertical: 8,
                                 marginHorizontal: 5,
                                 borderRadius: 14,
-                                borderWidth: 1, borderColor: '#ddd',
+                                borderWidth: 1,
                                 padding: 10,
                                 elevation: 4,
                                 position: 'relative',
@@ -562,7 +564,10 @@ const AgencySelect = () => {
                                             }}
                                             numberOfLines={2}   // ✅ Allow 2 lines
                                         >
-                                            {item.agency_name || '--'}
+                                            {item.agency_name || '--'}{' '}
+                                            <Text style={{ color: Number(item.total_vehicle) === 0 ? 'red' : '#1cd181' }}>
+                                                ({item.total_vehicle ?? 0})
+                                            </Text>
                                         </Text>
 
                                         <Text
@@ -575,6 +580,39 @@ const AgencySelect = () => {
                                         >
                                             Created: {formatDateTime(item.agency_entry_date)}
                                         </Text>
+                                        {(() => {
+                                            const isAdmin = item.is_admin === 'Yes';
+                                            return (
+                                                <View
+                                                    style={{
+                                                        alignSelf: 'flex-start',
+                                                        flexDirection: 'row',
+                                                        alignItems: 'center',
+                                                        backgroundColor: isAdmin ? '#FFF4D6' : '#F1F1F1',
+                                                        borderRadius: 20,
+                                                        paddingHorizontal: 8,
+                                                        paddingVertical: 2,
+                                                        marginTop: 5,
+                                                    }}
+                                                >
+                                                    <Ionicons
+                                                        name={isAdmin ? 'shield-checkmark' : 'shield-outline'}
+                                                        size={12}
+                                                        color={isAdmin ? '#B7791F' : '#777'}
+                                                    />
+                                                    <Text
+                                                        style={{
+                                                            marginLeft: 4,
+                                                            fontSize: 11,
+                                                            fontFamily: 'Inter-Bold',
+                                                            color: isAdmin ? '#B7791F' : '#777',
+                                                        }}
+                                                    >
+                                                        Admin: {isAdmin ? 'Yes' : 'No'}
+                                                    </Text>
+                                                </View>
+                                            );
+                                        })()}
                                     </View>
                                 </View>
 

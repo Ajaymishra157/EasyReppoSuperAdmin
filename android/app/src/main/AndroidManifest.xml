@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
- package="com.easyreppo">
+ package="com.easyreppotest">
 
     <uses-permission android:name="android.permission.INTERNET" />
  <uses-permission android:name="android.permission.CAMERA" />
@@ -23,7 +23,7 @@
 
          <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyBvoWcgSBGvofFvJi2tPnOyr7mj7Plc1pk" />
+            android:value="AIzaSyD0ATjEFzc87llMY3CsGlhxi-EGMu828Ds" />
 
 
       <activity

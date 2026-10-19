@@ -13,6 +13,7 @@ import {
 import React, { useEffect, useState } from 'react';
 import colors from '../CommonFiles/Colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ENDPOINTS } from '../CommonFiles/Constant';
 import RNFS from 'react-native-fs';
@@ -26,16 +27,18 @@ const AgencyFiles = () => {
     const route = useRoute();
     const navigation = useNavigation();
     const { agencyId, agencyName, agencyDetail } = route.params || {};
+    console.log("AgencyFiles route.params", route.params);
     const [loading, setLoading] = useState(true);
 
 
     const [search, setSearch] = useState('');
-    const [filteredFiles, setFilteredFiles] = useState(fileList);
 
     const [fileList, setFileList] = useState([]);
     const [filteredList, setFilteredList] = useState([]);
     const [keyboardVisible, setKeyboardVisible] = useState(false);
 
+    // 👇 sabhi files ke total vehicle records ka sum
+    const [totalRecords, setTotalRecords] = useState(0);
 
     const [downloadingItems, setDownloadingItems] = useState({});
 
@@ -93,11 +96,28 @@ const AgencyFiles = () => {
                     finance_name: item.vehicle_finance_name,
                     entry_date: item.entry_date,
                     status: item.vehicle_status,
-                    upload_number: item.vehicle_excel_upload_number
+                    upload_number: item.vehicle_excel_upload_number,
+                    // 🔥 API me jo field naam ho, yahan se pick kar lega
+                    total_vehicle: Number(
+                        item.total_vehicle ??
+                        item.total_records ??
+                        item.total_count ??
+                        item.vehicle_count ??
+                        item.record_count ??
+                        0
+                    ) || 0,
                 }));
 
                 setFileList(formatted);
                 setFilteredList(formatted);
+
+                // 👇 sabhi files ke vehicles ka sum
+                const sum = formatted.reduce((acc, item) => acc + item.total_vehicle, 0);
+                setTotalRecords(sum);
+            } else {
+                setFileList([]);
+                setFilteredList([]);
+                setTotalRecords(0);
             }
 
         } catch (error) {
@@ -236,6 +256,85 @@ const AgencyFiles = () => {
                 </Text>
             </View>
 
+            {/* TOP COUNT CARDS */}
+            <View style={{ flexDirection: 'row', paddingHorizontal: 15, marginTop: 12, gap: 10 }}>
+                <View
+                    style={{
+                        flex: 1,
+                        backgroundColor: colors.Brown,
+                        borderRadius: 12,
+                        paddingVertical: 14,
+                        paddingHorizontal: 14,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        elevation: 4,
+                        shadowColor: '#000',
+                        shadowOpacity: 0.15,
+                        shadowRadius: 5,
+                    }}
+                >
+                    <View>
+                        <Text style={{ color: 'white', fontSize: 12, fontFamily: 'Inter-Regular' }}>
+                            Total Files
+                        </Text>
+                        <Text style={{ color: 'white', fontSize: 20, fontFamily: 'Inter-Bold', marginTop: 2 }}>
+                            {fileList.length}
+                        </Text>
+                    </View>
+                    <View
+                        style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 20,
+                            backgroundColor: 'rgba(255,255,255,0.15)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <FontAwesome5 name="file-excel" size={17} color="white" />
+                    </View>
+                </View>
+
+                <View
+                    style={{
+                        flex: 1,
+                        backgroundColor: '#16A34A',
+                        borderRadius: 12,
+                        paddingVertical: 14,
+                        paddingHorizontal: 14,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        elevation: 4,
+                        shadowColor: '#000',
+                        shadowOpacity: 0.15,
+                        shadowRadius: 5,
+                    }}
+                >
+                    <View>
+                        <Text style={{ color: 'white', fontSize: 12, fontFamily: 'Inter-Regular' }}>
+                            Total Vehicles
+                        </Text>
+                        <Text style={{ color: 'white', fontSize: 20, fontFamily: 'Inter-Bold', marginTop: 2 }}>
+                            {totalRecords}
+                        </Text>
+                    </View>
+                    <View
+                        style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 20,
+                            backgroundColor: 'rgba(255,255,255,0.15)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <Ionicons name="car-sport-outline" size={20} color="white" />
+                    </View>
+                </View>
+            </View>
+
             {/* ✅ SEARCH BAR */}
             {(fileList.length > 0 || search.length > 0) && (
                 <View style={{
@@ -333,10 +432,10 @@ const AgencyFiles = () => {
                             )
                         }
                         renderItem={({ item, index }) => (
-
                             <View style={{
                                 backgroundColor: '#fff',
-                                paddingVertical: 10,
+                                paddingTop: 10,
+                                paddingBottom: 38,
                                 paddingHorizontal: 14,
                                 borderRadius: 10,
                                 marginVertical: 7,
@@ -346,32 +445,33 @@ const AgencyFiles = () => {
                                 elevation: 3
                             }}>
 
-                                {/* ✅ STATUS TOP RIGHT */}
+                                {/* ✅ TOP RIGHT: VEHICLE COUNT + STATUS */}
                                 <View style={{
                                     position: 'absolute',
                                     top: 0,
                                     right: 0,
-                                    backgroundColor:
-                                        item.status === "Active"
-                                            ? '#DCFCE7'
-                                            : '#FEE2E2',
-                                    paddingHorizontal: 10,
-                                    paddingVertical: 4,
-                                    borderTopRightRadius: 10,
-                                    borderBottomLeftRadius: 10,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
                                 }}>
-                                    <Text style={{
-                                        fontSize: 10,
-                                        fontFamily: 'Inter-Bold',
-                                        color:
-                                            item.status === "Active"
-                                                ? '#166534'
-                                                : '#991B1B'
+                                    {/* VEHICLE COUNT */}
+                                    <View style={{
+                                        backgroundColor: '#EFF6FF',
+                                        paddingHorizontal: 10,
+                                        paddingVertical: 4,
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        gap: 5,
+                                        borderBottomLeftRadius: 10,
                                     }}>
-                                        {item.status}
-                                    </Text>
-                                </View>
+                                        <Ionicons name="car-outline" size={12} color="#2563EB" />
+                                        <Text style={{ fontSize: 10, fontFamily: 'Inter-Bold', color: '#2563EB' }}>
+                                            {item.total_vehicle} Vehicles
+                                        </Text>
+                                    </View>
 
+                                    {/* STATUS */}
+
+                                </View>
 
                                 {/* INDEX */}
                                 <Text style={{
@@ -383,100 +483,92 @@ const AgencyFiles = () => {
                                     #{index + 1}
                                 </Text>
 
-
                                 {/* FINANCE */}
                                 <Text>
-                                    <Text style={{
-                                        fontSize: 12,
-                                        color: '#111827',
-                                        fontFamily: 'Inter-Bold'
-                                    }}>
+                                    <Text style={{ fontSize: 12, color: '#111827', fontFamily: 'Inter-Bold' }}>
                                         Finance Name:
                                     </Text>
-
-                                    <Text style={{
-                                        fontSize: 12,
-                                        color: '#6B7280',
-                                        fontFamily: 'Inter-Regular'
-                                    }}>
+                                    <Text style={{ fontSize: 12, color: '#6B7280', fontFamily: 'Inter-Regular' }}>
                                         {" "}{item.finance_name}
                                     </Text>
                                 </Text>
 
-
                                 {/* FILE */}
                                 <Text style={{ marginTop: 5 }}>
-                                    <Text style={{
-                                        fontSize: 12,
-                                        color: '#111827',
-                                        fontFamily: 'Inter-Bold'
-                                    }}>
+                                    <Text style={{ fontSize: 12, color: '#111827', fontFamily: 'Inter-Bold' }}>
                                         Excel File Name:
                                     </Text>
-
-                                    <Text style={{
-                                        fontSize: 12,
-                                        color: '#6B7280',
-                                        fontFamily: 'Inter-Regular'
-                                    }}>
+                                    <Text style={{ fontSize: 12, color: '#6B7280', fontFamily: 'Inter-Regular' }}>
                                         {" "}{item.file_name}
                                     </Text>
                                 </Text>
 
-
                                 {/* DATE */}
                                 <Text style={{ marginTop: 5 }}>
-                                    <Text style={{
-                                        fontSize: 12,
-                                        color: '#111827',
-                                        fontFamily: 'Inter-Bold'
-                                    }}>
+                                    <Text style={{ fontSize: 12, color: '#111827', fontFamily: 'Inter-Bold' }}>
                                         Entry On :
                                     </Text>
-
-                                    <Text style={{
-                                        fontSize: 12,
-                                        color: '#6B7280',
-                                        fontFamily: 'Inter-Regular'
-                                    }}>
+                                    <Text style={{ fontSize: 12, color: '#6B7280', fontFamily: 'Inter-Regular' }}>
                                         {" "}{formatDateTime(item.entry_date)}
                                     </Text>
                                 </Text>
 
-
-                                {/* ✅ DOWNLOAD BOTTOM RIGHT */}
-                                <TouchableOpacity
-                                    activeOpacity={0.8}
-                                    onPress={() => downloadExcel(item.upload_number, item.finance_name)}
-                                    style={{
-                                        position: 'absolute',
-                                        bottom: 3,
-                                        right: 3,
+                                {/* ✅ BOTTOM RIGHT: ACTIVE BADGE + DOWNLOAD (icon only) */}
+                                <View style={{
+                                    position: 'absolute',
+                                    bottom: 4,
+                                    right: 4,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                }}>
+                                    {/* ACTIVE / DEACTIVE */}
+                                    <View style={{
                                         flexDirection: 'row',
                                         alignItems: 'center',
-                                        backgroundColor: colors.Brown,
-                                        paddingVertical: 6,
+                                        height: 28,
                                         paddingHorizontal: 10,
                                         borderRadius: 8,
-                                    }}
-                                >
-                                    {downloadingItems[item.upload_number] ? (
-                                        <ActivityIndicator size="small" color="#fff" />
-                                    ) : (
-                                        <>
-                                            <Ionicons name="download-outline" size={10} color="#fff" />
-                                            <Text style={{
-                                                color: '#fff',
-                                                fontSize: 8,
-                                                marginLeft: 4,
-                                                fontFamily: 'Inter-Medium'
-                                            }}>
-                                                Download
-                                            </Text>
-                                        </>
-                                    )}
-                                </TouchableOpacity>
+                                        backgroundColor: item.status === "Active" ? '#DCFCE7' : '#F3F4F6',
+                                        borderWidth: 1,
+                                        borderColor: item.status === "Active" ? '#16A34A' : '#9CA3AF',
+                                    }}>
+                                        <Ionicons
+                                            name={item.status === "Active" ? 'checkmark-circle' : 'close-circle'}
+                                            size={12}
+                                            color={item.status === "Active" ? '#16A34A' : '#6B7280'}
+                                        />
+                                        <Text style={{
+                                            color: item.status === "Active" ? '#16A34A' : '#6B7280',
+                                            fontSize: 10,
+                                            marginLeft: 4,
+                                            fontFamily: 'Inter-Medium',
+                                        }}>
+                                            {item.status === "Active" ? 'Active' : 'Deactive'}
+                                        </Text>
+                                    </View>
 
+                                    {/* DOWNLOAD */}
+                                    <TouchableOpacity
+                                        activeOpacity={0.8}
+                                        onPress={() => downloadExcel(item.upload_number, item.finance_name)}
+                                        disabled={!!downloadingItems[item.upload_number]}
+                                        style={{
+                                            backgroundColor: colors.Brown,
+                                            width: 28,
+                                            height: 28,
+                                            borderRadius: 8,
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                        }}
+                                    >
+                                        {downloadingItems[item.upload_number] ? (
+                                            <ActivityIndicator size="small" color="#fff" />
+                                        ) : (
+                                            <Ionicons name="download-outline" size={14} color="#fff" />
+                                        )}
+                                    </TouchableOpacity>
+                                </View>
 
                             </View>
                         )}

@@ -1,4 +1,4 @@
-package com.easyreppo
+package com.easyreppotest
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

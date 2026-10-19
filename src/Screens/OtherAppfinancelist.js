@@ -14,8 +14,10 @@ const OtherAppfinancelist = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { Id, Name } = route.params || {};
+  console.log("Received Id and Name:", Id, Name);
 
   const [financeList, setFinanceList] = useState([]);
+  console.log("financelist data", financeList);
   const [isEditMode, setIsEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saveloading, setSaveloading] = useState(false);
@@ -119,7 +121,7 @@ const OtherAppfinancelist = () => {
       setLoading(true);
 
       const response = await fetch(ENDPOINTS.other_app_list_detail, {
-        method: 'POST',          // or 'PUT', as required
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
@@ -128,22 +130,39 @@ const OtherAppfinancelist = () => {
         })
       });
       const result = await response.json();
-      if (response.ok && result.code == 200) {
+
+      if (response.ok && result.code == 200 && result.payload?.length > 0) {
         const item = result.payload[0];
-        // Convert finance list into array
+
         const financeArr = item.finance_list.split(',').map(f => f.trim());
         const statusArr = item.status.split(',').map(s => s.trim());
 
-        const finalList = financeArr.map((name, index) => ({
-          finance_name: name,
-          status: statusArr[index],
-          staff_checkbox: statusArr[index].toLowerCase() == "active"
-        }));
-        setFinanceList(finalList);
-        setFilteredList(finalList);
-      } else {
-        setFinanceList([]);
+        // saved data ka lookup map bana lo (name lowercase -> active/deactive)
+        const savedMap = {};
+        financeArr.forEach((name, index) => {
+          savedMap[name.toLowerCase()] = statusArr[index]?.toLowerCase() === 'active';
+        });
+
+        // ab master list (financeList jo fetchFinanceList se aa chuki hai) ke upar
+        // saved status ko merge karo — master list hi base rahegi (64 items)
+        setFinanceList(prevMasterList => {
+          const mergedList = prevMasterList.map(masterItem => {
+            const key = masterItem.finance_name.toLowerCase();
+            const isMatched = savedMap.hasOwnProperty(key);
+
+            return {
+              ...masterItem,
+              staff_checkbox: isMatched ? savedMap[key] : false,
+              status: isMatched ? (savedMap[key] ? 'active' : 'deactive') : 'deactive'
+            };
+          });
+
+          setFilteredList(mergedList);
+          return mergedList;
+        });
       }
+      // agar payload empty hai (koi saved data nahi), to master list jaisi hai waisi rehne do
+      // (kuch mat karo, financeList already fetchFinanceList se set hai)
     } catch (error) {
       console.log("Error fetching finance list:", error.message);
     } finally {

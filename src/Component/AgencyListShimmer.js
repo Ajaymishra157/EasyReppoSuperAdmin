@@ -3,9 +3,13 @@ import React from 'react';
 import ShimmerPlaceHolder from 'react-native-shimmer-placeholder';
 import LinearGradient from 'react-native-linear-gradient';
 
+const Shimmer = ({ style }) => (
+    <ShimmerPlaceHolder LinearGradient={LinearGradient} style={style} />
+);
+
 const AgencyListShimmer = () => {
     return (
-        <View style={{ paddingHorizontal: 8, paddingTop: 10 }}>
+        <View style={{ padding: 10 }}>
             {[...Array(5)].map((_, index) => (
                 <View key={index} style={styles.card}>
 
@@ -14,71 +18,43 @@ const AgencyListShimmer = () => {
 
                         {/* Left Section */}
                         <View style={{ flexDirection: 'row', flex: 1 }}>
-                            <ShimmerPlaceHolder
-                                LinearGradient={LinearGradient}
-                                style={styles.businessIcon}
-                            />
+                            <Shimmer style={styles.businessIcon} />
 
                             <View style={{ flex: 1 }}>
-                                <ShimmerPlaceHolder
-                                    LinearGradient={LinearGradient}
-                                    style={styles.title}
-                                />
-                                <ShimmerPlaceHolder
-                                    LinearGradient={LinearGradient}
-                                    style={styles.date}
-                                />
+                                {/* Name (count) */}
+                                <Shimmer style={styles.title} />
+                                {/* Created date */}
+                                <Shimmer style={styles.date} />
+                                {/* Admin badge */}
+                                <Shimmer style={styles.badge} />
                             </View>
                         </View>
 
-                        {/* Toggle Placeholder */}
-                        <ShimmerPlaceHolder
-                            LinearGradient={LinearGradient}
-                            style={styles.toggle}
-                        />
+                        {/* Toggle */}
+                        <Shimmer style={styles.toggle} />
                     </View>
 
                     {/* Divider */}
                     <View style={styles.divider} />
 
-                    {/* Mobile Row */}
+                    {/* Mobile Row + arrow */}
                     <View style={styles.detailRow}>
-                        <ShimmerPlaceHolder
-                            LinearGradient={LinearGradient}
-                            style={styles.smallIcon}
-                        />
-                        <ShimmerPlaceHolder
-                            LinearGradient={LinearGradient}
-                            style={styles.lineMedium}
-                        />
-                        <ShimmerPlaceHolder
-                            LinearGradient={LinearGradient}
-                            style={styles.arrowBtn}
-                        />
+                        <Shimmer style={styles.smallIcon} />
+                        <Shimmer style={styles.lineMedium} />
+                        <Shimmer style={styles.arrowBtn} />
                     </View>
 
                     {/* Username Row */}
                     <View style={styles.detailRow}>
-                        <ShimmerPlaceHolder
-                            LinearGradient={LinearGradient}
-                            style={styles.smallIcon}
-                        />
-                        <ShimmerPlaceHolder
-                            LinearGradient={LinearGradient}
-                            style={styles.lineMedium}
-                        />
+                        <Shimmer style={styles.smallIcon} />
+                        <Shimmer style={styles.lineMedium} />
                     </View>
 
-                    {/* Password Row */}
-                    <View style={styles.detailRow}>
-                        <ShimmerPlaceHolder
-                            LinearGradient={LinearGradient}
-                            style={styles.smallIcon}
-                        />
-                        <ShimmerPlaceHolder
-                            LinearGradient={LinearGradient}
-                            style={styles.lineSmall}
-                        />
+                    {/* Password Row + eye */}
+                    <View style={[styles.detailRow, { marginBottom: 0 }]}>
+                        <Shimmer style={styles.smallIcon} />
+                        <Shimmer style={styles.lineMedium} />
+                        <Shimmer style={styles.eyeIcon} />
                     </View>
 
                 </View>
@@ -90,14 +66,15 @@ const AgencyListShimmer = () => {
 export default AgencyListShimmer;
 
 const styles = StyleSheet.create({
-
+    // Same spacing as the real card
     card: {
         backgroundColor: '#fff',
         marginVertical: 8,
+        marginHorizontal: 5,
         borderRadius: 14,
         borderWidth: 1,
         borderColor: '#ddd',
-        padding: 12,
+        padding: 10,
         elevation: 4,
     },
 
@@ -115,15 +92,22 @@ const styles = StyleSheet.create({
 
     title: {
         height: 16,
-        width: '80%',
+        width: '75%',
         borderRadius: 4,
         marginBottom: 6,
     },
 
     date: {
         height: 12,
-        width: '50%',
+        width: '55%',
         borderRadius: 4,
+    },
+
+    badge: {
+        height: 18,
+        width: 80,
+        borderRadius: 10,
+        marginTop: 7,
     },
 
     toggle: {
@@ -136,14 +120,13 @@ const styles = StyleSheet.create({
     divider: {
         height: 1,
         backgroundColor: '#eee',
-        marginVertical: 12,
+        marginVertical: 10,
     },
 
     detailRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 12,
-        justifyContent: 'space-between',
+        marginBottom: 10,
     },
 
     smallIcon: {
@@ -160,16 +143,17 @@ const styles = StyleSheet.create({
         marginRight: 10,
     },
 
-    lineSmall: {
-        flex: 1,
-        height: 14,
-        borderRadius: 4,
-    },
-
     arrowBtn: {
         height: 28,
         width: 28,
         borderRadius: 14,
+        marginRight: 3,
     },
 
+    eyeIcon: {
+        height: 20,
+        width: 22,
+        borderRadius: 6,
+        marginRight: 5,
+    },
 });

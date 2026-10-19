@@ -9,6 +9,7 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
 import EvilIcons from 'react-native-vector-icons/EvilIcons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import StaffVehicleShimmer from '../Component/StaffVehicleShimmer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 const StaffVehicleRecords = () => {
@@ -53,6 +54,8 @@ const StaffVehicleRecords = () => {
     const loadMore = () => {
         if (!hasMore || loadingMore) return;
 
+        if (StaffList.length === 0) return;
+
         setLoadingMore(true);
 
         setTimeout(() => {
@@ -72,6 +75,7 @@ const StaffVehicleRecords = () => {
     const fetchData = async () => {
         setStaffLoading(true);
         try {
+            const storedAgencyId = await AsyncStorage.getItem('rent_agency_id');
 
 
             const response = await fetch(ENDPOINTS.list_staff_vehicle_records, {
@@ -79,6 +83,9 @@ const StaffVehicleRecords = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                body: JSON.stringify({
+                    rent_agency_id: Number(storedAgencyId) || 0, // Add agency ID to the payload
+                }),
 
             });
 
@@ -367,6 +374,11 @@ const StaffVehicleRecords = () => {
                                 onPress={() => {
                                     setText('');
                                     setStaffList(originalStaffData);
+
+                                    const firstBatch = originalStaffData.slice(0, ITEMS_PER_PAGE);
+                                    setVisibleData(firstBatch);
+                                    setPage(1);
+                                    setHasMore(originalStaffData.length > ITEMS_PER_PAGE);
                                 }}
                                 style={{
                                     marginRight: 10,
@@ -392,7 +404,11 @@ const StaffVehicleRecords = () => {
 
                 keyExtractor={(item) => item.id.toString()}
                 removeClippedSubviews={true}
-                onEndReached={loadMore}
+                onEndReached={() => {
+                    if (visibleData.length > 0) {
+                        loadMore();
+                    }
+                }}
                 onEndReachedThreshold={0.5}
                 initialNumToRender={20}
                 maxToRenderPerBatch={20}

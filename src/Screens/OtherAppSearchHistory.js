@@ -17,13 +17,14 @@ import SearchHistoryShimmer from '../Component/SearchHistoryShimmer';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Toast from 'react-native-toast-message';
 
-Geocoder.init('AIzaSyBvoWcgSBGvofFvJi2tPnOyr7mj7Plc1pk');
+Geocoder.init('AIzaSyD0ATjEFzc87llMY3CsGlhxi-EGMu828Ds');
 
 const OtherAppSearchHistory = () => {
     const History = require('../assets/images/history.png');
     const navigation = useNavigation();
     const route = useRoute();
     const { Id, Name } = route.params || {};
+    console.log("agency ki id", Id)
 
     const [SearchHistory, setSearchHistory] = useState([]);
     const [SearchLoading, setSearchLoading] = useState(false);
@@ -311,16 +312,21 @@ const OtherAppSearchHistory = () => {
         setLoadingMore(true);
         try {
             const rentAgencyId = 0;
+
+            const requestBody = {
+                from_date: fromdate,
+                till_date: tilldate,
+                rent_agency_id: rentAgencyId,
+                page: pageNumber.toString(), // ✅ page bhejna
+                other_agency_id: Id
+            };
+
+            console.log('Request Body:', JSON.stringify(requestBody, null, 2)); // 👈 yaha dikhega
+
             const response = await fetch(ENDPOINTS.other_app_history, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    from_date: fromdate,
-                    till_date: tilldate,
-                    rent_agency_id: rentAgencyId,
-                    page: pageNumber.toString(), // ✅ page bhejna
-                    other_agency_id: Id
-                }),
+                body: JSON.stringify(requestBody),
             });
 
             console.log('Fetching page:', pageNumber, 'from', fromdate, 'to', tilldate, rentAgencyId, Id);
@@ -369,7 +375,6 @@ const OtherAppSearchHistory = () => {
 
     const handleSearch = async (inputText, pageNumber = 1) => {
         if (!inputText || inputText.trim() === '') {
-            // If search is empty, revert to showing all data
             setIsSearchActive(false);
             setCurrentSearch('');
             setPage(1);
@@ -379,43 +384,69 @@ const OtherAppSearchHistory = () => {
             SearchHistoryApi(fromDate, tillDate, 1);
             return;
         }
+
         const storedAgencyId = await AsyncStorage.getItem('rent_agency_id');
         const rentAgencyId = 0;
+
         setCurrentSearch(inputText);
         setIsSearchActive(true);
         setHasSearched(true);
         setLoadingMore(true);
 
         try {
+
+            const searchBody = {
+                search: inputText,
+                rent_agency_id: rentAgencyId,
+                page: pageNumber.toString(),
+                other_agency_id: Id
+            };
+
+            console.log('================ SEARCH API ================');
+            console.log('SEARCH API URL:', ENDPOINTS.search_other_app_history);
+            console.log('SEARCH API METHOD: POST');
+            console.log('SEARCH API BODY:', searchBody);
+            console.log('SEARCH API BODY JSON:', JSON.stringify(searchBody));
+            console.log('============================================');
+
             const response = await fetch(ENDPOINTS.search_other_app_history, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    search: inputText,
-                    rent_agency_id: rentAgencyId,
-                    page: pageNumber.toString(),
-                    other_agency_id: Id
-                }),
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(searchBody)
             });
+
             const result = await response.json();
+
+            console.log('SEARCH API RESPONSE:', result);
+
             if (result.code == 200) {
-                console.log('search inside search')
                 if (pageNumber === 1) {
                     setSearchHistory(result.payload);
                 } else {
-                    console.log('merge')
                     setSearchHistory((prev) => [...prev, ...result.payload]);
                 }
+
                 if (result.payload.length === 0) {
                     setAllLoaded(true);
                 } else {
                     setAllLoaded(false);
                 }
+
                 setPage(pageNumber);
+
             } else {
-                if (pageNumber == 1) setSearchHistory([]);
-                // console.log('Search API error', result.message || result.code);
+                if (pageNumber == 1) {
+                    setSearchHistory([]);
+                }
+
+                console.log(
+                    'Search API error:',
+                    result.message || result.code
+                );
             }
+
         } catch (error) {
             console.log('Search API error:', error);
         } finally {

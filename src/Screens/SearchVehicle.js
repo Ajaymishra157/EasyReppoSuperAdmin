@@ -288,7 +288,7 @@ const SearchVehicle = () => {
       if (rentAgencyId && rentAgencyId !== '0') {
         if (easyList.length > 0) {
           const placeholders = easyList.map(() => '?').join(',');
-          sql += ` AND (data_type != 'mjs' OR UPPER(TRIM(vehicle_finance_name)) NOT IN (${placeholders}))`;
+          sql += ` AND (data_type != 'mjs' OR UPPER(TRIM(vehicle_finance_name_admin)) NOT IN (${placeholders}))`;
           params.push(...easyList);
         }
       }
@@ -326,7 +326,7 @@ const SearchVehicle = () => {
           let finalPartialSql = partialSql;
           if (rentAgencyId && rentAgencyId !== '0' && easyList.length > 0) {
             const placeholders = easyList.map(() => '?').join(',');
-            finalPartialSql += ` AND (data_type != 'mjs' OR UPPER(TRIM(vehicle_finance_name)) NOT IN (${placeholders}))`;
+            finalPartialSql += ` AND (data_type != 'mjs' OR UPPER(TRIM(vehicle_finance_name_admin)) NOT IN (${placeholders}))`;
             partialParams.push(...easyList);
           }
 
@@ -354,7 +354,7 @@ const SearchVehicle = () => {
           let finalPartialSql = partialSql;
           if (rentAgencyId && rentAgencyId !== '0' && easyList.length > 0) {
             const placeholders = easyList.map(() => '?').join(',');
-            finalPartialSql += ` AND (data_type != 'mjs' OR UPPER(TRIM(vehicle_finance_name)) NOT IN (${placeholders}))`;
+            finalPartialSql += ` AND (data_type != 'mjs' OR UPPER(TRIM(vehicle_finance_name_admin)) NOT IN (${placeholders}))`;
             partialParams.push(...easyList);
           }
 

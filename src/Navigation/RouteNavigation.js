@@ -55,6 +55,13 @@ import PDFViewerScreen from '../Screens/PDFViewerScreen';
 import AgencyFiles from '../Screens/AgencyFiles';
 import AllVehicleSearch from '../Screens/AllVehicleSearch';
 import Toast from 'react-native-toast-message';
+import AllStaffList from '../Screens/AllStaffList';
+import OtherAppStaff from '../Screens/OtherAppStaff';
+import OtherStaffinfo from '../Screens/OtherStaffinfo';
+import OtherAppVehicleReport from '../Screens/OtherAppVehicleReport';
+import VehicleFileDetails from '../Screens/EasyReppoFileUpload/VehicleFileDetails';
+import VehicleFileUpload from '../Screens/EasyReppoFileUpload/VehicleFileUpload';
+import RentAgencySearchHistory from '../Screens/RentAgencySearchHistory';
 
 
 const Stack = createNativeStackNavigator();
@@ -178,7 +185,16 @@ const RouteNavigation = () => {
         <Stack.Screen name='AgencyAddStaffSchedule' component={AgencyAddStaffSchedule} options={{ headerShown: false }} />
         <Stack.Screen name='AgencyFiles' component={AgencyFiles} options={{ headerShown: false }} />
         <Stack.Screen name='AllVehicleSearch' component={AllVehicleSearch} options={{ headerShown: false }} />
+        <Stack.Screen name='AllStaffList' component={AllStaffList} options={{ headerShown: false }} />
 
+        <Stack.Screen name='OtherAppStaff' component={OtherAppStaff} options={{ headerShown: false }} />
+        <Stack.Screen name='OtherStaffinfo' component={OtherStaffinfo} options={{ headerShown: false }} />
+        <Stack.Screen name='OtherAppVehicleReport' component={OtherAppVehicleReport} options={{ headerShown: false }} />
+
+        <Stack.Screen name='VehicleFileDetails' component={VehicleFileDetails} options={{ headerShown: false }} />
+        <Stack.Screen name='VehicleFileUpload' component={VehicleFileUpload} options={{ headerShown: false }} />
+
+        <Stack.Screen name='RentAgencySearchHistory' component={RentAgencySearchHistory} options={{ headerShown: false }} />
 
 
 

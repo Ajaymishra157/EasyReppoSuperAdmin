@@ -86,7 +86,7 @@ const SingleVehicleUpload = () => {
             setRcNumber(vehicle.vehicle_registration_no || '');
             setRepoFos(vehicle.vehicle_repo_fos || '');
             setFieldFos(vehicle.vehicle_fild_fos || '');
-            setSelectedType(vehicle.vehicle_finance_name || null);
+            setSelectedType(vehicle.vehicle_finance_name_admin || null);
             setCustomerName(vehicle.vehicle_customer_name || '');
             setPrincipleOutstanding(vehicle.vehicle_principle_outstanding || '');
             setBranch(vehicle.vehicle_branch || '');

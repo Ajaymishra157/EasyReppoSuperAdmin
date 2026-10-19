@@ -1,12 +1,43 @@
 // export const BASE_URL = 'https://admin.easyreppo.in/new_api/';
-export const BASE_URL = 'https://admin.easyreppo.in/api-1.0.1/';
+// export const BASE_URL = 'https://admin.easyreppo.in/api-1.0.1/';
+// export const BASE_URL = 'https://admin.easyreppo.in/api-1.0.2/';
+// export const BASE_URL = 'https://admin.easyreppo.in/api-1.0.3/';
+
 // export const BASE_URL = 'https://admin.easyreppo.in/new_api_dev/';
 // export const BASE_URL = 'https://easyreppo.com/admin/api-1.0/';
 // export const BASE_URL = 'https://api1.easyreppo.in/';
 
+
+
+// export const BASE_URL = 'https://admin.easyreppo.in/api-1.0.6/';
+
+//testing ke liye only
+export const BASE_URL = 'https://easyreppo.easyseizing.in/admin/api-1.0.6/';
+
+
 // ye sare images ke liye hai link
 export const IMAGE_BASE_URL = 'https://easyreppo.in/';
 
+
+
+const CHUNK_SIZE = 500;
+const PREVIEW_ROWS = 50;
+
+const makeHeaders = (rawHeaders) => {
+  const seen = {};
+  return rawHeaders.map((h, i) => {
+    let name = String(h ?? '').trim() || `Column_${i + 1}`;
+    if (seen[name]) {
+      seen[name] += 1;
+      name = `${name}_${seen[name]}`;
+    } else {
+      seen[name] = 1;
+    }
+    return name;
+  });
+};
+
+const toPath = (uri) => decodeURIComponent(uri.replace('file://', ''));
 
 
 export const ENDPOINTS = {
@@ -82,6 +113,8 @@ export const ENDPOINTS = {
   user_vehicle_history_new: `${BASE_URL}user_vehicle_history_new.php`,
   update_profile_img: `${BASE_URL}update_profile_img.php`,
 
+  All_Staff_List: `${BASE_URL}all_staff_list.php`,
+
 
 
 
@@ -109,4 +142,16 @@ export const ENDPOINTS = {
   other_app_list_detail: `${BASE_URL}other/other_app_list_detail.php`,
   other_app_history: `${BASE_URL}other/other_app_history.php`,
   search_other_app_history: `${BASE_URL}other/search_other_app_history.php`,
+
+  column_list: `${BASE_URL}column_list.php`,
+  ajax_vehicle_upload: `${BASE_URL}ajax_vehicle_upload.php`,
+  csv_excel_file_upload: `${BASE_URL}csv_excel_file_upload.php`,
+  listvehiclerand: `${BASE_URL}listvehiclerand.php`,
+  deletevehiclerand: `${BASE_URL}deletevehiclerand.php`, // 👈 list API ki file ka naam daalo
+
+  change_excel_status: `${BASE_URL}change_excel_status.php`, // apni API ke hisab se
+
+
+
+
 };

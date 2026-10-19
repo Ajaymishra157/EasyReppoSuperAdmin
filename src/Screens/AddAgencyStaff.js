@@ -52,6 +52,7 @@ const AddAgencyStaff = () => {
 
     const dropdownData = [
         { label: 'Sub Admin', value: 'subadmin' },
+        { label: 'TL', value: 'TL' },
         { label: 'Field Staff', value: 'normal' },
     ];
 
@@ -82,6 +83,10 @@ const AddAgencyStaff = () => {
         if (lowerType === 'subadmin' || lowerType === 'admin staff' ||
             lowerType === 'admin') {
             return 'subadmin';
+        }
+
+        if (lowerType === 'tl' || lowerType === 'TL') {
+            return 'TL';
         }
 
         return null;
@@ -181,6 +186,11 @@ const AddAgencyStaff = () => {
             payload.staff_id = staff_id;
         }
 
+        // ✅ Pehle purane errors clear kar do
+        setMobileError('');
+        setEmailError('');
+        setSubmitError('');
+
         try {
             const endpoint = staff_id ? ENDPOINTS.update_agency_staff : ENDPOINTS.Add_Agency_Staff;
             const response = await fetch(endpoint, {
@@ -191,22 +201,9 @@ const AddAgencyStaff = () => {
                 body: JSON.stringify(payload),
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                Toast.show({
-                    type: 'error',
-                    text1: errorData.message || 'Failed to save staff.',
-                    position: 'bottom',
-                    bottomOffset: 60,
-                    visibilityTime: 2000,
-                }); return;
-            }
-
-            const data = await response.json();
+            const data = await response.json(); // ✅ response ek hi baar parse
 
             if (data.code === 200) {
-                // ✅ New custom toast
-
                 Toast.show({
                     type: 'success',
                     text1: staff_id
@@ -230,31 +227,35 @@ const AddAgencyStaff = () => {
                 }, 500);
             } else if (data.code === 400 && data.message === 'This mobile number is blacklisted') {
                 // 🔹 Blacklist case
-                const payload = data.payload;
-                setBlacklistError(`${payload.staff_name} has been blacklisted\nRemark: ${payload.remark}`);
+                const blacklistPayload = data.payload;
+                setBlacklistError(`${blacklistPayload.staff_name} has been blacklisted\nRemark: ${blacklistPayload.remark}`);
                 setBlacklistModalVisible(true);
             } else {
                 console.log('Add failed:', data.message);
-                // Check if the error is related to mobile number already existing
-                if (data.message === 'Mobile number already exists') {
-                    setMobileError('Mobile number already exists'); // Set the error message to state
-                    // setSubmitError('');
-                } else if (data.message === 'Email address already exists') {
-                    setEmailError('Email address already exists');
-                } else if (
-                    data.message ===
-                    'Mobile number already exists, Email address already exists'
-                ) {
-                    setSubmitError(
-                        'Mobile number already exists, Email address already exists',
-                    );
+
+                const msg = data.message || 'Something went wrong';
+                const lowerMsg = msg.toLowerCase();
+
+                // Field-specific highlight (agar keyword mile to)
+                if (lowerMsg.includes('mobile')) {
+                    setMobileError(msg);
+                } else if (lowerMsg.includes('email')) {
+                    setEmailError(msg);
+                } else {
+                    // sirf tab dikhao jab koi field-specific match na ho
+                    setSubmitError(msg);
                 }
             }
 
-
         } catch (error) {
             console.error('API error:', error);
-            console.log('Network error, please try again later.');
+            Toast.show({
+                type: 'error',
+                text1: 'Network error, please try again later.',
+                position: 'bottom',
+                bottomOffset: 60,
+                visibilityTime: 2000,
+            });
         } finally {
             setLoading(false);   // ✅ Stop loader (IMPORTANT)
         }
@@ -459,7 +460,7 @@ const AddAgencyStaff = () => {
                 <Text style={{ fontSize: 16, fontWeight: '600', color: '#222', marginBottom: 6, fontFamily: 'Inter-Medium' }}>
                     Staff Type<Text style={{ color: 'red', fontFamily: 'Inter-Bold', }}>*</Text>
                 </Text>
-                <View style={{ position: 'relative', marginBottom: staffTypeError ? 0 : 5 }}>
+                <View style={{ position: 'relative', marginBottom: staffTypeError ? 0 : 5, zIndex: 100 }}>
                     <TouchableOpacity
                         style={{
                             backgroundColor: '#fff',
@@ -495,27 +496,40 @@ const AddAgencyStaff = () => {
                                 borderWidth: 1,
                                 borderColor: '#ccc',
                                 marginTop: 4,
-                                zIndex: 10,
-                                maxHeight: 120,
+                                zIndex: 100,
+                                elevation: 8,
+                                maxHeight: 100,          // ✅ chota kiya
                             }}
                         >
                             <FlatList
                                 data={dropdownData}
                                 keyExtractor={(item) => item.value}
                                 keyboardShouldPersistTaps="handled"
-                                renderItem={({ item }) => (
-                                    <TouchableOpacity
-                                        onPress={() => handleSelect(item)}
-                                        style={{
-                                            paddingVertical: 12,
-                                            paddingHorizontal: 15,
-                                            borderBottomWidth: 1,
-                                            borderBottomColor: '#eee',
-                                        }}
-                                    >
-                                        <Text style={{ fontSize: 16, color: '#222' }}>{item.label}</Text>
-                                    </TouchableOpacity>
-                                )}
+                                nestedScrollEnabled={true}
+                                renderItem={({ item }) => {
+                                    const isSelected = selectedType?.value === item.value;  // ✅ selected check
+                                    return (
+                                        <TouchableOpacity
+                                            onPress={() => handleSelect(item)}
+                                            style={{
+                                                paddingVertical: 6,          // ✅ chota kiya
+                                                paddingHorizontal: 15,
+                                                borderBottomWidth: 1,
+                                                borderBottomColor: '#eee',
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                justifyContent: 'space-between',
+                                                backgroundColor: isSelected ? '#f2ecff' : '#fff',  // ✅ highlight
+                                            }}
+                                        >
+                                            <Text style={{ fontSize: 13, color: '#222' }}>{item.label}</Text>
+
+                                            {isSelected && (
+                                                <Ionicons name="checkmark" size={16} color={colors.Brown} />
+                                            )}
+                                        </TouchableOpacity>
+                                    );
+                                }}
                             />
                         </View>
                     )}
@@ -661,7 +675,7 @@ const AddAgencyStaff = () => {
                     }}
                     onPress={() => {
                         const isAdmin = selectedType?.value === 'subadmin';
-                        handleSave(isAdmin); // It handles both goBack and replace
+                        handleSave(isAdmin);
                     }}
 
 

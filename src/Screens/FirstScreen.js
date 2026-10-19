@@ -1,4 +1,4 @@
-import { ActivityIndicator, Alert, Animated, BackHandler, FlatList, Image, Keyboard, Modal, PermissionsAndroid, Platform, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, Alert, Animated, BackHandler, FlatList, Image, Keyboard, Modal, PermissionsAndroid, Platform, RefreshControl, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import colors from '../CommonFiles/Colors';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -49,6 +49,7 @@ const FirstScreen = () => {
     const [showBottomTab, setShowBottomTab] = useState(true);
     const scrollTimeoutRef = useRef(null);
     const lastOffsetY = useRef(0);
+    const flatListRef = useRef(null);
 
     const [SelectedDropdownItem, setSelectedDropdownItem] = useState('List');
     const [selectedType, setSelectedType] = useState('All');
@@ -113,28 +114,30 @@ const FirstScreen = () => {
 
     const SCROLL_THRESHOLD = 20; // 15–25 best value
 
-    const handleScroll = (event) => {
-        const currentOffset = event.nativeEvent.contentOffset.y;
-        const diff = currentOffset - lastOffsetY.current;
+    // const handleScroll = (event) => {
+    //     const currentOffset = event.nativeEvent.contentOffset.y;
+    //     const diff = currentOffset - lastOffsetY.current;
 
-        if (Math.abs(diff) < SCROLL_THRESHOLD) {
-            return; // Ignore small scrolls
-        }
+    //     if (Math.abs(diff) < SCROLL_THRESHOLD) {
+    //         return; // Ignore small scrolls
+    //     }
 
-        if (diff > 0) {
-            // Scrolling DOWN → hide
-            if (showBottomTab) {
-                setShowBottomTab(false);
-            }
-        } else {
-            // Scrolling UP → show
-            if (!showBottomTab) {
-                setShowBottomTab(true);
-            }
-        }
+    //     if (diff > 0) {
+    //         // Scrolling DOWN → hide
+    //         if (showBottomTab) {
+    //             setShowBottomTab(false);
+    //         }
+    //     } else {
+    //         // Scrolling UP → show
+    //         if (!showBottomTab) {
+    //             setShowBottomTab(true);
+    //         }
+    //     }
 
-        lastOffsetY.current = currentOffset;
-    };
+    //     lastOffsetY.current = currentOffset;
+    // };
+
+
 
     React.useEffect(() => {
         const loadRentAgencyId = async () => {
@@ -242,6 +245,34 @@ const FirstScreen = () => {
     };
 
 
+    const Updatesyncstatus = async () => {
+        const userId = await AsyncStorage.getItem('staff_id');
+        if (!userId) {
+            console.log("❌ User ID not found");
+            return;
+        }
+
+        try {
+            const response = await fetch(`${ENDPOINTS.update_sync_status}?staff_id=${userId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            const result = await response.json();
+
+            if (result.code == 200) {
+                UserWiseExpiryApi();
+            } else {
+                console.log('❌ Error: Failed ');
+            }
+        } catch (error) {
+            console.log('❌ Error checking for update sync time:', error.message);
+        }
+    };
+
+
     const syncDataFromFile = async () => {
         KeepAwake.activate();
         try {
@@ -253,6 +284,7 @@ const FirstScreen = () => {
 
             // 🔥 Step 1: Get ZIP URL from API
             const apiZipUrl = await FetchDynamicUrlApi();
+            console.log("Dynamic ZIP URL:", apiZipUrl);
             if (!apiZipUrl) throw new Error('Zip URL not found');
 
             const zipUrl = `${apiZipUrl}?v=${Date.now()}`;
@@ -360,10 +392,10 @@ const FirstScreen = () => {
             console.log("✅ Database opened successfully from internal storage");
 
             console.log("⚡ Creating indexes…");
-            await db.executeSql("CREATE INDEX IF NOT EXISTS idx_reg_state ON full_vehicle_detail(reg_last, state_code,vehicle_finance_name, data_type);");
-            await db.executeSql("CREATE INDEX IF NOT EXISTS idx_chassis_state ON full_vehicle_detail(chassis_last, state_code,vehicle_finance_name, data_type);");
-            await db.executeSql("CREATE INDEX IF NOT EXISTS idx_engine_state ON full_vehicle_detail(eng_last, state_code,vehicle_finance_name, data_type);");
-            await db.executeSql("CREATE INDEX IF NOT EXISTS idx_finance_name ON full_vehicle_detail(vehicle_finance_name);");
+            await db.executeSql("CREATE INDEX IF NOT EXISTS idx_reg_state ON full_vehicle_detail(reg_last, state_code,vehicle_finance_name_admin, data_type);");
+            await db.executeSql("CREATE INDEX IF NOT EXISTS idx_chassis_state ON full_vehicle_detail(chassis_last, state_code,vehicle_finance_name_admin, data_type);");
+            await db.executeSql("CREATE INDEX IF NOT EXISTS idx_engine_state ON full_vehicle_detail(eng_last, state_code,vehicle_finance_name_admin, data_type);");
+            await db.executeSql("CREATE INDEX IF NOT EXISTS idx_finance_name ON full_vehicle_detail(vehicle_finance_name_admin);");
 
             await db.executeSql("PRAGMA analysis_limit=4000;");
             await db.executeSql("PRAGMA optimize;");
@@ -394,32 +426,6 @@ const FirstScreen = () => {
     };
 
 
-    const Updatesyncstatus = async () => {
-        const userId = await AsyncStorage.getItem('staff_id');
-        if (!userId) {
-            console.log("❌ User ID not found");
-            return;
-        }
-
-        try {
-            const response = await fetch(`${ENDPOINTS.update_sync_status}?staff_id=${userId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            const result = await response.json();
-
-            if (result.code == 200) {
-                UserWiseExpiryApi();
-            } else {
-                console.log('❌ Error: Failed ');
-            }
-        } catch (error) {
-            console.log('❌ Error checking for update sync time:', error.message);
-        }
-    };
 
     // Retry query logic
     const retryQuery = async (query, retries = 3, delay = 1000) => {
@@ -1119,7 +1125,7 @@ const FirstScreen = () => {
                     financeFilterSQL += `
             AND (
                 data_type != 'mjs'
-                OR UPPER(TRIM(vehicle_finance_name)) NOT IN (${placeholders})
+                OR UPPER(TRIM(vehicle_finance_name_admin)) NOT IN (${placeholders})
             )
         `;
                     financeParams.push(...easyList);
@@ -1171,6 +1177,11 @@ const FirstScreen = () => {
             setSearchPerformed(true);
             setIsSearched(true);
 
+            // 👇 Scroll to top after new search
+            if (flatListRef.current) {
+                flatListRef.current.scrollToOffset({ animated: false, offset: 0 });
+            }
+
         } catch (err) {
             console.log("❌ handleSearch error:", err);
             setModalMessage(
@@ -1215,6 +1226,11 @@ const FirstScreen = () => {
     }, []);
     return (
         <View style={{ flex: 1, backgroundColor: 'white' }}>
+            <StatusBar
+                backgroundColor={colors.Brown}
+                barStyle="light-content"
+            />
+
             <View
                 style={{
                     backgroundColor: colors.Brown,
@@ -1361,6 +1377,7 @@ const FirstScreen = () => {
                                         setVisibleType('Reg No');
                                         setSearchVehicle([]);
                                     }
+                                    // setShowBottomTab(true);
                                 }}
                             >
                                 <Ionicons name="swap-horizontal" size={25} color="white" />
@@ -2000,6 +2017,7 @@ const FirstScreen = () => {
                                         setSearchVehicle([]);
                                         setSearchPerformed(false);
                                         setIsSearched(false);
+                                        // setShowBottomTab(true);
                                     }}>
                                         <Text style={{ fontFamily: 'Inter-Bold', color: 'red' }}>Clear</Text>
                                     </TouchableOpacity>
@@ -2031,6 +2049,7 @@ const FirstScreen = () => {
                                 // />
 
                                 <FlatList
+                                    ref={flatListRef}
                                     data={
                                         listType === "Grid"
                                             ? transformToColumnWise(
@@ -2076,7 +2095,7 @@ const FirstScreen = () => {
                                     numColumns={listType === 'Grid' ? 2 : 1}
                                     key={listType === 'Grid' ? 'g' : 'l'} // Force re-render on layout change
                                     keyboardShouldPersistTaps="handled"
-                                    onScroll={handleScroll}
+                                    // onScroll={handleScroll}
                                     scrollEventThrottle={16} // smooth scroll events
                                     contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: keyboardVisible ? 340 : 80 }}
                                     columnWrapperStyle={listType === 'Grid' ? { justifyContent: 'space-between' } : null}
@@ -2091,7 +2110,7 @@ const FirstScreen = () => {
 
 
 
-            <Animated.View
+            {/* <Animated.View
                 style={{
                     position: 'absolute',
                     bottom: 0,
@@ -2106,7 +2125,10 @@ const FirstScreen = () => {
                 }}
             >
                 <Bottomtab />
-            </Animated.View>
+            </Animated.View> */}
+            <View style={{}}>
+                <Bottomtab />
+            </View>
 
             <Modal
                 animationType="fade"

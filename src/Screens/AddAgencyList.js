@@ -17,6 +17,7 @@ const AddAgencyList = () => {
     const [password, setPassword] = useState('');
     const [mobile, setMobile] = useState('');
     const [email, setEmail] = useState('');
+    const [isAdmin, setIsAdmin] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [errors, setErrors] = useState({});
     const [keyboardVisible, setKeyboardVisible] = useState(false);
@@ -28,6 +29,7 @@ const AddAgencyList = () => {
             setPassword(agencyData.agency_password || '');
             setMobile(agencyData.agency_mobile || '');
             setEmail(agencyData.agency_email || '');
+            setIsAdmin(agencyData.is_admin === 'Yes');
         }
     }, [agencyData]);
 
@@ -56,6 +58,7 @@ const AddAgencyList = () => {
             agency_password: password,
             agency_mobile: mobile,
             agency_email: email,
+            is_admin: isAdmin ? 'Yes' : 'No',
         };
         const endpoint = agencyData
             ? ENDPOINTS.Update_rent_agency  // Replace with actual update endpoint
@@ -89,6 +92,7 @@ const AddAgencyList = () => {
                 setPassword('');
                 setMobile('');
                 setEmail('');
+                setIsAdmin(false);
                 setErrors({});
                 setTimeout(() => {
                     navigation.goBack();
@@ -321,6 +325,22 @@ const AddAgencyList = () => {
                 />
                 {/* {errors.email && <Text style={{ color: 'red', marginBottom: 8 }}>{errors.email}</Text>} */}
 
+
+                {/* Is Admin Checkbox */}
+                <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => setIsAdmin(!isAdmin)}
+                    style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, marginBottom: 8 }}
+                >
+                    <Ionicons
+                        name={isAdmin ? 'checkbox' : 'square-outline'}
+                        size={24}
+                        color={isAdmin ? (colors.Brown || '#8B4513') : '#888'}
+                    />
+                    <Text style={{ marginLeft: 8, fontSize: 16, color: '#333', fontFamily: 'Inter-Medium' }}>
+                        Is Admin
+                    </Text>
+                </TouchableOpacity>
                 {/* Submit Button */}
                 <TouchableOpacity
                     onPress={handleSubmit}

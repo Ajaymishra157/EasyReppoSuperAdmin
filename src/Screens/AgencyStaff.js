@@ -44,6 +44,7 @@ const AgencyStaff = () => {
     const [modalVisible, setModalVisible] = useState(false);
     const [AdminCount, setAdminCount] = useState('');
     const [FieldCount, setFieldCount] = useState('');
+    const [TLCount, setTLCount] = useState('');
     const [text, setText] = useState('');
     const [refreshing, setRefreshing] = useState(false);
     const [userType, setUsertype] = useState(null);
@@ -83,6 +84,7 @@ const AgencyStaff = () => {
     const tabs = [
         { key: '', label: 'Total', count: AllCount, bgColor: '#7c3aed', },
         { key: 'admin', label: 'Admin', count: AdminCount, bgColor: '#0ea5e9', },
+        { key: 'TL', label: 'TL', count: TLCount, bgColor: '#f59e0b', },
         { key: 'field', label: 'Field', count: FieldCount, bgColor: '#22c55e', },
 
     ]
@@ -387,6 +389,7 @@ const AgencyStaff = () => {
                 setAdminCount(result.count_admin || 0);
                 setFieldCount(result.count_field || 0);
                 setAllCount(result.count_all || 0);
+                setTLCount(result.count_tl || 0);
                 setOriginalStaffData(result.payload);
 
                 // Restore scroll position after data is rendered
@@ -870,7 +873,7 @@ const AgencyStaff = () => {
                         </View>
                     )} */}
             </View>
-            {(StaffLoading || originalStaffData.length > 0) && (
+            {(StaffLoading || Number(AllCount) > 0) && (
                 <View style={{ width: '100%', paddingHorizontal: 10 }}>
                     <View
                         style={{
@@ -957,7 +960,7 @@ const AgencyStaff = () => {
                     </Text>
                 </View>
             )} */}
-            {(StaffLoading || originalStaffData.length > 0) && (
+            {(StaffLoading || Number(AllCount) > 0) && (
                 <View>
                     <ScrollView
                         horizontal

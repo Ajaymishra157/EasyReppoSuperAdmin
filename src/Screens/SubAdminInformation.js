@@ -577,7 +577,7 @@ const SubAdminInformation = () => {
                 justifyContent: 'center'
             }}>
                 <TouchableOpacity
-                    style={{ position: 'absolute', left: 10, top: 10 }}
+                    style={{ position: 'absolute', left: 10, top: 16 }}
                     onPress={handleBack}>
                     <Ionicons name="arrow-back" color="white" size={26} />
                 </TouchableOpacity>
@@ -658,7 +658,7 @@ const SubAdminInformation = () => {
                         </View>
                     </View>
 
-                    <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+                    <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 10 }} showsVerticalScrollIndicator={false}>
                         {/* Details Section */}
                         <View style={{ backgroundColor: '#ffffff', width: '100%', paddingHorizontal: 10, marginTop: 15 }}>
                             <View style={{
@@ -755,7 +755,7 @@ const SubAdminInformation = () => {
                                 <View style={{ backgroundColor: '#F9FAFB', paddingVertical: 20, paddingHorizontal: 10, borderRadius: 16, marginHorizontal: 10, borderWidth: 1, borderColor: '#E5E7EB', minHeight: 180 }}>
                                     {/* Search History Tab */}
                                     {activeTab === 'Search' && (
-                                        <View>
+                                        <View style={{ height: searchHistory.length > 0 ? 300 : 300 }}>
                                             {searchHistoryLoading ? (
                                                 <View style={{ justifyContent: 'center', alignItems: 'center', paddingVertical: 40 }}>
                                                     <ActivityIndicator size="large" color={colors.Brown} />
@@ -763,6 +763,7 @@ const SubAdminInformation = () => {
                                                 </View>
                                             ) : searchHistory.length > 0 ? (
                                                 <FlatList
+                                                    nestedScrollEnabled={true}
                                                     data={displayedSearchHistory}
                                                     keyExtractor={(item, index) => index.toString()}
                                                     showsVerticalScrollIndicator={false}
@@ -811,7 +812,7 @@ const SubAdminInformation = () => {
 
                                     {/* Schedule History Tab */}
                                     {activeTab === 'Schedule' && (
-                                        <View>
+                                        <View style={{ height: 300 }}>
                                             {scheduleHistoryLoading ? (
                                                 <View style={{ justifyContent: 'center', alignItems: 'center', paddingVertical: 40 }}>
                                                     <ActivityIndicator size="large" color={colors.Brown} />
@@ -819,6 +820,7 @@ const SubAdminInformation = () => {
                                                 </View>
                                             ) : scheduleHistory.length > 0 ? (
                                                 <FlatList
+                                                    nestedScrollEnabled={true}
                                                     data={displayedScheduleHistory}
                                                     keyExtractor={(item, index) => index.toString()}
                                                     showsVerticalScrollIndicator={false}
@@ -1022,7 +1024,7 @@ const SubAdminInformation = () => {
                                     </Text>
                                 </TouchableOpacity>
 
-                                {userData.staff_type != 'normal' && (
+                                {userData.staff_type != 'normal' && userData.staff_type != 'TL' && (
                                     <TouchableOpacity
                                         style={{
                                             flexDirection: 'row',

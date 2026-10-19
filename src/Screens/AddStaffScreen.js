@@ -216,10 +216,11 @@ const AddStaffScreen = () => {
     [
       { label: 'Field Staff', value: 'normal' },
       { label: 'Admin Staff', value: 'main' },
+      { label: 'TL', value: 'TL' },
     ]); // Static data for dropdown
 
   const filteredDropdownData = userType === 'SubAdmin'
-    ? dropdownData.filter(item => item.value === 'normal')
+    ? dropdownData.filter(item => item.value === 'normal' || item.value === 'TL')
     : dropdownData;
 
   const toggleDropdown = () => {
@@ -415,8 +416,24 @@ const AddStaffScreen = () => {
                 navigation.goBack();
               }
             }, 500); // 3 sec delay before navigation
+          } else if (data.code === 400 && data.message === 'This mobile number is blacklisted') {
+            // 🔹 Blacklist case
+            const payload = data.payload;
+            setBlacklistError(`${payload.staff_name} has been blacklisted\nRemark: ${payload.remark}`);
+            setBlacklistModalVisible(true);
           } else {
             console.log('Update failed:', data.message);
+
+            const msg = data.message || 'Something went wrong';
+            const lowerMsg = msg.toLowerCase();
+
+            if (lowerMsg.includes('mobile')) {
+              setStaffMobileError(msg);
+            } else if (lowerMsg.includes('email')) {
+              setEmailError(msg);
+            } else {
+              setSubmitError(msg);
+            }
           }
         } else {
           // If it's an add operation (no staff_id), use the Add API
@@ -465,19 +482,18 @@ const AddStaffScreen = () => {
             setBlacklistModalVisible(true);
           } else {
             console.log('Add failed:', data.message);
-            // Check if the error is related to mobile number already existing
-            if (data.message === 'Mobile number already exists') {
-              setStaffMobileError('Mobile number already exists'); // Set the error message to state
-              // setSubmitError('');
-            } else if (data.message === 'Email address already exists') {
-              setEmailError('Email address already exists');
-            } else if (
-              data.message ===
-              'Mobile number already exists, Email address already exists'
-            ) {
-              setSubmitError(
-                'Mobile number already exists, Email address already exists',
-              );
+
+            const msg = data.message || 'Something went wrong';
+            const lowerMsg = msg.toLowerCase();
+
+            // Field-specific highlight (agar message me relevant keyword mile to)
+            if (lowerMsg.includes('mobile')) {
+              setStaffMobileError(msg);
+            } else if (lowerMsg.includes('email')) {
+              setEmailError(msg);
+            } else {
+              // sirf tab dikhao jab koi field-specific match na ho
+              setSubmitError(msg);
             }
           }
         }
@@ -852,8 +868,9 @@ const AddStaffScreen = () => {
           </Text>
 
           {/* Type Dropdown */}
-          <View style={{}}>
-            <View style={{ position: 'relative' }}>
+          {/* Type Dropdown */}
+          <View style={{ overflow: 'visible' }}>
+            <View style={{ position: 'relative', zIndex: 100 }}>
               <TouchableOpacity
                 style={{
                   backgroundColor: 'white',
@@ -880,6 +897,8 @@ const AddStaffScreen = () => {
                     selectedType === 'Admin Staff' ||
                     selectedType === 'main' ? (
                     <Text>Admin Staff</Text>
+                  ) : selectedType === 'TL' ? (
+                    <Text>TL</Text>
                   ) : (
                     <Text>Select Type</Text>
                   )}
@@ -893,7 +912,7 @@ const AddStaffScreen = () => {
                 )}
               </TouchableOpacity>
 
-              {/* Dropdown list visibility */}
+
               {isDropdownVisible && (
                 <View
                   style={{
@@ -905,35 +924,50 @@ const AddStaffScreen = () => {
                     borderRadius: 8,
                     borderColor: '#ddd',
                     borderWidth: 1,
-                    zIndex: 1,
+                    zIndex: 100,
+                    elevation: 8,
                     marginTop: 2,
+                    maxHeight: 100,
                   }}>
                   <FlatList
                     data={filteredDropdownData}
                     keyboardShouldPersistTaps="handled"
-                    renderItem={({ item }) => (
-                      <TouchableOpacity
-                        style={{
-                          padding: 12,
-                          borderBottomColor: '#ddd',
-                          borderBottomWidth: 1,
-                        }}
-                        onPress={() =>
-                          handleSelect({
-                            staff_id: item.value,
-                            staff_name: item.label,
-                          })
-                        }>
-                        <Text
+                    nestedScrollEnabled={true}
+                    renderItem={({ item }) => {
+                      const isSelected = SelectedId === item.value;
+                      return (
+                        <TouchableOpacity
                           style={{
-                            fontSize: 16,
-                            fontFamily: 'Inter-Regular',
-                            color: 'black',
-                          }}>
-                          {item.label}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
+                            paddingVertical: 6,
+                            paddingHorizontal: 12,
+                            borderBottomColor: '#eee',
+                            borderBottomWidth: 1,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            backgroundColor: isSelected ? '#f2ecff' : 'white',
+                          }}
+                          onPress={() =>
+                            handleSelect({
+                              staff_id: item.value,
+                              staff_name: item.label,
+                            })
+                          }>
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              fontFamily: 'Inter-Regular',
+                              color: 'black',
+                            }}>
+                            {item.label}
+                          </Text>
+
+                          {isSelected && (
+                            <Ionicons name="checkmark" size={16} color={colors.Brown} />
+                          )}
+                        </TouchableOpacity>
+                      );
+                    }}
                     keyExtractor={item => item.value}
                   />
                 </View>
@@ -1086,7 +1120,7 @@ const AddStaffScreen = () => {
               }}
               onPress={() => {
                 const isAdmin = SelectedId === 'main';
-                handleSubmit(isAdmin); // It handles both goBack and replace
+                handleSubmit(isAdmin);
               }}
             >
               {StaffLoading ? (

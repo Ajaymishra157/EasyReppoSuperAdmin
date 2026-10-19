@@ -65,7 +65,7 @@ const HomeScreen = () => {
   const [originalStaffData, setoriginalStaffData] = useState([]);
   const hasStaff = originalStaffData.length > 0;
   const [FieldCount, setFieldCount] = useState('');
-
+  const [TLCount, setTLCount] = useState('');
   const [selectedStaffId, setSelectedStaffId] = useState(null);
   const [selectedStaffName, setselectedStaffName] = useState(null);
   const [DeviceId, setDeviceId] = useState('');
@@ -173,6 +173,7 @@ const HomeScreen = () => {
   const tabs = [
     { key: '', label: 'Total', count: AllCount, bgColor: '#7c3aed', },
     { key: 'admin', label: 'Admin', count: AdminCount, bgColor: '#0ea5e9', },
+    { key: 'TL', label: 'TL', count: TLCount, bgColor: '#f59e0b', },
     { key: 'field', label: 'Field', count: FieldCount, bgColor: '#22c55e', },
 
   ]
@@ -484,7 +485,7 @@ const HomeScreen = () => {
           setFieldCount(result.count_field);
           setAllCount(result.count_all);
 
-
+          setTLCount(result.count_tl);
           setoriginalStaffData(result.payload);
 
           // Data set होने के बाद scroll position restore करें
@@ -925,7 +926,13 @@ const HomeScreen = () => {
               color: '#374151',
               fontFamily: 'Inter-Regular', marginTop: 2
             }}>
-              {item.staff_type === 'normal' ? 'Field Staff' : item.staff_type || '----'}
+              {item.staff_type === 'normal'
+                ? 'Field Staff'
+                : item.staff_type === 'TL'
+                  ? 'TL'
+                  : item.staff_type === 'main'
+                    ? 'Admin Staff'
+                    : item.staff_type || '----'}
             </Text>
           </View>
         </View>
@@ -997,7 +1004,7 @@ const HomeScreen = () => {
           Staff List
         </Text>
       </View>
-      {(StaffLoading || originalStaffData.length > 0) && (
+      {(StaffLoading || Number(AllCount) > 0) && (
         <View style={{ width: '100%', paddingHorizontal: 10 }}>
           <View
             style={{
@@ -1060,7 +1067,7 @@ const HomeScreen = () => {
           </View>
         </View>
       )}
-      {(StaffLoading || originalStaffData.length > 0) && (
+      {(StaffLoading || Number(AllCount) > 0) && (
         <View>
           <ScrollView
             horizontal
@@ -1621,7 +1628,13 @@ const HomeScreen = () => {
                       Staff Type:{' '}
                     </Text>
 
-                    {selectedStaff.staff_type == 'normal' ? 'User' : selectedStaff.staff_type || '----'}
+                    {selectedStaff.staff_type === 'normal'
+                      ? 'User'
+                      : selectedStaff.staff_type === 'TL'
+                        ? 'TL'
+                        : selectedStaff.staff_type === 'main'
+                          ? 'Admin Staff'
+                          : selectedStaff.staff_type || '----'}
                   </Text>
 
                   <Text

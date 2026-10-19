@@ -1,4 +1,4 @@
-package com.easyreppo
+package com.easyreppotest
 
 import android.app.Application
 import com.facebook.react.PackageList
